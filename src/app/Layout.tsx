@@ -2,6 +2,7 @@ import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { backendInfo, useAuth, useBasket, useMode, useToasts } from '@/store';
 import { Icon, LogoMark } from '@/ui';
+import { ErrorBoundary } from './ErrorBoundary';
 
 const MAIN = [
   { to: '/', label: 'Home', end: true },
@@ -68,9 +69,9 @@ export function Layout({ children }: { children: ReactNode }) {
             </nav>
           </div>
         </div>
-        {info.note && <div className="storage-note"><div className="wrap">{info.note}</div></div>}
       </header>
-      <main id="main">{children}</main>
+      {info.note && <div className="storage-note"><div className="wrap">{info.note} <a href="#/scope">How to connect the database</a></div></div>}
+      <main id="main"><ErrorBoundary resetKey={loc.pathname}>{children}</ErrorBoundary></main>
       <footer className="site-footer">
         <div className="wrap">
           <div className="foot-grid">

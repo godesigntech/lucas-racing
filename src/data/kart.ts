@@ -18,10 +18,10 @@ export const PANEL_BOX: Record<PanelId, { w: number; h: number }> = {
   frontBumper: { w: 1000, h: 300 },
 };
 
-function pod(p: { nose: number; tail: number; dip: number }, mirror: boolean) {
+function pod(p: { nose: number; tail: number; dip: number }) {
   // side pod seen from the side; nose at x=1000 (front) for the left pod
   const pts = `M40 ${110 + p.tail} C120 60 300 40 520 46 C700 52 860 70 ${960 - p.nose} 120 C990 150 990 230 ${950 - p.nose} 270 C760 300 420 310 120 300 C60 296 30 260 30 ${200 + p.dip} Z`;
-  return mirror ? `<g transform="translate(1000 0) scale(-1 1)"><path d="${pts}"/></g>` : pts;
+  return pts;
 }
 const nassau = (round: number) =>
   `M70 70 C${200 - round} 30 ${440 + round} 30 570 70 L600 300 C${560 - round} 430 ${360} 490 320 494 C280 490 ${80 + round} 430 40 300 Z`;
@@ -29,7 +29,7 @@ const bumper = (lip: number) =>
   `M30 210 C60 120 200 60 420 52 L760 50 C880 54 950 100 975 170 C985 220 960 ${250 + lip} 900 ${262 + lip} L120 ${262 + lip} C60 260 26 246 30 210 Z`;
 
 function bodywork(id: string, name: string, p: { nose: number; tail: number; dip: number; round: number; lip: number }): KartBodywork {
-  const left = pod(p, false);
+  const left = pod(p);
   return {
     id, name, accurate: false,
     outlines: {
@@ -57,7 +57,8 @@ const rect = (x: number, y: number, w: number, h: number, color: string, rotatio
 const stripe = (x: number, y: number, w: number, h: number, color: string, rotation = 0, name = 'Stripe'): KartLayer => ({ id: uid('l'), type: 'stripe', x, y, w, h, rotation, color, name });
 const tri = (x: number, y: number, w: number, h: number, color: string, rotation = 0, name = 'Chevron'): KartLayer => ({ id: uid('l'), type: 'triangle', x, y, w, h, rotation, color, name });
 const ell = (x: number, y: number, w: number, h: number, color: string, name = 'Circle'): KartLayer => ({ id: uid('l'), type: 'ellipse', x, y, w, h, rotation: 0, color, name });
-const txt = (x: number, y: number, text: string, size: number, color: string, outline: string | null = null, name = 'Text', font: 'barlow' | 'anton' | 'racing' = 'barlow'): KartLayer => ({ id: uid('l'), type: 'text', x, y, text, size, rotation: 0, color, outline, font, name });
+const autoName = (text: string) => (/^\d+$/.test(text) ? 'Race number' : /DRIVER/i.test(text) ? 'Driver name' : /TEAM|LUCAS/i.test(text) ? 'Team name' : 'Text');
+const txt = (x: number, y: number, text: string, size: number, color: string, outline: string | null = null, name = autoName(text), font: 'barlow' | 'anton' | 'racing' = 'barlow'): KartLayer => ({ id: uid('l'), type: 'text', x, y, text, size, rotation: 0, color, outline, font, name });
 
 type Build = (c: [string, string, string]) => Record<PanelId, KartPanelDesign>;
 

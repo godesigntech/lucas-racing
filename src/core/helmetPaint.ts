@@ -170,7 +170,7 @@ export function paintHelmet(d: HelmetDesign, opts: PaintOptions = {}) {
 
   // Template zones
   const tpl = templateById(d.templateId);
-  if (tpl && d.source === 'template') {
+  if (tpl && (d.source === 'template' || d.source === 'ai')) {
     for (const z of tpl.zones) {
       const p = d.zonePaints[z.id];
       if (p) fillBoth(ctx, pbr, new Path2D(z.path), p, rough);

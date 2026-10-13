@@ -256,7 +256,7 @@ function drawFilm(ctx: Ctx, film: Film, cols: string[], seed: number) {
     }
     case 'brushed':
       pixels(ctx, (x, y) => {
-        const n = noise(x * 0.02, y, 128) * 0.6 + noise(x, y, 4) * 0.4;
+        const n = noise(x * 0.02, y, 64) * 0.6 + noise(x, y, 4) * 0.4;
         return lerpColor(rgb, n);
       });
       break;
