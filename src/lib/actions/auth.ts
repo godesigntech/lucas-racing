@@ -10,6 +10,29 @@ import type { ActionResult } from "@/types/account"
 
 import { failure, validationError } from "./result"
 
+/** Customer-facing message for each Supabase sign-up error code. */
+function signUpErrorMessage(code: string | undefined): string {
+  switch (code) {
+    case "user_already_exists":
+    case "email_exists":
+      return "An account with that email already exists. Try logging in."
+    case "weak_password":
+      return "Please choose a stronger password."
+    case "email_address_invalid":
+      return "Please use a real email address you can receive mail at."
+    case "over_email_send_rate_limit":
+    case "over_request_rate_limit":
+      return "Too many sign-ups in a short time. Please wait a few minutes and try again."
+    case "email_address_not_authorized":
+      return "We can't send a confirmation email to that address right now. Please contact us and we'll set up your account."
+    case "signup_disabled":
+    case "email_provider_disabled":
+      return "New sign-ups are paused at the moment. Please contact us."
+    default:
+      return "We couldn't create your account. Please try again."
+  }
+}
+
 /** Only allow redirects back into this site. */
 function safeNext(next: string | null | undefined, fallback: string): string {
   return next && next.startsWith("/") && !next.startsWith("//") ? next : fallback
@@ -55,9 +78,9 @@ export async function signUp(values: SignupFormValues): Promise<ActionResult<{ n
   })
 
   if (error) {
-    if (error.code === "user_already_exists") return failure("An account with that email already exists. Try logging in.")
-    if (error.code === "weak_password") return failure("Please choose a stronger password.")
-    return failure("We couldn't create your account. Please try again.")
+    // Logged server-side so configuration problems (email limits, disabled sign-ups) are visible.
+    console.error("Sign-up failed:", { code: error.code, status: error.status, message: error.message })
+    return failure(signUpErrorMessage(error.code))
   }
 
   // With email confirmation on, Supabase returns no session until the link is clicked.
