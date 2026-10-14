@@ -175,6 +175,27 @@ export type CustomerSummaryRow = {
   last_order_at: string | null
 }
 
+export type ConversationRow = Timestamps & {
+  id: string
+  customer_id: string
+  status: string
+  last_message_at: string | null
+  last_message_preview: string
+  last_message_role: string | null
+  customer_unread_count: number
+  admin_unread_count: number
+}
+
+export type MessageRow = {
+  id: string
+  conversation_id: string
+  sender_id: string | null
+  sender_role: string
+  body: string
+  attachment_path: string | null
+  created_at: string
+}
+
 export type Database = {
   public: {
     Tables: {
@@ -198,12 +219,41 @@ export type Database = {
         keyof OrderStatusEventRow,
         [OrderRelationship<"order_status_events_order_id_fkey">]
       >
+      conversations: Table<
+        ConversationRow,
+        "customer_id",
+        keyof ConversationRow,
+        [
+          {
+            foreignKeyName: "conversations_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      >
+      messages: Table<
+        MessageRow,
+        "conversation_id" | "sender_role",
+        keyof MessageRow,
+        [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      >
     }
     Views: {
       customer_summaries: { Row: CustomerSummaryRow; Relationships: [] }
     }
     Functions: {
       is_admin: { Args: Record<string, never>; Returns: boolean }
+      mark_conversation_read: { Args: { p_conversation_id: string; p_role: string }; Returns: undefined }
       place_order: {
         Args: {
           p_items: Json

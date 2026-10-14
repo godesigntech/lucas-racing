@@ -3,6 +3,7 @@ import { CalendarDays, Mail, MapPin, Phone, PoundSterling, ShoppingBag } from "l
 
 import { AdminCard } from "@/components/admin/admin-card"
 import { AdminPageHeader } from "@/components/admin/admin-page-header"
+import { MessageCustomerButton } from "@/components/admin/chat/message-customer-button"
 import { OrdersTable } from "@/components/admin/orders-table"
 import { StatCard } from "@/components/admin/stat-card"
 import { UserAvatar } from "@/components/shared/user-avatar"
@@ -37,6 +38,7 @@ async function CustomerDetail({ id }: { id: string }) {
           </span>
         }
         description={`Customer since ${formatDate(profile.createdAt)}`}
+        actions={<MessageCustomerButton customerId={profile.id} />}
       />
 
       <div className="grid gap-6 lg:grid-cols-[20rem_minmax(0,1fr)]">

@@ -1,9 +1,21 @@
-import { Droplets, LayoutDashboard, Package, PoundSterling, Settings, ShoppingBag, Users, type LucideIcon } from "lucide-react"
+import {
+  Droplets,
+  LayoutDashboard,
+  MessagesSquare,
+  Package,
+  PoundSterling,
+  Settings,
+  ShoppingBag,
+  Users,
+  type LucideIcon,
+} from "lucide-react"
 
 export interface AdminNavItem {
   label: string
   href: string
   icon: LucideIcon
+  /** Shows the live count of conversations awaiting a reply. */
+  unreadBadge?: boolean
 }
 
 export const adminNavSections: { title: string; items: AdminNavItem[] }[] = [
@@ -13,6 +25,7 @@ export const adminNavSections: { title: string; items: AdminNavItem[] }[] = [
       { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
       { label: "Orders", href: "/admin/orders", icon: ShoppingBag },
       { label: "Customers", href: "/admin/customers", icon: Users },
+      { label: "Messages", href: "/admin/messages", icon: MessagesSquare, unreadBadge: true },
     ],
   },
   {

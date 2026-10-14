@@ -1,10 +1,12 @@
 import { Suspense } from "react"
 import type { Metadata } from "next"
 
+import { AdminUnreadProvider } from "@/components/admin/chat/admin-unread-provider"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { AdminTopbar } from "@/components/admin/admin-topbar"
 import { Skeleton } from "@/components/ui/skeleton"
 import { requireAdmin } from "@/lib/auth/session"
+import { isDemoMode } from "@/lib/demo/mode"
 
 export const metadata: Metadata = {
   title: { default: "Admin", template: "%s | Admin" },
@@ -13,19 +15,21 @@ export const metadata: Metadata = {
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-dvh bg-paper">
-      <AdminSidebar />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <AdminTopbar />
-        <main id="main" className="flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-          <div className="mx-auto max-w-6xl">
-            <Suspense fallback={<AdminPageSkeleton />}>
-              <AdminGate>{children}</AdminGate>
-            </Suspense>
-          </div>
-        </main>
+    <AdminUnreadProvider enabled={!isDemoMode()}>
+      <div className="flex min-h-dvh bg-paper">
+        <AdminSidebar />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <AdminTopbar />
+          <main id="main" className="flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+            <div className="mx-auto max-w-6xl">
+              <Suspense fallback={<AdminPageSkeleton />}>
+                <AdminGate>{children}</AdminGate>
+              </Suspense>
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+    </AdminUnreadProvider>
   )
 }
 
