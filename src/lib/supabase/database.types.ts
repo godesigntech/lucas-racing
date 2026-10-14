@@ -196,6 +196,23 @@ export type MessageRow = {
   created_at: string
 }
 
+export type QuoteRequestRow = Timestamps & {
+  id: string
+  reference: string
+  user_id: string | null
+  name: string
+  email: string
+  phone: string
+  helmet: string
+  notes: string
+  image_path: string | null
+  palette: string[]
+  concept: Json
+  suggested_products: string[]
+  status: string
+  admin_notes: string
+}
+
 export type Database = {
   public: {
     Tables: {
@@ -247,6 +264,7 @@ export type Database = {
           },
         ]
       >
+      quote_requests: Table<QuoteRequestRow, "name" | "email" | "helmet", keyof QuoteRequestRow>
     }
     Views: {
       customer_summaries: { Row: CustomerSummaryRow; Relationships: [] }
@@ -254,6 +272,20 @@ export type Database = {
     Functions: {
       is_admin: { Args: Record<string, never>; Returns: boolean }
       mark_conversation_read: { Args: { p_conversation_id: string; p_role: string }; Returns: undefined }
+      submit_quote_request: {
+        Args: {
+          p_name: string
+          p_email: string
+          p_phone: string
+          p_helmet: string
+          p_notes: string
+          p_image_path: string | null
+          p_palette: string[]
+          p_concept: Json
+          p_suggested_products: string[]
+        }
+        Returns: { reference: string }[]
+      }
       place_order: {
         Args: {
           p_items: Json

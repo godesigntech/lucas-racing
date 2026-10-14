@@ -1,6 +1,6 @@
 import { Suspense } from "react"
 import Link from "next/link"
-import { ArrowRight, Clock, PoundSterling, ShoppingBag, Users } from "lucide-react"
+import { ArrowRight, Clock, PoundSterling, ShoppingBag, Sparkles, Users } from "lucide-react"
 
 import { AdminCard } from "@/components/admin/admin-card"
 import { AdminPageHeader } from "@/components/admin/admin-page-header"
@@ -9,6 +9,7 @@ import { StatCard } from "@/components/admin/stat-card"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getDashboardStats } from "@/lib/data/admin"
+import { countNewQuoteRequests } from "@/lib/data/quotes"
 import { formatMoney } from "@/lib/format"
 import { orderStatusMeta, toneClasses } from "@/lib/orders/status"
 import { cn } from "@/lib/utils"
@@ -28,11 +29,28 @@ export default function AdminDashboardPage() {
 }
 
 async function Dashboard() {
-  const stats = await getDashboardStats()
+  const [stats, newQuotes] = await Promise.all([getDashboardStats(), countNewQuoteRequests()])
   const totalOrders = orderStatuses.reduce((sum, status) => sum + stats.statusCounts[status], 0)
 
   return (
     <div className="space-y-6">
+      {newQuotes > 0 && (
+        <Link
+          href="/admin/quotes?status=new"
+          className="group flex items-center gap-3 rounded-2xl border border-lime-ink/20 bg-accent px-5 py-4 transition-colors hover:border-lime-ink/40"
+        >
+          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-carbon text-lime">
+            <Sparkles className="size-5" aria-hidden />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">
+              {newQuotes} new quote {newQuotes === 1 ? "request" : "requests"}
+            </span>
+            <span className="block text-sm text-carbon/70">Sent from the design assistant and waiting for a reply.</span>
+          </span>
+          <ArrowRight className="size-5 shrink-0 transition-transform group-hover:translate-x-0.5" aria-hidden />
+        </Link>
+      )}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           highlight

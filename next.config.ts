@@ -3,8 +3,8 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
-  // The live chat button lives bottom left; keep the dev-only badge out of its way.
-  devIndicators: { position: "bottom-right" },
+  // Both bottom corners hold floating buttons (chat, design assistant); keep the dev-only badge clear of them.
+  devIndicators: { position: "top-left" },
   // Dev logs would otherwise print Server Action arguments, including passwords from the login form.
   logging: { serverFunctions: false },
   images: {

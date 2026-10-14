@@ -6,6 +6,7 @@ import {
   PoundSterling,
   Settings,
   ShoppingBag,
+  Sparkles,
   Users,
   type LucideIcon,
 } from "lucide-react"
@@ -25,6 +26,7 @@ export const adminNavSections: { title: string; items: AdminNavItem[] }[] = [
       { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
       { label: "Orders", href: "/admin/orders", icon: ShoppingBag },
       { label: "Customers", href: "/admin/customers", icon: Users },
+      { label: "Quotes", href: "/admin/quotes", icon: Sparkles },
       { label: "Messages", href: "/admin/messages", icon: MessagesSquare, unreadBadge: true },
     ],
   },

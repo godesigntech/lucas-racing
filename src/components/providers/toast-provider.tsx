@@ -6,7 +6,8 @@ import { Slide, ToastContainer } from "react-toastify"
 export function ToastProvider() {
   return (
     <ToastContainer
-      position="bottom-right"
+      // The bottom corners belong to the chat and design assistant buttons.
+      position="top-right"
       autoClose={5000}
       transition={Slide}
       newestOnTop
