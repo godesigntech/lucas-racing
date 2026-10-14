@@ -1,8 +1,8 @@
 "use client"
 
-import { Box } from "lucide-react"
+import { Rotate3d } from "lucide-react"
 
-import { HelmetArt } from "@/components/helmet/helmet-art"
+import { Helmet3D } from "@/components/helmet/helmet-3d"
 import { useHelmetConfigurator } from "@/hooks/use-helmet-configurator"
 import { configurationToText } from "@/lib/configurator/helmet-configuration"
 import type { Product } from "@/types/product"
@@ -23,13 +23,18 @@ export function HelmetConfigurator({ product }: { product: Product }) {
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-12">
       <div className="lg:sticky lg:top-32 lg:self-start">
-        <div className="relative overflow-hidden rounded-3xl border border-carbon/10 bg-[radial-gradient(circle_at_50%_40%,#ffffff,#e8e7e0_75%)] p-6 sm:p-10">
-          <HelmetArt look={look} title={`Live preview of your ${product.name} helmet`} />
-          <p className="mt-4 flex items-center justify-center gap-2 text-center text-xs text-muted-foreground">
-            <Box className="size-3.5" aria-hidden />
-            Illustrated preview. The interactive 3D builder is on its way.
-          </p>
+        <div className="relative overflow-hidden rounded-3xl border border-carbon/10 bg-[radial-gradient(circle_at_50%_40%,#ffffff,#e8e7e0_75%)]">
+          <Helmet3D
+            look={look}
+            title={`Live 3D preview of your ${product.name} helmet`}
+            controls
+            className="aspect-square w-full sm:aspect-[5/4]"
+          />
         </div>
+        <p className="mt-3 flex items-center justify-center gap-2 text-center text-xs text-muted-foreground">
+          <Rotate3d className="size-3.5" aria-hidden />
+          Drag to rotate, scroll or pinch to zoom. Test model: colour zones are approximate.
+        </p>
       </div>
 
       <div className="space-y-8">

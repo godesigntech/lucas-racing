@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 
-import { HelmetArt } from "@/components/helmet/helmet-art"
+import { Helmet3D } from "@/components/helmet/helmet-3d"
 import { Container } from "@/components/layout/container"
 import { Button } from "@/components/ui/button"
 import type { HelmetLook } from "@/types/helmet"
@@ -74,10 +74,12 @@ export function HomeHero() {
           <div aria-hidden className="absolute inset-[12%] rounded-full bg-lime/20 blur-2xl" />
           <div aria-hidden className="absolute inset-[8%] rounded-full border border-white/10" />
           <div aria-hidden className="absolute inset-[20%] rounded-full border border-dashed border-white/10" />
-          <HelmetArt
+          <Helmet3D
             look={heroLook}
-            title="Custom Arai SK-6 with a lime forged-carbon sweep and number 29"
-            className="relative drop-shadow-[0_30px_40px_rgb(0_0_0/0.45)]"
+            title="Custom Arai SK-6 with a lime forged-carbon sweep and number 29, rotating in 3D"
+            autoRotate
+            tone="dark"
+            className="relative aspect-[5/4] w-full"
           />
           {heroTags.map((tag) => (
             <div
