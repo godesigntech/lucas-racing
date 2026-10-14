@@ -2,6 +2,7 @@
 
 import { Check } from "lucide-react"
 
+import { formatSurcharge } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { ConfigOptionGroup } from "@/types/configurator"
 
@@ -18,18 +19,23 @@ export function OptionGroup({ group, value, onChange, disabledReason, descriptio
   const disabled = Boolean(disabledReason)
   const selected = group.choices.find((choice) => choice.value === value)
   const helper = disabledReason ?? description ?? group.description
+  const selectedSurcharge = formatSurcharge(selected?.price)
 
   return (
     <fieldset disabled={disabled} className={cn("min-w-0 space-y-3", disabled && "opacity-55")}>
       <legend className="flex w-full items-baseline justify-between gap-3">
         <span className="text-sm font-semibold">{group.label}</span>
-        <span className="truncate text-sm text-muted-foreground">{disabled ? "Not used" : selected?.label}</span>
+        <span className="truncate text-sm text-muted-foreground">
+          {disabled ? "Not used" : selected?.label}
+          {!disabled && selectedSurcharge && <span className="ml-1.5 font-medium text-lime-ink">{selectedSurcharge}</span>}
+        </span>
       </legend>
 
       <div className={cn("flex flex-wrap", group.kind === "swatch" ? "gap-2.5" : "gap-2")}>
         {group.choices.map((choice) => {
           const checked = choice.value === value
           const id = `${group.key}-${choice.value.replace("#", "")}`
+          const surcharge = formatSurcharge(choice.price)
           return (
             <label key={choice.value} htmlFor={id} className="relative cursor-pointer has-disabled:cursor-not-allowed">
               <input
@@ -43,7 +49,7 @@ export function OptionGroup({ group, value, onChange, disabledReason, descriptio
               />
               {group.kind === "swatch" ? (
                 <span
-                  title={choice.label}
+                  title={surcharge ? `${choice.label} (${surcharge})` : choice.label}
                   className={cn(
                     "grid size-10 place-items-center rounded-full ring-1 ring-carbon/15 transition-[box-shadow,transform] peer-focus-visible:ring-3 peer-focus-visible:ring-ring/60 hover:scale-105",
                     checked && "ring-2 ring-carbon ring-offset-2 ring-offset-card",
@@ -51,22 +57,28 @@ export function OptionGroup({ group, value, onChange, disabledReason, descriptio
                   style={{ backgroundColor: choice.swatch }}
                 >
                   {checked && <Check className="size-4 text-paper mix-blend-difference" aria-hidden />}
-                  <span className="sr-only">{choice.label}</span>
+                  <span className="sr-only">
+                    {choice.label}
+                    {surcharge && ` ${surcharge}`}
+                  </span>
                 </span>
               ) : (
                 <span
                   className={cn(
                     "flex min-h-10 flex-col justify-center rounded-xl border px-3.5 py-2 text-sm transition-colors peer-focus-visible:ring-3 peer-focus-visible:ring-ring/50",
-                    checked
-                      ? "border-carbon bg-carbon text-paper"
-                      : "border-carbon/15 bg-card hover:border-carbon/40",
+                    checked ? "border-carbon bg-carbon text-paper" : "border-carbon/15 bg-card hover:border-carbon/40",
                   )}
                 >
-                  <span className="font-medium">{choice.label}</span>
+                  <span className="font-medium">
+                    {choice.label}
+                    {surcharge && (
+                      <span className={cn("ml-1.5 text-xs font-semibold", checked ? "text-lime" : "text-lime-ink")}>
+                        {surcharge}
+                      </span>
+                    )}
+                  </span>
                   {choice.hint && (
-                    <span className={cn("text-xs", checked ? "text-paper/65" : "text-muted-foreground")}>
-                      {choice.hint}
-                    </span>
+                    <span className={cn("text-xs", checked ? "text-paper/65" : "text-muted-foreground")}>{choice.hint}</span>
                   )}
                 </span>
               )}

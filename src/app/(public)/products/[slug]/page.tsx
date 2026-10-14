@@ -1,14 +1,18 @@
+import { Suspense } from "react"
 import type { Metadata } from "next"
+import Link from "next/link"
 import { notFound } from "next/navigation"
+import { ArrowRight } from "lucide-react"
 
 import { Container } from "@/components/layout/container"
-import { HelmetConfigurator } from "@/components/products/configurator/helmet-configurator"
 import { ProductDetails } from "@/components/products/product-details"
 import { ProductGallery } from "@/components/products/product-gallery"
 import { ProductGrid } from "@/components/products/product-grid"
 import { ProductSummary } from "@/components/products/product-summary"
 import { Breadcrumbs } from "@/components/shared/breadcrumbs"
 import { SectionHeading } from "@/components/shared/section-heading"
+import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import { getProductBySlug, getProducts, getRelatedProducts } from "@/lib/data/products"
 
 export async function generateStaticParams() {
@@ -31,8 +35,33 @@ export async function generateMetadata({ params }: PageProps<"/products/[slug]">
   }
 }
 
-export default async function ProductPage({ params }: PageProps<"/products/[slug]">) {
-  const { slug } = await params
+export default function ProductPage({ params }: PageProps<"/products/[slug]">) {
+  return (
+    <Suspense fallback={<ProductSkeleton />}>
+      {params.then(({ slug }) => (
+        <ProductContent slug={slug} />
+      ))}
+    </Suspense>
+  )
+}
+
+function ProductSkeleton() {
+  return (
+    <Container className="space-y-8 pb-16 pt-8" aria-busy="true" aria-label="Loading design">
+      <Skeleton className="h-5 w-48" />
+      <div className="grid gap-10 lg:grid-cols-2 lg:gap-14">
+        <Skeleton className="aspect-[4/3] rounded-[2rem]" />
+        <div className="space-y-4">
+          <Skeleton className="h-16 w-2/3" />
+          <Skeleton className="h-6 w-1/2" />
+          <Skeleton className="h-32 w-full" />
+        </div>
+      </div>
+    </Container>
+  )
+}
+
+async function ProductContent({ slug }: { slug: string }) {
   const product = await getProductBySlug(slug)
   if (!product) notFound()
 
@@ -62,14 +91,22 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
         </Container>
       </section>
 
-      <section id="configure" className="border-y border-carbon/10 bg-smoke/60 py-16 sm:py-20">
-        <Container className="space-y-10">
-          <SectionHeading
-            eyebrow="Configure"
-            title={`Make ${product.name} yours`}
-            description="Choose your shell, finish, colours, film and trims. The preview updates as you go, and you can send the build to the workshop as an enquiry."
-          />
-          <HelmetConfigurator product={product} />
+      <section className="pb-16 sm:pb-20">
+        <Container>
+          <div className="grid-texture relative flex flex-col gap-6 overflow-hidden rounded-[2rem] bg-carbon p-6 text-paper sm:p-10 md:flex-row md:items-center md:justify-between">
+            <div className="max-w-xl space-y-3">
+              <p className="eyebrow text-lime">Design studio</p>
+              <h2 className="display text-4xl sm:text-5xl">Make {product.name} yours</h2>
+              <p className="text-paper/70">
+                Pick your shell, finish, colours, film and trims step by step. The preview and price update as you go.
+              </p>
+            </div>
+            <Button asChild size="lg" className="self-start md:self-auto">
+              <Link href={`/products/${product.slug}/customize`}>
+                Open the design studio <ArrowRight />
+              </Link>
+            </Button>
+          </div>
         </Container>
       </section>
 

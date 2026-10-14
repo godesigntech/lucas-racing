@@ -1,16 +1,18 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import { Controller, useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Check, Loader2 } from "lucide-react"
+import { Check, Loader2, MailCheck } from "lucide-react"
 import { toast } from "react-toastify"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { previewSignUp } from "@/lib/services/auth-preview"
+import { signUp } from "@/lib/actions/auth"
+import { isRedirectError } from "@/lib/is-redirect"
 import { cn } from "@/lib/utils"
 import { passwordRules, signupSchema, type SignupFormValues } from "@/lib/validations/auth"
 
@@ -18,11 +20,12 @@ import { fieldA11y, FormField } from "./form-field"
 import { PasswordInput } from "./password-input"
 
 export function SignupForm() {
+  const [confirmEmail, setConfirmEmail] = useState<string | null>(null)
   const {
     register,
     control,
     handleSubmit,
-    reset,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
@@ -32,12 +35,37 @@ export function SignupForm() {
 
   async function onSubmit(values: SignupFormValues) {
     try {
-      const result = await previewSignUp(values)
-      toast.success(result.message)
-      reset()
-    } catch {
+      const result = await signUp(values)
+      if (!result.ok) {
+        for (const [field, message] of Object.entries(result.fieldErrors ?? {})) {
+          setError(field as keyof SignupFormValues, { message })
+        }
+        toast.error(result.message)
+        return
+      }
+      if (result.data?.needsConfirmation) setConfirmEmail(values.email)
+    } catch (error) {
+      if (isRedirectError(error)) throw error
       toast.error("We couldn't reach the server. Check your connection and try again.")
     }
+  }
+
+  if (confirmEmail) {
+    return (
+      <div className="space-y-4 rounded-3xl border border-carbon/10 bg-card p-6 text-center" role="status">
+        <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-accent text-lime-ink">
+          <MailCheck className="size-6" aria-hidden />
+        </span>
+        <h2 className="font-display text-3xl font-bold uppercase">Check your inbox</h2>
+        <p className="text-sm text-muted-foreground">
+          We sent a confirmation link to <strong className="text-carbon">{confirmEmail}</strong>. Click it to activate
+          your account, then log in.
+        </p>
+        <Button asChild variant="outline">
+          <Link href="/login">Go to login</Link>
+        </Button>
+      </div>
+    )
   }
 
   return (

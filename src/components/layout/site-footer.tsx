@@ -1,10 +1,11 @@
 import Link from "next/link"
 import { Clock, Mail, MapPin, Phone } from "lucide-react"
 
-import { SocialIcon } from "@/components/shared/social-icon"
+import { SocialLinks } from "@/components/shared/social-links"
 import { siteConfig } from "@/config/site"
 import { legalNav, mainNav } from "@/constants/navigation"
 import { getProducts } from "@/lib/data/products"
+import { getSiteSettings } from "@/lib/data/settings"
 
 import { Container } from "./container"
 import { Wordmark } from "./wordmark"
@@ -16,8 +17,7 @@ function FooterHeading({ children }: { children: React.ReactNode }) {
 }
 
 export async function SiteFooter() {
-  const products = (await getProducts()).slice(0, 5)
-  const { contact } = siteConfig
+  const [products, settings] = await Promise.all([getProducts(), getSiteSettings()])
 
   return (
     <footer className="grid-texture mt-auto bg-carbon text-paper">
@@ -25,23 +25,10 @@ export async function SiteFooter() {
         <div className="space-y-5">
           <Wordmark tone="light" />
           <p className="max-w-xs text-sm leading-relaxed text-paper/65">
-            Custom race helmets from the Lucas Racing team. Designed with you and hydro-dipped by Hydro Karts in our UK workshop.
+            Custom race helmets from the {settings.businessName} team. Designed with you and hydro-dipped by{" "}
+            {settings.partnerName} in our UK workshop.
           </p>
-          <ul className="flex gap-2" aria-label="Social media">
-            {siteConfig.social.map((item) => (
-              <li key={item.label}>
-                <a
-                  href={item.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label={`${siteConfig.name} on ${item.label}`}
-                  className="grid size-10 place-items-center rounded-full border border-white/15 text-paper/80 transition-colors hover:border-lime hover:text-lime"
-                >
-                  <SocialIcon name={item.icon} className="size-4" />
-                </a>
-              </li>
-            ))}
-          </ul>
+          <SocialLinks links={settings.socialLinks} businessName={settings.businessName} />
         </div>
 
         <nav aria-label="Footer">
@@ -54,13 +41,18 @@ export async function SiteFooter() {
                 </Link>
               </li>
             ))}
+            <li>
+              <Link href="/account" className={linkClass}>
+                My account
+              </Link>
+            </li>
           </ul>
         </nav>
 
         <div>
           <FooterHeading>Helmet designs</FooterHeading>
           <ul className="space-y-3">
-            {products.map((product) => (
+            {products.slice(0, 5).map((product) => (
               <li key={product.slug}>
                 <Link href={`/products/${product.slug}`} className={linkClass}>
                   {product.name}
@@ -73,27 +65,35 @@ export async function SiteFooter() {
         <div>
           <FooterHeading>Get in touch</FooterHeading>
           <ul className="space-y-3 text-sm text-paper/70">
-            <li className="flex items-start gap-3">
-              <Mail className="mt-0.5 size-4 shrink-0 text-lime" aria-hidden />
-              <a href={`mailto:${contact.email}`} className="break-all transition-colors hover:text-lime">
-                {contact.email}
-              </a>
-            </li>
-            <li className="flex items-start gap-3">
-              <Phone className="mt-0.5 size-4 shrink-0 text-lime" aria-hidden />
-              <span>{contact.phone}</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <MapPin className="mt-0.5 size-4 shrink-0 text-lime" aria-hidden />
-              <span>
-                {contact.location}
-                <span className="block text-paper/45">{contact.addressNote}</span>
-              </span>
-            </li>
-            <li className="flex items-start gap-3">
-              <Clock className="mt-0.5 size-4 shrink-0 text-lime" aria-hidden />
-              <span>{contact.hours}</span>
-            </li>
+            {settings.contactEmail && (
+              <li className="flex items-start gap-3">
+                <Mail className="mt-0.5 size-4 shrink-0 text-lime" aria-hidden />
+                <a href={`mailto:${settings.contactEmail}`} className="break-all transition-colors hover:text-lime">
+                  {settings.contactEmail}
+                </a>
+              </li>
+            )}
+            {settings.contactPhone && (
+              <li className="flex items-start gap-3">
+                <Phone className="mt-0.5 size-4 shrink-0 text-lime" aria-hidden />
+                <span>{settings.contactPhone}</span>
+              </li>
+            )}
+            {settings.location && (
+              <li className="flex items-start gap-3">
+                <MapPin className="mt-0.5 size-4 shrink-0 text-lime" aria-hidden />
+                <span>
+                  {settings.location}
+                  {settings.addressNote && <span className="block text-paper/45">{settings.addressNote}</span>}
+                </span>
+              </li>
+            )}
+            {settings.openingHours && (
+              <li className="flex items-start gap-3">
+                <Clock className="mt-0.5 size-4 shrink-0 text-lime" aria-hidden />
+                <span>{settings.openingHours}</span>
+              </li>
+            )}
           </ul>
         </div>
       </Container>
@@ -101,7 +101,7 @@ export async function SiteFooter() {
       <div className="border-t border-white/10">
         <Container className="flex flex-col gap-3 py-6 text-xs text-paper/50 sm:flex-row sm:items-center sm:justify-between">
           <p>
-            © {siteConfig.copyrightYear} {siteConfig.name}. All rights reserved.
+            © {siteConfig.copyrightYear} {settings.businessName}. All rights reserved.
           </p>
           <ul className="flex gap-5">
             {legalNav.map((item) => (

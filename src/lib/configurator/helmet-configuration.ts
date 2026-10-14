@@ -1,62 +1,107 @@
-import {
-  baseColourOptions,
-  filmOptions,
-  finishOptions,
-  routeOptions,
-  sizeOptions,
-  spoilerOptions,
-  trimOptions,
-} from "@/data/configurator-options"
-import { getHelmetModels } from "@/lib/data/products"
+import type { PriceBook } from "@/types/catalog"
 import type {
   ConfigKey,
   ConfigOptionGroup,
   ConfigSummaryLine,
   HelmetConfiguration,
 } from "@/types/configurator"
-import type { FilmId, HelmetFinish, HelmetLook } from "@/types/helmet"
-import type { Product } from "@/types/product"
+import type { HelmetFinish, HelmetLook } from "@/types/helmet"
+import type { CatalogProduct } from "@/types/product"
 
-/** Option groups for a product, in display order. */
-export function getOptionGroups(product: Product): ConfigOptionGroup[] {
-  const modelGroup: ConfigOptionGroup = {
-    key: "model",
-    label: "Helmet",
-    kind: "choice",
-    choices: getHelmetModels(product.models).map((model) => ({
-      value: model.id,
-      label: model.name,
+const DEFAULT_SIZE = "M"
+
+const groupMeta = {
+  route: { label: "How you'd like it", kind: "choice" },
+  finish: { label: "Base finish", kind: "choice" },
+  base: { label: "Base colour", kind: "swatch" },
+  trim: { label: "Rubber trim", kind: "swatch" },
+  spoiler: { label: "Rear spoiler", kind: "choice" },
+} as const
+
+function optionGroup(key: keyof typeof groupMeta, priceBook: PriceBook): ConfigOptionGroup {
+  return {
+    key,
+    ...groupMeta[key],
+    choices: priceBook.options[key].map((option) => ({
+      value: option.value,
+      label: option.label,
+      hint: option.hint ?? undefined,
+      swatch: option.swatch ?? undefined,
+      price: option.price,
     })),
   }
+}
+
+/** Option groups for a product, in display order, built from live catalogue data. */
+export function getOptionGroups(
+  product: CatalogProduct,
+  priceBook: PriceBook,
+  config?: HelmetConfiguration,
+): ConfigOptionGroup[] {
+  const models = priceBook.models.filter((model) => product.models.includes(model.id))
+  const selectedModel = models.find((model) => model.id === config?.model) ?? models[0]
 
   return [
-    modelGroup,
-    routeOptions,
-    sizeOptions,
-    finishOptions,
-    baseColourOptions,
-    filmOptions,
-    trimOptions,
-    spoilerOptions,
+    {
+      key: "model",
+      label: "Helmet",
+      kind: "choice",
+      choices: models.map((model) => ({ value: model.id, label: model.name })),
+    },
+    optionGroup("route", priceBook),
+    {
+      key: "size",
+      label: "Helmet size",
+      kind: "choice",
+      choices: (selectedModel?.sizes ?? []).map((size) => ({ value: size, label: size })),
+    },
+    optionGroup("finish", priceBook),
+    optionGroup("base", priceBook),
+    {
+      key: "film",
+      label: "Hydro-dip film on the graphic",
+      kind: "choice",
+      description: "Films sample the Hydro Karts library. The full range arrives with the 3D builder.",
+      choices: priceBook.films.map((film) => ({ value: film.id, label: film.name, price: film.price })),
+    },
+    optionGroup("trim", priceBook),
+    optionGroup("spoiler", priceBook),
   ]
 }
 
-function closestChoice(group: ConfigOptionGroup, preferred: string): string {
-  return group.choices.some((choice) => choice.value === preferred) ? preferred : group.choices[0].value
+function pick(values: string[], preferred: string | undefined): string {
+  return preferred && values.includes(preferred) ? preferred : (values[0] ?? "")
 }
 
 /** Starting configuration taken from the product's showcase colourway. */
-export function getInitialConfiguration(product: Product): HelmetConfiguration {
+export function getInitialConfiguration(product: CatalogProduct, priceBook: PriceBook): HelmetConfiguration {
+  const model = priceBook.models.find((item) => item.id === product.models[0])
+  const values = (group: keyof PriceBook["options"]) => priceBook.options[group].map((option) => option.value)
+  const filmForLook = priceBook.films.find((film) => film.pattern === product.look.film)
+
   return {
-    model: product.models[0],
-    route: "new",
-    size: "M",
-    finish: product.look.finish,
-    base: closestChoice(baseColourOptions, product.look.base),
-    film: product.look.film,
-    trim: closestChoice(trimOptions, product.look.trim),
-    spoiler: product.look.spoiler ? "yes" : "no",
+    model: product.models[0] ?? "",
+    route: pick(values("route"), "new"),
+    size: pick(model?.sizes ?? [], DEFAULT_SIZE),
+    finish: pick(values("finish"), product.look.finish),
+    base: pick(values("base"), product.look.base),
+    film: pick(
+      priceBook.films.map((film) => film.id),
+      filmForLook?.id,
+    ),
+    trim: pick(values("trim"), product.look.trim),
+    spoiler: pick(values("spoiler"), product.look.spoiler ? "yes" : "no"),
   }
+}
+
+/** Keeps a configuration valid after a change (e.g. size list differs between helmets). */
+export function normaliseConfiguration(
+  config: HelmetConfiguration,
+  product: CatalogProduct,
+  priceBook: PriceBook,
+): HelmetConfiguration {
+  const model = priceBook.models.find((item) => item.id === config.model)
+  return model && !model.sizes.includes(config.size) ? { ...config, size: pick(model.sizes, DEFAULT_SIZE) } : config
 }
 
 /** Groups that don't apply to the current configuration, with the reason shown to the user. */
@@ -65,12 +110,17 @@ export function getDisabledGroups(config: HelmetConfiguration): Partial<Record<C
 }
 
 /** Maps the configuration onto the illustration, keeping the design's own graphic colours. */
-export function configurationToLook(product: Product, config: HelmetConfiguration): HelmetLook {
+export function configurationToLook(
+  product: CatalogProduct,
+  config: HelmetConfiguration,
+  priceBook: PriceBook,
+): HelmetLook {
+  const film = priceBook.films.find((item) => item.id === config.film)
   return {
     ...product.look,
     finish: config.finish as HelmetFinish,
     base: config.finish === "chrome" ? "#c9ccd1" : config.base,
-    film: config.film as FilmId,
+    film: film?.pattern ?? "none",
     trim: config.trim,
     spoiler: config.spoiler === "yes",
   }
@@ -92,7 +142,7 @@ export function summariseConfiguration(
 }
 
 /** Plain-text summary used to pre-fill the enquiry form. */
-export function configurationToText(product: Product, summary: ConfigSummaryLine[]): string {
+export function configurationToText(product: CatalogProduct, summary: ConfigSummaryLine[]): string {
   const lines = summary.map((line) => `${line.label}: ${line.value}`)
   return [`Design: ${product.name}`, ...lines].join("\n")
 }

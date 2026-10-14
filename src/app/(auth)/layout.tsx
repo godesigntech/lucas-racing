@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowLeft, Bookmark, MessageSquare, Sparkles } from "lucide-react"
+import { ArrowLeft, PackageCheck, Sparkles, Zap } from "lucide-react"
 
 import { HelmetArt } from "@/components/helmet/helmet-art"
 import { Wordmark } from "@/components/layout/wordmark"
@@ -18,8 +18,8 @@ const panelLook: HelmetLook = {
 }
 
 const perks = [
-  { icon: Bookmark, text: "Save designs and come back to them later" },
-  { icon: MessageSquare, text: "Message the workshop about your helmet" },
+  { icon: PackageCheck, text: "Track every order from proof to handover" },
+  { icon: Zap, text: "Check out faster with saved details" },
   { icon: Sparkles, text: "First access to the 3D helmet builder" },
 ]
 

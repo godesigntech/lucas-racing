@@ -1,15 +1,14 @@
 import Link from "next/link"
-import { ArrowDown, MessageSquare } from "lucide-react"
+import { ArrowRight, MessageSquare } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { getCategory, getHelmetModels } from "@/lib/data/products"
+import { getCategory } from "@/lib/catalog/categories"
 import { formatPrice } from "@/lib/format"
-import type { Product } from "@/types/product"
+import type { CatalogProduct } from "@/types/product"
 
-export function ProductSummary({ product }: { product: Product }) {
+export function ProductSummary({ product }: { product: CatalogProduct }) {
   const category = getCategory(product.category)
-  const models = getHelmetModels(product.models)
 
   return (
     <div className="space-y-7">
@@ -27,7 +26,7 @@ export function ProductSummary({ product }: { product: Product }) {
 
       <div className="flex items-baseline gap-3 border-y border-carbon/10 py-5">
         <span className="font-display text-4xl font-bold uppercase">{formatPrice(product.startingPrice)}</span>
-        <span className="text-sm text-muted-foreground">customisation, sample pricing</span>
+        <span className="text-sm text-muted-foreground">design and finishing</span>
       </div>
 
       <p className="leading-relaxed text-carbon/80">{product.description}</p>
@@ -35,7 +34,7 @@ export function ProductSummary({ product }: { product: Product }) {
       <div>
         <p className="eyebrow mb-3 text-muted-foreground">Available on</p>
         <ul className="flex flex-wrap gap-2">
-          {models.map((model) => (
+          {product.availableModels.map((model) => (
             <li key={model.id} className="rounded-2xl border border-carbon/10 bg-card px-4 py-3">
               <p className="font-semibold">{model.name}</p>
               <p className="text-xs text-muted-foreground">{model.summary}</p>
@@ -46,8 +45,8 @@ export function ProductSummary({ product }: { product: Product }) {
 
       <div className="flex flex-col gap-3 sm:flex-row">
         <Button asChild size="lg">
-          <Link href="#configure">
-            Configure this design <ArrowDown />
+          <Link href={`/products/${product.slug}/customize`}>
+            Customise this design <ArrowRight />
           </Link>
         </Button>
         <Button asChild size="lg" variant="outline">

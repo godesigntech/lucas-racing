@@ -1,4 +1,4 @@
-import type { SocialIcon as SocialIconName } from "@/config/site"
+import type { SocialIconName } from "@/types/settings"
 
 /** Simple brand glyphs (Lucide no longer ships brand icons). */
 export function SocialIcon({ name, className }: { name: SocialIconName; className?: string }) {

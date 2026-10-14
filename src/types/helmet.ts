@@ -1,4 +1,4 @@
-export type HelmetModelId = "arai-sk6" | "bell-kc7"
+export type HelmetModelId = string
 
 export interface HelmetModel {
   id: HelmetModelId
@@ -6,6 +6,11 @@ export interface HelmetModel {
   name: string
   shortName: string
   summary: string
+  /** Price added when we supply a new helmet. */
+  newHelmetPrice: number
+  sizes: string[]
+  isActive: boolean
+  sortOrder: number
 }
 
 /** Graphic layouts the helmet illustration knows how to draw. */
@@ -13,7 +18,13 @@ export type HelmetLayout = "apex" | "twin" | "split" | "shard" | "halo" | "flow"
 
 export type HelmetFinish = "gloss" | "matte" | "chrome"
 
-export type FilmId = "none" | "carbon" | "forged" | "hex" | "camo"
+/** How a film is drawn in the illustrated preview. */
+export type FilmPattern = "none" | "carbon" | "forged" | "hex" | "camo"
+
+export const filmPatterns: FilmPattern[] = ["none", "carbon", "forged", "hex", "camo"]
+
+/** Kept for the illustration components, which draw by pattern. */
+export type FilmId = FilmPattern
 
 /** Everything needed to draw a helmet: shared by product art and the configurator preview. */
 export interface HelmetLook {
@@ -25,8 +36,8 @@ export interface HelmetLook {
   graphic: string
   /** Thin pinstripe / accent colour. */
   accent: string
-  /** Film applied to the graphic area ("none" for solid colour). */
-  film: FilmId
+  /** Film pattern applied to the graphic area ("none" for solid colour). */
+  film: FilmPattern
   /** Rubber trim colour (eye-port and base). */
   trim: string
   spoiler: boolean

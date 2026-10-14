@@ -1,5 +1,5 @@
 import type { HelmetModelId } from "@/types/helmet"
-import type { Product, ProductCategoryId } from "@/types/product"
+import type { CatalogProduct as Product, ProductCategoryId } from "@/types/product"
 
 export interface ProductFilterState {
   query: string

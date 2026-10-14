@@ -5,7 +5,7 @@ import { Container } from "@/components/layout/container"
 import { ProductBrowser } from "@/components/products/product-browser"
 import { ProductBrowserSkeleton } from "@/components/products/product-browser-skeleton"
 import { PageHero } from "@/components/shared/page-hero"
-import { getHelmetModels, getProductCategories, getProducts } from "@/lib/data/products"
+import { getPriceBook, getProductCategories, getProducts } from "@/lib/data/products"
 
 export const metadata: Metadata = {
   title: "Helmet designs",
@@ -14,8 +14,7 @@ export const metadata: Metadata = {
 }
 
 export default async function ProductsPage() {
-  const [products, categories] = await Promise.all([getProducts(), getProductCategories()])
-  const models = getHelmetModels()
+  const [products, categories, priceBook] = await Promise.all([getProducts(), getProductCategories(), getPriceBook()])
 
   return (
     <>
@@ -27,10 +26,10 @@ export default async function ProductsPage() {
       <section className="py-12 sm:py-16">
         <Container>
           <Suspense fallback={<ProductBrowserSkeleton count={products.length} />}>
-            <ProductBrowser products={products} categories={categories} models={models} />
+            <ProductBrowser products={products} categories={categories} models={priceBook.models} />
           </Suspense>
           <p className="mt-10 text-center font-mono text-xs text-muted-foreground">
-            Sample designs and pricing. Prices cover the customisation; the helmet itself is quoted separately.
+            Prices cover the design and finishing. A new helmet, chrome and extras are added in the configurator.
           </p>
         </Container>
       </section>

@@ -1,75 +1,120 @@
 # Lucas Racing website
 
-The public website for Lucas Racing × Hydro Karts: custom Arai SK-6 and Bell KC7 race helmets. Built with Next.js (App Router), TypeScript, Tailwind CSS and shadcn/ui.
+The website, shop and admin panel for Lucas Racing × Hydro Karts: custom Arai SK-6 and Bell KC7 race helmets.
 
-This is the website foundation (Phase 1). It runs on static sample data, and its form and account flows are previews. The 3D helmet builder, Supabase data and real authentication come next.
+Built with Next.js 16 (App Router, Cache Components), TypeScript, Tailwind CSS v4, shadcn/ui and Supabase (Postgres, Auth, row level security).
 
-## Run it
+## Setup
 
-```bash
-npm install
-npm run dev        # http://localhost:3000
-npm run lint
-npm run typecheck  # generates Next route types, then runs tsc
-npm run build
-npm start          # serve the production build
-```
+1. Install dependencies:
 
-Requires Node.js 20 or later.
+   ```bash
+   npm install
+   ```
 
-## Routes
+2. Create `.env.local`:
 
-| Route | What it is |
+   ```bash
+   NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+   # Only needed to run migrations. Supabase > Connect > Session pooler URI.
+   SUPABASE_DB_URL=postgresql://...
+   ```
+
+3. Create the database tables, security rules and starting data:
+
+   ```bash
+   npm run db:migrate
+   ```
+
+   This applies everything in `supabase/migrations` once, in order. It records applied files in `app_private.schema_migrations`.
+
+4. In the Supabase dashboard, go to **Authentication > URL configuration**. Add `http://localhost:3000/auth/confirm` (and your live domain's equivalent) to the redirect URLs, so the links in confirmation emails work.
+
+5. Start the site:
+
+   ```bash
+   npm run dev
+   ```
+
+   Then open http://localhost:3000.
+
+### Demo mode (no database)
+
+Set `DEMO_MODE=true` in `.env.local` to run the whole UI on built-in sample data with Supabase switched off. A demo admin is always signed in, so you can review the account and admin pages. Saving, ordering and sign-in are disabled in this mode and say so. Set it to `false` once the database is set up.
+
+### Admin access
+
+Admins are the emails listed in the `admin_users` table. The seed migration adds `godesign.pk@gmail.com`. Sign up with that email, confirm it, and an **Admin dashboard** link appears in the account menu. Add more admins from **Admin > Settings > Admins**.
+
+## Scripts
+
+| Command | What it does |
 | --- | --- |
-| `/` | Homepage: hero, featured designs, benefits, why us, process, styles, sample reviews, CTA |
-| `/products` | Helmet designs with search, a style filter and a helmet filter (`?category=` and `?helmet=` are shareable) |
-| `/products/[slug]` | Design detail: gallery, specs, related designs and the configurator |
-| `/about` | Story, mission and values, team placeholders |
-| `/contact` | Contact details and the enquiry form (pre-filled from `?design=` and `?build=`) |
-| `/login`, `/signup` | Account forms (preview only) |
-| `/privacy`, `/terms` | Placeholder policy pages |
+| `npm run dev` | Development server |
+| `npm run build` / `npm start` | Production build and server |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | Generate route types, then `tsc` |
+| `npm run db:migrate` | Apply pending SQL migrations |
+
+## What's in it
+
+**Public site:** home, helmet designs (search and filters), product pages, basket, checkout, about, contact.
+
+**Design studio** (`/products/[slug]/customize`): a step-by-step builder (Helmet → Design → Materials → Details → Review) with a live preview, running price, shareable build links and a watermarked social image download.
+
+**Customer account** (`/account`):
+- overview,
+- order history with status tracking,
+- order details,
+- profile and delivery address,
+- password change.
+
+**Admin panel** (`/admin`):
+
+| Section | What admins can do |
+| --- | --- |
+| Dashboard | Revenue, orders, open orders, customers, recent orders |
+| Orders | Search and filter orders; update order and payment status with notes, which customers see in their history; keep private notes |
+| Customers | Search customers; see each customer's details, order history and total spend |
+| Products | Edit names, copy, starting prices, available helmets, badges and features; show or hide designs |
+| Films | Add, edit, price, hide or delete hydro-dip films |
+| Pricing | New helmet prices and sizes; surcharges for finishes, colours, trims and the spoiler |
+| Settings | Business and contact details, event banner, social links, delivery options and prices, admin access |
+
+## How it works
+
+- **Checkout and pricing.** Prices are always recalculated in the database by `public.place_order()`, so a tampered basket can't change what an order costs. `src/lib/pricing/helmet-price.ts` mirrors that logic so the configurator and basket can show prices.
+- **Payment.** No payment gateway is connected yet. Orders are placed as *Received / Awaiting payment*, and the checkout tells customers a payment link follows their proof approval. A gateway can be added later without changing the order flow.
+- **Caching.** The catalogue and settings are read with `use cache` and tagged (`src/lib/data/cache-tags.ts`). Admin saves call `updateTag()`, so the site updates straight away.
+- **Security.** Every table has row level security. Customers can only read their own profile and orders. Only admins can change the catalogue, settings and orders. Every admin Server Action re-checks access on the server as well.
+- **Sessions.** `src/proxy.ts` refreshes the Supabase session on each request. It sends signed-out visitors from `/account`, `/admin` and `/checkout` to the login page.
 
 ## Structure
 
 ```
+supabase/migrations/   schema, RLS, place_order(), seed data
+scripts/db-migrate.mjs migration runner
 src/
   app/
-    (public)/          pages that share the header and footer
-    (auth)/            login and sign-up, with their own split layout
-    layout.tsx         fonts, metadata, toast provider
-    not-found.tsx
+    (public)/          public site, basket, checkout, account
+    (auth)/            login and sign-up
+    admin/             admin panel
+    auth/confirm/      email confirmation handler
   components/
-    ui/                shadcn/ui primitives, restyled to the brand
-    layout/            header, footer, mobile nav, container, wordmark
-    helmet/            SVG helmet illustration and hydro-dip film patterns
-    home/ about/ contact/ products/ forms/ shared/
-  config/site.ts       business details (placeholders marked)
-  constants/           navigation, image sources
-  data/                static sample data (products, categories, options, copy)
+    ui/                shadcn/ui primitives (restyled)
+    layout/ home/ products/ basket/ checkout/ account/ orders/ admin/ forms/ shared/ helmet/
   lib/
-    data/products.ts   data-access functions (swap these for Supabase/API calls)
-    configurator/      pure configurator logic (options, defaults, summary)
-    products/          filter logic
-    services/          mock services for forms and accounts
-    validations/       Zod schemas
-  hooks/               useHelmetConfigurator
+    actions/           Server Actions (auth, checkout, account, admin/*)
+    data/              server data access (catalogue, settings, account, admin)
+    supabase/          clients, proxy session refresh, types, row mappers
+    basket/ configurator/ pricing/ orders/ validations/
   types/
 ```
 
-## Design system
+## Still to do
 
-Tokens live in `src/app/globals.css`: carbon and paper neutrals, a single lime accent, Barlow Condensed for display type, Geist for body text and Geist Mono for labels. The shadcn components in `src/components/ui` use these tokens.
-
-## What's simulated
-
-- **Products, prices and testimonials** are sample content in `src/data`. Prices are marked as sample pricing on the site.
-- **Contact, login and sign-up** validate input with Zod and show toasts, but nothing is sent or stored. The mock functions live in `src/lib/services` and are labelled as previews in the UI.
-- **Helmet visuals** are SVG illustrations (`src/components/helmet`), not the final 3D models.
-- **Contact details and social links** in `src/config/site.ts` are placeholders.
-- **Photos** come from Unsplash (free licence) via `src/constants/images.ts`.
-
-## Next steps
-
-1. Connect Supabase: replace `src/lib/data/*` and `src/lib/services/*` with real queries, auth and Server Actions.
-2. Build the 3D helmet builder (three.js) and replace the illustrated preview on the product page.
-3. Swap in the client's logo, photos, copy, prices and policies.
+- Connect a payment gateway (Stripe or similar).
+- Deliver contact form messages (it currently only validates input).
+- Swap in the client's logo, photos, real prices and policies.
+- Build the 3D helmet builder to replace the illustrated preview.

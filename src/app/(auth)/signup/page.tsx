@@ -5,7 +5,7 @@ import { SignupForm } from "@/components/forms/signup-form"
 
 export const metadata: Metadata = {
   title: "Sign up",
-  description: "Create a Lucas Racing account to save helmet designs and message the workshop.",
+  description: "Create a Lucas Racing account to order custom helmets and track your orders.",
 }
 
 export default function SignupPage() {
@@ -14,7 +14,7 @@ export default function SignupPage() {
       <AuthHeading
         eyebrow="Join the grid"
         title="Create account"
-        description="Save your helmet designs, share them and send them to the workshop when you're ready."
+        description="Order custom helmets, track every order and check out faster next time."
       />
       <SignupForm />
     </>

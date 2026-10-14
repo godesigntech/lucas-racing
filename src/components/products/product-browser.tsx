@@ -13,7 +13,7 @@ import {
   type ProductFilterState,
 } from "@/lib/products/filter-products"
 import type { HelmetModel } from "@/types/helmet"
-import type { Product, ProductCategory } from "@/types/product"
+import type { CatalogProduct as Product, ProductCategory } from "@/types/product"
 
 import { ProductFilters } from "./product-filters"
 import { ProductGrid } from "./product-grid"

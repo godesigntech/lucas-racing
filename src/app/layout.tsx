@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next"
 import { Barlow_Condensed, Geist, Geist_Mono } from "next/font/google"
 
 import { ToastProvider } from "@/components/providers/toast-provider"
+import { DemoBanner } from "@/components/shared/demo-banner"
 import { siteConfig } from "@/config/site"
 
 import "./globals.css"
@@ -55,6 +56,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="flex min-h-full flex-col">
         {children}
+        <DemoBanner />
         <ToastProvider />
       </body>
     </html>

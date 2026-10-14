@@ -1,0 +1,77 @@
+import type { HelmetConfiguration } from "@/types/configurator"
+import type { HelmetLook } from "@/types/helmet"
+
+export const orderStatuses = [
+  "pending",
+  "confirmed",
+  "in_production",
+  "ready",
+  "shipped",
+  "completed",
+  "cancelled",
+] as const
+export type OrderStatus = (typeof orderStatuses)[number]
+
+export const paymentStatuses = ["unpaid", "paid", "refunded"] as const
+export type PaymentStatus = (typeof paymentStatuses)[number]
+
+export interface ShippingAddress {
+  line1: string
+  line2: string
+  city: string
+  county: string
+  postcode: string
+  country: string
+}
+
+export interface OrderSummaryLine {
+  label: string
+  value: string
+}
+
+export interface OrderItem {
+  id: string
+  productSlug: string
+  productName: string
+  values: Partial<HelmetConfiguration>
+  summary: OrderSummaryLine[]
+  look: HelmetLook | null
+  unitPrice: number
+  quantity: number
+  lineTotal: number
+}
+
+export interface OrderEvent {
+  id: number
+  status: OrderStatus
+  paymentStatus: PaymentStatus | null
+  note: string
+  createdAt: string
+}
+
+export interface OrderListItem {
+  id: string
+  orderNumber: string
+  status: OrderStatus
+  paymentStatus: PaymentStatus
+  customerName: string
+  customerEmail: string
+  total: number
+  itemCount: number
+  createdAt: string
+}
+
+export interface Order extends OrderListItem {
+  userId: string | null
+  customerPhone: string
+  shippingAddress: ShippingAddress
+  deliveryMethod: string
+  deliveryLabel: string
+  deliveryPrice: number
+  subtotal: number
+  customerNotes: string
+  adminNotes: string
+  updatedAt: string
+  items: OrderItem[]
+  events: OrderEvent[]
+}

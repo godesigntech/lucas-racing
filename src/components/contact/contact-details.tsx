@@ -1,7 +1,7 @@
 import { Clock, Mail, MapPin, Phone, type LucideIcon } from "lucide-react"
 
-import { SocialIcon } from "@/components/shared/social-icon"
-import { siteConfig } from "@/config/site"
+import { SocialLinks } from "@/components/shared/social-links"
+import type { SiteSettings } from "@/types/settings"
 
 interface DetailItem {
   icon: LucideIcon
@@ -11,14 +11,13 @@ interface DetailItem {
   href?: string
 }
 
-export function ContactDetails() {
-  const { contact } = siteConfig
+export function ContactDetails({ settings }: { settings: SiteSettings }) {
   const items: DetailItem[] = [
-    { icon: Mail, label: "Email", value: contact.email, href: `mailto:${contact.email}` },
-    { icon: Phone, label: "Phone", value: contact.phone, note: "Placeholder number" },
-    { icon: MapPin, label: "Workshop", value: contact.location, note: contact.addressNote },
-    { icon: Clock, label: "Opening hours", value: contact.hours },
-  ]
+    { icon: Mail, label: "Email", value: settings.contactEmail, href: `mailto:${settings.contactEmail}` },
+    { icon: Phone, label: "Phone", value: settings.contactPhone },
+    { icon: MapPin, label: "Workshop", value: settings.location, note: settings.addressNote },
+    { icon: Clock, label: "Opening hours", value: settings.openingHours },
+  ].filter((item) => item.value)
 
   return (
     <div className="space-y-6">
@@ -44,25 +43,20 @@ export function ContactDetails() {
       </ul>
 
       <div className="rounded-2xl bg-carbon p-5 text-paper">
-        <p className="font-display text-2xl font-bold uppercase">Coming to {siteConfig.event.name}?</p>
-        <p className="mt-1 text-sm text-paper/70">
-          Find the Lucas Racing stand on {siteConfig.event.dates}. Bring your helmet and we’ll talk designs.
-        </p>
-        <ul className="mt-4 flex gap-2" aria-label="Social media">
-          {siteConfig.social.map((item) => (
-            <li key={item.label}>
-              <a
-                href={item.href}
-                target="_blank"
-                rel="noreferrer"
-                aria-label={`${siteConfig.name} on ${item.label}`}
-                className="grid size-10 place-items-center rounded-full border border-white/15 transition-colors hover:border-lime hover:text-lime"
-              >
-                <SocialIcon name={item.icon} className="size-4" />
-              </a>
-            </li>
-          ))}
-        </ul>
+        {settings.showEventBanner && settings.eventName ? (
+          <>
+            <p className="font-display text-2xl font-bold uppercase">Coming to {settings.eventName}?</p>
+            <p className="mt-1 text-sm text-paper/70">
+              Find the {settings.businessName} stand on {settings.eventDates}. Bring your helmet and we’ll talk designs.
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="font-display text-2xl font-bold uppercase">Follow the team</p>
+            <p className="mt-1 text-sm text-paper/70">Race days, new designs and finished helmets.</p>
+          </>
+        )}
+        <SocialLinks links={settings.socialLinks} businessName={settings.businessName} className="mt-4" />
       </div>
     </div>
   )

@@ -3,19 +3,18 @@ import { ArrowUpRight } from "lucide-react"
 
 import { HelmetArt } from "@/components/helmet/helmet-art"
 import { Badge } from "@/components/ui/badge"
-import { getCategory, getHelmetModels } from "@/lib/data/products"
+import { getCategory } from "@/lib/catalog/categories"
 import { formatPrice } from "@/lib/format"
 import { cn } from "@/lib/utils"
-import type { Product } from "@/types/product"
+import type { CatalogProduct } from "@/types/product"
 
 interface ProductCardProps {
-  product: Product
+  product: CatalogProduct
   className?: string
 }
 
 export function ProductCard({ product, className }: ProductCardProps) {
   const category = getCategory(product.category)
-  const models = getHelmetModels(product.models)
 
   return (
     <article
@@ -39,7 +38,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
         <div className="flex items-center justify-between gap-3">
           <span className="eyebrow text-lime-ink">{category.label}</span>
           <span className="font-mono text-[0.7rem] text-muted-foreground">
-            {models.map((model) => model.shortName).join(" · ")}
+            {product.availableModels.map((model) => model.shortName).join(" · ")}
           </span>
         </div>
         <h3 className="font-display text-3xl font-bold uppercase leading-none">

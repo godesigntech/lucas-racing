@@ -1,43 +1,60 @@
 "use client"
 
 import Link from "next/link"
-import { Controller, useForm } from "react-hook-form"
+import { useSearchParams } from "next/navigation"
+import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2 } from "lucide-react"
 import { toast } from "react-toastify"
 
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { previewLogin } from "@/lib/services/auth-preview"
+import { signIn } from "@/lib/actions/auth"
+import { isRedirectError } from "@/lib/is-redirect"
 import { loginSchema, type LoginFormValues } from "@/lib/validations/auth"
 
 import { fieldA11y, FormField } from "./form-field"
 import { PasswordInput } from "./password-input"
 
 export function LoginForm() {
+  const searchParams = useSearchParams()
+  const next = searchParams.get("next") ?? undefined
+  const linkError = searchParams.get("error") === "link"
+
   const {
     register,
-    control,
     handleSubmit,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "", remember: false },
+    defaultValues: { email: "", password: "" },
   })
 
   async function onSubmit(values: LoginFormValues) {
     try {
-      const result = await previewLogin(values)
-      toast.info(result.message)
-    } catch {
+      const result = await signIn(values, next)
+      // On success the action redirects, so we only get here on failure.
+      if (!result.ok) {
+        for (const [field, message] of Object.entries(result.fieldErrors ?? {})) {
+          setError(field as keyof LoginFormValues, { message })
+        }
+        toast.error(result.message)
+      }
+    } catch (error) {
+      if (isRedirectError(error)) throw error
       toast.error("We couldn't reach the server. Check your connection and try again.")
     }
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
+      {linkError && (
+        <p role="alert" className="rounded-xl bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
+          That link has expired or was already used. Log in, or sign up again to get a new one.
+        </p>
+      )}
+
       <FormField id="login-email" label="Email" error={errors.email?.message}>
         <Input
           {...register("email")}
@@ -57,27 +74,17 @@ export function LoginForm() {
         />
       </FormField>
 
-      <Controller
-        control={control}
-        name="remember"
-        render={({ field }) => (
-          <div className="flex items-center gap-3">
-            <Checkbox id="login-remember" checked={field.value} onCheckedChange={(checked) => field.onChange(checked === true)} />
-            <Label htmlFor="login-remember" className="text-sm font-normal">
-              Keep me signed in on this device
-            </Label>
-          </div>
-        )}
-      />
-
       <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
         {isSubmitting && <Loader2 className="animate-spin" aria-hidden />}
-        {isSubmitting ? "Signing in…" : "Login"}
+        {isSubmitting ? "Logging in…" : "Login"}
       </Button>
 
       <p className="text-center text-sm text-muted-foreground">
         New to Lucas Racing?{" "}
-        <Link href="/signup" className="font-semibold text-carbon underline-offset-4 hover:underline">
+        <Link
+          href={next ? `/signup?next=${encodeURIComponent(next)}` : "/signup"}
+          className="font-semibold text-carbon underline-offset-4 hover:underline"
+        >
           Create an account
         </Link>
       </p>

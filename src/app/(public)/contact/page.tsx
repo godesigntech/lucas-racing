@@ -7,6 +7,7 @@ import { ContactFormFromUrl } from "@/components/forms/contact-form-from-url"
 import { Container } from "@/components/layout/container"
 import { PageHero } from "@/components/shared/page-hero"
 import { getProducts } from "@/lib/data/products"
+import { getSiteSettings } from "@/lib/data/settings"
 
 export const metadata: Metadata = {
   title: "Contact",
@@ -14,7 +15,8 @@ export const metadata: Metadata = {
 }
 
 export default async function ContactPage() {
-  const designs = (await getProducts()).map(({ slug, name }) => ({ slug, name }))
+  const [products, settings] = await Promise.all([getProducts(), getSiteSettings()])
+  const designs = products.map(({ slug, name }) => ({ slug, name }))
 
   return (
     <>
@@ -25,11 +27,12 @@ export default async function ContactPage() {
       />
       <section className="py-14 sm:py-20">
         <Container className="grid gap-10 lg:grid-cols-[1fr_1.5fr] lg:gap-14">
-          <ContactDetails />
+          <ContactDetails settings={settings} />
           <div className="rounded-3xl border border-carbon/10 bg-card p-6 sm:p-8">
             <h2 className="font-display text-3xl font-bold uppercase">Send a message</h2>
             <p className="mt-1 mb-7 text-sm text-muted-foreground">
-              Preview site: the form checks your details, but messages aren’t delivered yet.
+              Preview: the form checks your details, but messages aren’t delivered yet. Email us directly for anything
+              urgent.
             </p>
             <Suspense fallback={<ContactForm designs={designs} />}>
               <ContactFormFromUrl designs={designs} />

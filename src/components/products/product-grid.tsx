@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils"
-import type { Product } from "@/types/product"
+import type { CatalogProduct as Product } from "@/types/product"
 
 import { ProductCard } from "./product-card"
 
