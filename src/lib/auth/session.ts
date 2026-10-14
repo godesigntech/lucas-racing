@@ -2,6 +2,7 @@ import "server-only"
 
 import { cache } from "react"
 import { notFound, redirect } from "next/navigation"
+import { connection } from "next/server"
 
 import { isDemoMode } from "@/lib/demo/mode"
 import { demoUser } from "@/lib/demo/people"
@@ -15,6 +16,8 @@ import type { CurrentUser } from "@/types/account"
 export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   if (isDemoMode()) return demoUser
 
+  // Session checks read the clock (token expiry), so they must run at request time, never during prerendering.
+  await connection()
   const supabase = await createClient()
   const { data } = await supabase.auth.getClaims()
   const claims = data?.claims
