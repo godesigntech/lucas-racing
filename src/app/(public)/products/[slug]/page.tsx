@@ -79,7 +79,7 @@ async function ProductContent({ slug }: { slug: string }) {
             ]}
           />
           <div className="grid gap-10 lg:grid-cols-2 lg:gap-14">
-            <ProductGallery look={product.look} name={product.name} />
+            <ProductGallery look={product.look} name={product.name} models={product.models} />
             <ProductSummary product={product} />
           </div>
         </Container>

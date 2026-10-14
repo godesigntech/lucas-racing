@@ -122,6 +122,7 @@ function StudioBody({ product, priceBook, startFrom }: HelmetStudioProps & { sta
           <StudioPreview
             ref={previewRef}
             look={look}
+            modelId={config.model}
             modelName={model?.name ?? product.name}
             designLabel={`${getCategory(product.category).label} · ${product.name}`}
           />
