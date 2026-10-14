@@ -33,7 +33,9 @@ export async function signIn(values: LoginFormValues, next?: string): Promise<Ac
     return failure("That email and password don't match an account.")
   }
 
-  redirect(safeNext(next, "/account"))
+  // Admins land in the admin portal unless they were heading somewhere specific.
+  const { data: isAdmin } = await supabase.rpc("is_admin")
+  redirect(safeNext(next, isAdmin ? "/admin" : "/account"))
 }
 
 export async function signUp(values: SignupFormValues): Promise<ActionResult<{ needsConfirmation: boolean }>> {

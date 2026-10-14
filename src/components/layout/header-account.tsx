@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, LayoutDashboard } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { authNav } from "@/constants/navigation"
@@ -21,6 +21,13 @@ export async function HeaderAccount({ eventText }: HeaderAccountProps) {
   const menuUser = { fullName: user.fullName, email: user.email, isAdmin: user.isAdmin }
   return (
     <>
+      {user.isAdmin && (
+        <Button asChild variant="secondary" className="hidden h-10 px-4 sm:inline-flex">
+          <Link href="/admin">
+            <LayoutDashboard /> Admin
+          </Link>
+        </Button>
+      )}
       <AccountMenu user={menuUser} />
       <MobileNav user={menuUser} eventText={eventText} />
     </>

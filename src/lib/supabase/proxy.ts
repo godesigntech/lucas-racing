@@ -43,8 +43,10 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (signedIn && AUTH_PAGES.includes(pathname)) {
+    // Only this branch needs the role, so the extra query never runs on normal page views.
+    const { data: isAdmin } = await supabase.rpc("is_admin")
     const url = request.nextUrl.clone()
-    url.pathname = "/account"
+    url.pathname = isAdmin ? "/admin" : "/account"
     url.search = ""
     return withCookies(NextResponse.redirect(url), response)
   }

@@ -1,12 +1,13 @@
 import { Suspense } from "react"
 import Link from "next/link"
-import { ArrowRight, MapPin, Pencil } from "lucide-react"
+import { ArrowRight, MapPin, Pencil, ShieldCheck } from "lucide-react"
 
 import { AccountPageHeader } from "@/components/account/account-page-header"
 import { OrderList } from "@/components/account/order-list"
 import { UserAvatar } from "@/components/shared/user-avatar"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { getCurrentUser } from "@/lib/auth/session"
 import { getMyOrders, getMyProfile } from "@/lib/data/account"
 
 export const metadata = { title: "Overview" }
@@ -20,7 +21,7 @@ export default function AccountOverviewPage() {
 }
 
 async function Overview() {
-  const [profile, orders] = await Promise.all([getMyProfile(), getMyOrders(3)])
+  const [user, profile, orders] = await Promise.all([getCurrentUser(), getMyProfile(), getMyOrders(3)])
   const firstName = profile.fullName.split(" ")[0] || "there"
   const address = [profile.addressLine1, profile.city, profile.postcode].filter(Boolean).join(", ")
 
@@ -29,6 +30,25 @@ async function Overview() {
       <AccountPageHeader title={`Hi, ${firstName}`} description="Track your orders and keep your details up to date." />
 
       <div className="grid gap-6">
+        {user?.isAdmin && (
+          <section className="flex flex-col gap-4 rounded-3xl bg-carbon p-6 text-paper sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-4">
+              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-lime text-carbon">
+                <ShieldCheck className="size-5" aria-hidden />
+              </span>
+              <div>
+                <h2 className="font-display text-2xl font-bold uppercase">You&apos;re an admin</h2>
+                <p className="text-sm text-paper/70">Manage orders, customers, prices and store settings.</p>
+              </div>
+            </div>
+            <Button asChild size="lg" className="self-start sm:self-auto">
+              <Link href="/admin">
+                Open admin portal <ArrowRight />
+              </Link>
+            </Button>
+          </section>
+        )}
+
         <section aria-labelledby="recent-orders" className="space-y-4">
           <div className="flex items-center justify-between gap-4">
             <h2 id="recent-orders" className="font-display text-2xl font-bold uppercase">
