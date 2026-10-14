@@ -1,9 +1,11 @@
+import Image from "next/image"
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 
 import { HelmetArt } from "@/components/helmet/helmet-art"
 import { Container } from "@/components/layout/container"
 import { Button } from "@/components/ui/button"
+import { images } from "@/constants/images"
 import type { HelmetLook } from "@/types/helmet"
 
 const heroLook: HelmetLook = {
@@ -27,8 +29,19 @@ const heroTags = [
 
 export function HomeHero() {
   return (
-    <section className="grid-texture relative overflow-hidden bg-carbon text-paper">
-      <div aria-hidden className="pointer-events-none absolute -left-40 top-1/3 size-[32rem] rounded-full bg-lime/10 blur-3xl" />
+    <section className="relative isolate overflow-hidden bg-carbon text-paper">
+      <Image
+        src={images.heroKarts.src}
+        alt=""
+        fill
+        preload
+        sizes="100vw"
+        className="-z-20 object-cover object-center opacity-45"
+      />
+      <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-r from-carbon via-carbon/90 to-carbon/40" />
+      <div aria-hidden className="absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-t from-carbon to-transparent" />
+      <div aria-hidden className="grid-texture absolute inset-0 -z-10 opacity-60" />
+      <div aria-hidden className="pointer-events-none absolute -left-40 top-1/3 -z-10 size-[32rem] rounded-full bg-lime/10 blur-3xl" />
       <Container className="relative grid items-center gap-10 py-14 sm:py-20 lg:grid-cols-[1.05fr_1fr] lg:gap-6 lg:py-24">
         <div className="space-y-7">
           <p className="eyebrow inline-flex items-center gap-2 text-lime">

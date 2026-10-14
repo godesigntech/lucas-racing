@@ -5,7 +5,9 @@ import { FilmTicker } from "@/components/home/film-ticker"
 import { HomeHero } from "@/components/home/home-hero"
 import { ProcessSteps } from "@/components/home/process-steps"
 import { Testimonials } from "@/components/home/testimonials"
+import { TrackGallery } from "@/components/home/track-gallery"
 import { WhyChooseUs } from "@/components/home/why-choose-us"
+import { WorkshopBand } from "@/components/home/workshop-band"
 import { CtaBand } from "@/components/shared/cta-band"
 
 export default function HomePage() {
@@ -14,10 +16,12 @@ export default function HomePage() {
       <HomeHero />
       <FilmTicker />
       <FeaturedProducts />
+      <TrackGallery />
       <Benefits />
       <WhyChooseUs />
       <ProcessSteps />
       <Categories />
+      <WorkshopBand />
       <Testimonials />
       <CtaBand />
     </>

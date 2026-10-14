@@ -1,8 +1,10 @@
+import Image from "next/image"
 import Link from "next/link"
 import { ArrowLeft, PackageCheck, Sparkles, Zap } from "lucide-react"
 
 import { HelmetArt } from "@/components/helmet/helmet-art"
 import { Wordmark } from "@/components/layout/wordmark"
+import { images } from "@/constants/images"
 import type { HelmetLook } from "@/types/helmet"
 
 const panelLook: HelmetLook = {
@@ -41,8 +43,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </main>
       </div>
 
-      <aside className="grid-texture relative hidden overflow-hidden bg-carbon p-12 text-paper lg:flex lg:flex-col lg:justify-between">
-        <div aria-hidden className="absolute -right-32 top-20 size-[28rem] rounded-full bg-lime/15 blur-3xl" />
+      <aside className="relative isolate hidden overflow-hidden bg-carbon p-12 text-paper lg:flex lg:flex-col lg:justify-between">
+        <Image src={images.cornerKart.src} alt="" fill sizes="50vw" className="-z-20 object-cover opacity-35" />
+        <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-b from-carbon/70 via-carbon/80 to-carbon" />
+        <div aria-hidden className="absolute -right-32 top-20 -z-10 size-[28rem] rounded-full bg-lime/15 blur-3xl" />
         <p className="eyebrow relative text-lime">Your Lucas Racing account</p>
         <div className="relative mx-auto w-full max-w-lg">
           <HelmetArt look={panelLook} className="drop-shadow-[0_30px_40px_rgb(0_0_0/0.5)]" />

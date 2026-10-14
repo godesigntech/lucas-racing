@@ -5,6 +5,7 @@ import { Container } from "@/components/layout/container"
 import { ProductBrowser } from "@/components/products/product-browser"
 import { ProductBrowserSkeleton } from "@/components/products/product-browser-skeleton"
 import { PageHero } from "@/components/shared/page-hero"
+import { images } from "@/constants/images"
 import { getPriceBook, getProductCategories, getProducts } from "@/lib/data/products"
 
 export const metadata: Metadata = {
@@ -22,6 +23,7 @@ export default async function ProductsPage() {
         eyebrow="Products"
         title="Helmet designs"
         description="Every design is a starting point. Pick a layout, then make it yours with colours, films, trims and your race number."
+        image={images.pack}
       />
       <section className="py-12 sm:py-16">
         <Container>

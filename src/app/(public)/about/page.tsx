@@ -5,6 +5,7 @@ import { TeamGrid } from "@/components/about/team-grid"
 import { ValuesGrid } from "@/components/about/values-grid"
 import { CtaBand } from "@/components/shared/cta-band"
 import { PageHero } from "@/components/shared/page-hero"
+import { images } from "@/constants/images"
 
 export const metadata: Metadata = {
   title: "About us",
@@ -19,6 +20,7 @@ export default function AboutPage() {
         eyebrow="About us"
         title="A race team with a paint shop"
         description="Lucas Racing brings the team, the track experience and the reach. Hydro Karts brings the hands that mask, dip and finish every helmet."
+        image={images.orangeKart}
       />
       <BrandStory />
       <ValuesGrid />

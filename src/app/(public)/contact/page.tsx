@@ -6,6 +6,7 @@ import { ContactForm } from "@/components/forms/contact-form"
 import { ContactFormFromUrl } from "@/components/forms/contact-form-from-url"
 import { Container } from "@/components/layout/container"
 import { PageHero } from "@/components/shared/page-hero"
+import { images } from "@/constants/images"
 import { getProducts } from "@/lib/data/products"
 import { getSiteSettings } from "@/lib/data/settings"
 
@@ -24,6 +25,7 @@ export default async function ContactPage() {
         eyebrow="Contact"
         title="Talk to the workshop"
         description="Questions about a design, sending in your own helmet or an existing order? Send us a message and the team will get back to you."
+        image={images.workshop}
       />
       <section className="py-14 sm:py-20">
         <Container className="grid gap-10 lg:grid-cols-[1fr_1.5fr] lg:gap-14">
