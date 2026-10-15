@@ -1,0 +1,9 @@
+# Netlify detects Next.js and deploys it with its Next.js runtime (server functions,
+# image optimisation, caching). These settings override any older ones in the
+# Netlify UI, which were set up for the previous Vite demo.
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
