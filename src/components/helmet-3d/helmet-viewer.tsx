@@ -54,12 +54,15 @@ interface HelmetViewerProps extends HelmetSceneProps {
 
 /** Interactive 3D helmet: drag to turn, scroll or pinch to zoom. */
 export function HelmetViewer({ fallback, label, className, ...scene }: HelmetViewerProps) {
-  // WebGL can only be checked in the browser; the server renders the fallback.
-  const supported = useSyncExternalStore(subscribeNever, hasWebGL, () => false)
+  // WebGL can only be checked in the browser. Until then (server render, hydration) a loading
+  // state shows, so the illustration only appears on devices that really can't do 3D.
+  const supported = useSyncExternalStore<boolean | null>(subscribeNever, hasWebGL, () => null)
 
   return (
     <div className={cn("relative size-full", className)} role="img" aria-label={label}>
-      {supported ? (
+      {supported === null ? (
+        <SceneLoading />
+      ) : supported ? (
         <SceneBoundary fallback={fallback}>
           <HelmetScene {...scene} />
           <p className="pointer-events-none absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap rounded-full bg-card/80 px-3 py-1 text-[0.68rem] font-medium text-muted-foreground ring-1 ring-carbon/10">

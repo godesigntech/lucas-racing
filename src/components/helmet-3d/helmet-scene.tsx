@@ -1,9 +1,10 @@
 "use client"
 
-import { Suspense, useEffect, useLayoutEffect, useMemo, useState } from "react"
-import { Canvas } from "@react-three/fiber"
+import { type RefObject, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import { Bounds, Center, ContactShadows, Environment, Lightformer, OrbitControls, useGLTF, useProgress } from "@react-three/drei"
 import { Box3, Color, type Material, type Mesh, MeshStandardMaterial, type Object3D, type Texture, Vector3 } from "three"
+import type { OrbitControls as OrbitControlsImpl } from "three-stdlib"
 
 import type { HelmetFinish } from "@/types/helmet"
 
@@ -17,8 +18,24 @@ export interface HelmetSceneProps {
   finish?: HelmetFinish
   /** Photo of a hydro-dip film to wrap around the shell, or null for plain paint. */
   film?: string | null
-  /** Slowly spins until the customer drags it. */
+  /** Slowly spins until the customer drags it or picks an angle. */
   autoRotate?: boolean
+  /** Turns the camera to a preset angle. `at` changes on every request, so picking the same angle again re-centres it. */
+  view?: { angle: HelmetAngle; at: number } | null
+}
+
+export type HelmetAngle = "angle" | "front" | "side" | "back" | "top"
+
+/** Azimuth (around the helmet) that looks straight at the visor. */
+const FRONT = 0
+
+/** Camera direction for each preset angle: azimuth around the helmet and polar angle from straight above. */
+const angles: Record<HelmetAngle, { azimuth: number; polar: number }> = {
+  angle: { azimuth: FRONT + Math.PI / 4, polar: Math.PI * 0.42 },
+  front: { azimuth: FRONT, polar: Math.PI * 0.46 },
+  side: { azimuth: FRONT + Math.PI / 2, polar: Math.PI * 0.47 },
+  back: { azimuth: FRONT + Math.PI, polar: Math.PI * 0.44 },
+  top: { azimuth: FRONT + Math.PI / 6, polar: Math.PI * 0.17 },
 }
 
 // Surface settings per finish. The model's own roughness/metal map still adds detail on top.
@@ -72,7 +89,7 @@ function applySurface(material: MeshStandardMaterial, tint: string, finish: Helm
   material.needsUpdate = true
 }
 
-function HelmetModel({ url, tint = "#ffffff", finish = "gloss", film = null }: Required<Omit<HelmetSceneProps, "autoRotate">>) {
+function HelmetModel({ url, tint = "#ffffff", finish = "gloss", film = null }: Required<Omit<HelmetSceneProps, "autoRotate" | "view">>) {
   const { scene } = useGLTF(url)
   const root = useMemo(() => cloneWithOwnMaterials(scene), [scene])
 
@@ -117,11 +134,51 @@ function Progress() {
   return active ? <SceneLoading progress={progress} /> : null
 }
 
+/** Smallest signed difference between two angles, so the camera turns the short way round. */
+function angleBetween(from: number, to: number): number {
+  return Math.atan2(Math.sin(to - from), Math.cos(to - from))
+}
+
+/** Eases the camera to the requested preset angle. Stops as soon as it arrives or the customer drags. */
+function CameraRig({ targetRef }: { targetRef: RefObject<{ azimuth: number; polar: number } | null> }) {
+  const controls = useThree((state) => state.controls) as unknown as OrbitControlsImpl | null
+
+  useFrame((_, delta) => {
+    const goal = targetRef.current
+    if (!goal || !controls) return
+    const azimuth = controls.getAzimuthalAngle()
+    const polar = controls.getPolarAngle()
+    const turn = angleBetween(azimuth, goal.azimuth)
+    const tilt = goal.polar - polar
+    const step = 1 - Math.exp(-delta * 7)
+    controls.setAzimuthalAngle(azimuth + turn * step)
+    controls.setPolarAngle(polar + tilt * step)
+    controls.update()
+    if (Math.abs(turn) < 0.002 && Math.abs(tilt) < 0.002) targetRef.current = null
+  })
+
+  return null
+}
+
 /** The three.js scene. Load this through <HelmetViewer>, which keeps three.js out of the main bundle. */
-export default function HelmetScene({ url, tint = "#ffffff", finish = "gloss", film = null, autoRotate = true }: HelmetSceneProps) {
+export default function HelmetScene({
+  url,
+  tint = "#ffffff",
+  finish = "gloss",
+  film = null,
+  autoRotate = true,
+  view = null,
+}: HelmetSceneProps) {
   // Spin until the customer grabs the helmet; only then does the mouse wheel zoom,
   // so scrolling past the viewer still scrolls the page.
   const [grabbed, setGrabbed] = useState(false)
+  const cameraTarget = useRef<{ azimuth: number; polar: number } | null>(null)
+
+  // A picked angle turns the camera there (and, below, stops the spin).
+  useEffect(() => {
+    if (view) cameraTarget.current = angles[view.angle]
+  }, [view])
+  const handled = grabbed || Boolean(view)
 
   return (
     <>
@@ -149,11 +206,15 @@ export default function HelmetScene({ url, tint = "#ffffff", finish = "gloss", f
           maxDistance={4}
           minPolarAngle={Math.PI * 0.15}
           maxPolarAngle={Math.PI * 0.62}
-          enableZoom={grabbed}
-          autoRotate={autoRotate && !grabbed}
+          enableZoom={handled}
+          autoRotate={autoRotate && !handled}
           autoRotateSpeed={0.9}
-          onStart={() => setGrabbed(true)}
+          onStart={() => {
+            cameraTarget.current = null
+            setGrabbed(true)
+          }}
         />
+        <CameraRig targetRef={cameraTarget} />
       </Canvas>
       <Progress />
     </>

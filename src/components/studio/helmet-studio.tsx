@@ -138,7 +138,7 @@ function StudioBody({ product, priceBook, startFrom }: HelmetStudioProps & { sta
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:items-start lg:gap-8">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:items-start lg:gap-8">
       <div className="lg:sticky lg:top-24">
         <StudioPreview
           ref={previewRef}
