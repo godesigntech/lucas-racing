@@ -39,11 +39,12 @@ export const demoModels: HelmetModel[] = [
 ]
 
 export const demoFilms: Film[] = [
-  { id: "none", name: "Solid colour", category: "Solid", pattern: "none", price: 0, ...timestamps },
-  { id: "carbon", name: "Carbon weave", category: "Carbon", pattern: "carbon", price: 45, ...timestamps, sortOrder: 1 },
-  { id: "forged", name: "Forged carbon", category: "Carbon", pattern: "forged", price: 65, ...timestamps, sortOrder: 2 },
-  { id: "hex", name: "Hex", category: "Patterns", pattern: "hex", price: 55, ...timestamps, sortOrder: 3 },
-  { id: "camo", name: "Camo", category: "Camouflage", pattern: "camo", price: 50, ...timestamps, sortOrder: 4 },
+  { id: "none", name: "Solid colour", code: "SOLID", category: "Solid", pattern: "none", price: 0, textureUrl: null, thumbUrl: null, widths: [], ...timestamps },
+  { id: "tshy241", name: "Carbon fibre TSHY241", code: "TSHY241", category: "Carbon fibre", pattern: "carbon", price: 45, textureUrl: "/films/carbon/tshy241.webp", thumbUrl: "/films/carbon/thumbs/tshy241.webp", widths: ["0.5m"], ...timestamps, sortOrder: 1 },
+  { id: "tsmd11512", name: "Camo TSMD11512", code: "TSMD11512", category: "Camo", pattern: "camo", price: 45, textureUrl: "/films/camo/tsmd11512.webp", thumbUrl: "/films/camo/thumbs/tsmd11512.webp", widths: ["1m"], ...timestamps, sortOrder: 2 },
+  { id: "tswd10610", name: "Wood TSWD10610", code: "TSWD10610", category: "Wood", pattern: "none", price: 45, textureUrl: "/films/wood/tswd10610.webp", thumbUrl: "/films/wood/thumbs/tswd10610.webp", widths: ["1m"], ...timestamps, sortOrder: 3 },
+  { id: "tsdd125-10", name: "Marble & water drop TSDD125-10", code: "TSDD125-10", category: "Marble & water drop", pattern: "none", price: 45, textureUrl: "/films/marble/tsdd125-10.webp", thumbUrl: "/films/marble/thumbs/tsdd125-10.webp", widths: ["1m"], ...timestamps, sortOrder: 4 },
+  { id: "tscy860", name: "Skull TSCY860", code: "TSCY860", category: "Skull", pattern: "none", price: 45, textureUrl: "/films/skull/tscy860.webp", thumbUrl: "/films/skull/thumbs/tscy860.webp", widths: ["1m"], ...timestamps, sortOrder: 5 },
 ]
 
 const option = (

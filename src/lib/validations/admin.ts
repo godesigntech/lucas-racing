@@ -60,6 +60,12 @@ export const filmSchema = z.object({
 })
 export type FilmValues = z.infer<typeof filmSchema>
 
+export const filmCategoryPriceSchema = z.object({
+  category: z.string().trim().min(1).max(40),
+  price,
+})
+export type FilmCategoryPriceValues = z.infer<typeof filmCategoryPriceSchema>
+
 // Pricing -------------------------------------------------------------------
 
 export const helmetModelSchema = z.object({

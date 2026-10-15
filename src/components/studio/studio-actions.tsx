@@ -46,13 +46,13 @@ export function StudioActions({ shareUrl, enquiryHref, imageName, imageCaption, 
 
   return (
     <div className="flex flex-wrap gap-2">
-      <Button variant="outline" onClick={copyLink}>
+      <Button variant="ghost" size="sm" onClick={copyLink}>
         <Link2 /> Share link
       </Button>
-      <Button variant="outline" onClick={downloadImage} disabled={downloading}>
+      <Button variant="ghost" size="sm" onClick={downloadImage} disabled={downloading}>
         {downloading ? <Loader2 className="animate-spin" aria-hidden /> : <Download />} Social image
       </Button>
-      <Button asChild variant="outline">
+      <Button asChild variant="ghost" size="sm">
         <Link href={enquiryHref}>
           <MessageSquare /> Ask the workshop
         </Link>

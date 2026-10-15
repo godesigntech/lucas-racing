@@ -22,6 +22,8 @@ interface HelmetArtProps {
 }
 
 const PLASTIC = "#1b1e1c"
+/** Size (in viewBox units) one film photo covers on the illustration. */
+const FILM_TILE = 150
 
 /** Stable short hash so each distinct look gets its own SVG ids. */
 function hashLook(value: string): string {
@@ -45,7 +47,8 @@ export function HelmetArt({ look, view = "full", title, className }: HelmetArtPr
     shadow: `${uid}-shadow`,
   }
   const layout = LAYOUTS[look.layout]
-  const graphicFill = look.film === "none" ? look.graphic : `url(#${ids.film})`
+  const hasFilm = Boolean(look.filmTexture) || look.film !== "none"
+  const graphicFill = hasFilm ? `url(#${ids.film})` : look.graphic
   const baseFill = look.finish === "chrome" ? `url(#${ids.chrome})` : look.base
   const glossOpacity = look.finish === "matte" ? 0.12 : look.finish === "chrome" ? 0.7 : 0.5
 
@@ -62,7 +65,13 @@ export function HelmetArt({ look, view = "full", title, className }: HelmetArtPr
         <clipPath id={ids.clip}>
           <path d={SHELL_PATH} />
         </clipPath>
-        {look.film !== "none" && <FilmPattern id={ids.film} film={look.film} tint={look.graphic} />}
+        {look.filmTexture ? (
+          <pattern id={ids.film} width={FILM_TILE} height={FILM_TILE} patternUnits="userSpaceOnUse">
+            <image href={look.filmTexture} width={FILM_TILE} height={FILM_TILE} preserveAspectRatio="xMidYMid slice" />
+          </pattern>
+        ) : (
+          look.film !== "none" && <FilmPattern id={ids.film} film={look.film} tint={look.graphic} />
+        )}
         <linearGradient id={ids.chrome} x1="0" y1="0" x2="0.35" y2="1">
           <stop offset="0" stopColor="#fbfcfd" />
           <stop offset="0.28" stopColor="#a7adb5" />

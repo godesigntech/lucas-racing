@@ -82,8 +82,12 @@ export type ProductRow = Timestamps & {
 export type FilmRow = Timestamps & {
   id: string
   name: string
+  code: string
   category: string
   pattern: string
+  texture_url: string | null
+  thumb_url: string | null
+  widths: string[]
   price: number
   is_active: boolean
   sort_order: number

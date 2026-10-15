@@ -1,3 +1,4 @@
+import { first3dModel } from "@/lib/helmet-3d/models"
 import type { PriceBook } from "@/types/catalog"
 import type {
   ConfigKey,
@@ -73,14 +74,18 @@ function pick(values: string[], preferred: string | undefined): string {
   return preferred && values.includes(preferred) ? preferred : (values[0] ?? "")
 }
 
-/** Starting configuration taken from the product's showcase colourway. */
+/**
+ * Starting configuration taken from the product's showcase colourway. Starts on a
+ * helmet we can show in 3D when the design offers one.
+ */
 export function getInitialConfiguration(product: CatalogProduct, priceBook: PriceBook): HelmetConfiguration {
-  const model = priceBook.models.find((item) => item.id === product.models[0])
+  const modelId = first3dModel(product.models)?.id ?? product.models[0] ?? ""
+  const model = priceBook.models.find((item) => item.id === modelId)
   const values = (group: keyof PriceBook["options"]) => priceBook.options[group].map((option) => option.value)
   const filmForLook = priceBook.films.find((film) => film.pattern === product.look.film)
 
   return {
-    model: product.models[0] ?? "",
+    model: modelId,
     route: pick(values("route"), "new"),
     size: pick(model?.sizes ?? [], DEFAULT_SIZE),
     finish: pick(values("finish"), product.look.finish),
@@ -121,6 +126,7 @@ export function configurationToLook(
     finish: config.finish as HelmetFinish,
     base: config.finish === "chrome" ? "#c9ccd1" : config.base,
     film: film?.pattern ?? "none",
+    filmTexture: film?.textureUrl ?? undefined,
     trim: config.trim,
     spoiler: config.spoiler === "yes",
   }

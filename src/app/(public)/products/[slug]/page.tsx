@@ -1,19 +1,16 @@
 import { Suspense } from "react"
 import type { Metadata } from "next"
-import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ArrowRight } from "lucide-react"
 
 import { Container } from "@/components/layout/container"
 import { ProductDetails } from "@/components/products/product-details"
-import { ProductGallery } from "@/components/products/product-gallery"
 import { ProductGrid } from "@/components/products/product-grid"
-import { ProductSummary } from "@/components/products/product-summary"
 import { Breadcrumbs } from "@/components/shared/breadcrumbs"
 import { SectionHeading } from "@/components/shared/section-heading"
-import { Button } from "@/components/ui/button"
+import { HelmetStudio } from "@/components/studio/helmet-studio"
+import { StudioHighlights } from "@/components/studio/studio-highlights"
 import { Skeleton } from "@/components/ui/skeleton"
-import { getProductBySlug, getProducts, getRelatedProducts } from "@/lib/data/products"
+import { getPriceBook, getProductBySlug, getProducts, getRelatedProducts } from "@/lib/data/products"
 
 export async function generateStaticParams() {
   const products = await getProducts()
@@ -49,12 +46,12 @@ function ProductSkeleton() {
   return (
     <Container className="space-y-8 pb-16 pt-8" aria-busy="true" aria-label="Loading design">
       <Skeleton className="h-5 w-48" />
-      <div className="grid gap-10 lg:grid-cols-2 lg:gap-14">
-        <Skeleton className="aspect-[4/3] rounded-[2rem]" />
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:gap-8">
+        <Skeleton className="aspect-[4/3] rounded-[1.75rem]" />
         <div className="space-y-4">
           <Skeleton className="h-16 w-2/3" />
           <Skeleton className="h-6 w-1/2" />
-          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-80 w-full rounded-[1.5rem]" />
         </div>
       </div>
     </Container>
@@ -65,12 +62,12 @@ async function ProductContent({ slug }: { slug: string }) {
   const product = await getProductBySlug(slug)
   if (!product) notFound()
 
-  const related = await getRelatedProducts(product)
+  const [related, priceBook] = await Promise.all([getRelatedProducts(product), getPriceBook()])
 
   return (
     <>
-      <section className="pb-16 pt-8 sm:pb-20">
-        <Container className="space-y-8">
+      <section className="pb-12 pt-8 sm:pb-16">
+        <Container className="space-y-6">
           <Breadcrumbs
             items={[
               { label: "Home", href: "/" },
@@ -78,35 +75,18 @@ async function ProductContent({ slug }: { slug: string }) {
               { label: product.name },
             ]}
           />
-          <div className="grid gap-10 lg:grid-cols-2 lg:gap-14">
-            <ProductGallery look={product.look} name={product.name} models={product.models} />
-            <ProductSummary product={product} />
-          </div>
+          <HelmetStudio product={product} priceBook={priceBook} />
         </Container>
       </section>
 
       <section className="pb-16 sm:pb-20">
-        <Container>
+        <Container className="space-y-10">
+          <StudioHighlights />
+          <div className="max-w-3xl space-y-3">
+            <p className="eyebrow text-lime-ink">About this design</p>
+            <p className="text-lg leading-relaxed text-carbon/80">{product.description}</p>
+          </div>
           <ProductDetails product={product} />
-        </Container>
-      </section>
-
-      <section className="pb-16 sm:pb-20">
-        <Container>
-          <div className="grid-texture relative flex flex-col gap-6 overflow-hidden rounded-[2rem] bg-carbon p-6 text-paper sm:p-10 md:flex-row md:items-center md:justify-between">
-            <div className="max-w-xl space-y-3">
-              <p className="eyebrow text-lime">Design studio</p>
-              <h2 className="display text-4xl sm:text-5xl">Make {product.name} yours</h2>
-              <p className="text-paper/70">
-                Pick your shell, finish, colours, film and trims step by step. The preview and price update as you go.
-              </p>
-            </div>
-            <Button asChild size="lg" className="self-start md:self-auto">
-              <Link href={`/products/${product.slug}/customize`}>
-                Open the design studio <ArrowRight />
-              </Link>
-            </Button>
-          </div>
         </Container>
       </section>
 

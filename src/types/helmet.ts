@@ -38,6 +38,8 @@ export interface HelmetLook {
   accent: string
   /** Film pattern applied to the graphic area ("none" for solid colour). */
   film: FilmPattern
+  /** Photo of the chosen hydro-dip film. When set it replaces the illustrated pattern. */
+  filmTexture?: string
   /** Rubber trim colour (eye-port and base). */
   trim: string
   spoiler: boolean

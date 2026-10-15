@@ -8,6 +8,7 @@ export async function downloadPreviewImage(svg: SVGSVGElement, fileName: string,
   const clone = svg.cloneNode(true) as SVGSVGElement
   clone.setAttribute("width", String(width * 0.8))
   clone.setAttribute("height", String(height * 0.6))
+  await inlineImages(clone)
   const markup = new XMLSerializer().serializeToString(clone)
   const url = URL.createObjectURL(new Blob([markup], { type: "image/svg+xml;charset=utf-8" }))
 
@@ -53,6 +54,24 @@ export async function downloadPreviewImage(svg: SVGSVGElement, fileName: string,
   } finally {
     URL.revokeObjectURL(url)
   }
+}
+
+/** An SVG drawn onto a canvas can't fetch outside images, so film photos are embedded first. */
+async function inlineImages(svg: SVGSVGElement): Promise<void> {
+  await Promise.all(
+    Array.from(svg.querySelectorAll("image")).map(async (image) => {
+      const href = image.getAttribute("href")
+      if (!href || href.startsWith("data:")) return
+      const blob = await (await fetch(href)).blob()
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(String(reader.result))
+        reader.onerror = () => reject(reader.error)
+        reader.readAsDataURL(blob)
+      })
+      image.setAttribute("href", dataUrl)
+    }),
+  )
 }
 
 function loadImage(src: string): Promise<HTMLImageElement> {

@@ -2,41 +2,52 @@
 
 import { useMemo, useRef, useState, useSyncExternalStore } from "react"
 import Link from "next/link"
-import { ArrowLeft, ArrowRight, MessageSquare, ShoppingBag } from "lucide-react"
+import { ArrowRight, ChevronDown, MessageSquare, RotateCcw, ShoppingBag } from "lucide-react"
 import { toast } from "react-toastify"
 
 import { OptionGroup } from "@/components/products/configurator/option-group"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useHelmetConfigurator } from "@/hooks/use-helmet-configurator"
 import { basket } from "@/lib/basket/basket-store"
 import { getCategory } from "@/lib/catalog/categories"
 import { configurationToText, getInitialConfiguration, getOptionGroups } from "@/lib/configurator/helmet-configuration"
-import { formatMoney } from "@/lib/format"
+import { formatMoney, formatPrice } from "@/lib/format"
 import { configFromSearchParams, configToSearchParams } from "@/lib/studio/share-config"
+import { cn } from "@/lib/utils"
 import type { PriceBook } from "@/types/catalog"
 import type { ConfigKey, HelmetConfiguration } from "@/types/configurator"
 import type { CatalogProduct } from "@/types/product"
 
+import { FilmPicker } from "./film-picker"
 import { ModelCards } from "./model-cards"
-import { ReviewStep } from "./review-step"
 import { SegmentedControl } from "./segmented-control"
-import { StepTabs } from "./step-tabs"
 import { StudioActions } from "./studio-actions"
 import { StudioPreview } from "./studio-preview"
-import { studioSteps, type StudioStepId } from "./studio-steps"
+import { StudioSection } from "./studio-section"
 
 interface HelmetStudioProps {
   product: CatalogProduct
   priceBook: PriceBook
 }
 
+type SectionId = "helmet" | "colour" | "film" | "extras"
+
+const sections: { id: SectionId; title: string }[] = [
+  { id: "helmet", title: "Helmet" },
+  { id: "colour", title: "Finish & colour" },
+  { id: "film", title: "Hydro-dip film" },
+  { id: "extras", title: "Trim & extras" },
+]
+
 const noSubscription = () => () => {}
 
 /**
- * Step-by-step helmet builder: live preview on the left, steps and running total on the right.
- * A shared link (?model=…&finish=…) is read in the browser after load; the studio then
- * remounts with that build, so the prerendered page always starts from the design's default.
+ * The helmet builder, shown at the top of each product page: live preview on the
+ * left, numbered option sections and the running total on the right.
+ * A shared link (?model=…&film=…) is read in the browser after load; the studio
+ * then remounts with that build, so the prerendered page starts from the design's default.
  */
 export function HelmetStudio(props: HelmetStudioProps) {
   const search = useSyncExternalStore(
@@ -54,17 +65,42 @@ export function HelmetStudio(props: HelmetStudioProps) {
 }
 
 function StudioBody({ product, priceBook, startFrom }: HelmetStudioProps & { startFrom?: HelmetConfiguration }) {
-  const { groups, config, setOption, disabled, look, summary, price } = useHelmetConfigurator(product, priceBook, startFrom)
-  const [stepId, setStepId] = useState<StudioStepId>("helmet")
+  const { groups, config, setOption, disabled, look, summary, price, reset, isDirty } = useHelmetConfigurator(
+    product,
+    priceBook,
+    startFrom,
+  )
+  const [open, setOpen] = useState<SectionId | null>("helmet")
+  const [showBreakdown, setShowBreakdown] = useState(false)
   const previewRef = useRef<HTMLDivElement>(null)
+  const totalRef = useRef<HTMLDivElement>(null)
 
-  const stepIndex = studioSteps.findIndex((step) => step.id === stepId)
-  const step = studioSteps[stepIndex]
-  const nextStep = studioSteps[stepIndex + 1]
-  const previousStep = studioSteps[stepIndex - 1]
   const group = (key: ConfigKey) => groups.find((item) => item.key === key)!
+  const label = (key: ConfigKey) => summary.find((line) => line.key === key)?.value ?? ""
   const model = priceBook.models.find((item) => item.id === config.model)
+  const film = priceBook.films.find((item) => item.id === config.film)
+  const category = getCategory(product.category)
   const enquiryHref = `/contact?${new URLSearchParams({ design: product.slug, build: configurationToText(product, summary) })}`
+
+  const summaries: Record<SectionId, string> = {
+    helmet: [model?.shortName, config.route === "own" ? "Your helmet" : "New helmet", `Size ${config.size}`].filter(Boolean).join(" · "),
+    colour: disabled.base ? label("finish") : `${label("finish")} · ${label("base")}`,
+    film: film?.textureUrl ? `${film.category} · ${film.code}` : "Solid colour, no film",
+    extras: `${label("trim")} rubbers · ${config.spoiler === "yes" ? "Rear spoiler" : "No spoiler"}`,
+  }
+
+  function toggle(id: SectionId) {
+    setOpen((current) => (current === id ? null : id))
+  }
+
+  function goToNext(id: SectionId) {
+    const next = sections[sections.findIndex((section) => section.id === id) + 1]
+    if (next) setOpen(next.id)
+    else {
+      setOpen(null)
+      totalRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
+    }
+  }
 
   function addToBasket() {
     basket.add({ slug: product.slug, name: product.name, config })
@@ -78,7 +114,17 @@ function StudioBody({ product, priceBook, startFrom }: HelmetStudioProps & { sta
     )
   }
 
-  function renderOption(key: ConfigKey, description?: string) {
+  function nextButton(id: SectionId) {
+    const index = sections.findIndex((section) => section.id === id)
+    const next = sections[index + 1]
+    return (
+      <Button variant="secondary" size="sm" onClick={() => goToNext(id)}>
+        {next ? `Next: ${next.title}` : "Done, see my total"} <ArrowRight />
+      </Button>
+    )
+  }
+
+  function option(key: ConfigKey, description?: string) {
     return (
       <OptionGroup
         key={key}
@@ -92,146 +138,155 @@ function StudioBody({ product, priceBook, startFrom }: HelmetStudioProps & { sta
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
-        <div className="space-y-3">
-          <Link
-            href={`/products/${product.slug}`}
-            className="eyebrow inline-flex items-center gap-1.5 text-muted-foreground transition-colors hover:text-carbon"
-          >
-            <ArrowLeft className="size-3.5" aria-hidden /> Lucas Racing / {product.name} design studio
-          </Link>
-          <h1 className="display text-5xl sm:text-6xl">
-            Make it unmistakably yours<span className="text-lime-ink">.</span>
-          </h1>
-          <p className="max-w-xl text-muted-foreground">
-            Build your {product.name} helmet step by step. Every tool is open to explore, with no sign-up needed.
-          </p>
-        </div>
-        <StudioActions
-          shareUrl={`/products/${product.slug}/customize?${configToSearchParams(config)}`}
-          enquiryHref={enquiryHref}
-          imageName={`lucas-racing-${product.slug}.png`}
-          imageCaption={`${product.name} · ${model?.name ?? ""}`}
-          getPreviewSvg={() => previewRef.current?.querySelector("svg") ?? null}
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:items-start lg:gap-8">
+      <div className="lg:sticky lg:top-24">
+        <StudioPreview
+          ref={previewRef}
+          look={look}
+          modelId={config.model}
+          modelName={model?.name ?? product.name}
+          designLabel={`${category.label} · ${product.name}`}
         />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:items-start">
-        <div className="lg:sticky lg:top-28">
-          <StudioPreview
-            ref={previewRef}
-            look={look}
-            modelId={config.model}
-            modelName={model?.name ?? product.name}
-            designLabel={`${getCategory(product.category).label} · ${product.name}`}
-          />
-        </div>
-
-        <section aria-label="Build steps" className="flex min-w-0 flex-col overflow-hidden rounded-[1.75rem] border border-carbon/10 bg-card">
-          <StepTabs current={stepId} onSelect={setStepId} />
-
-          <div
-            role="tabpanel"
-            id={`studio-panel-${step.id}`}
-            aria-labelledby={`studio-tab-${step.id}`}
-            className="flex-1 space-y-6 p-5 sm:p-7"
-          >
-            <div className="space-y-1.5">
-              <h2 className="font-display text-3xl font-bold uppercase leading-tight">{step.title}</h2>
-              <p className="text-sm text-muted-foreground">{step.description}</p>
-            </div>
-
-            {step.id === "helmet" && (
-              <>
-                <SegmentedControl group={group("route")} value={config.route} onChange={(value) => setOption("route", value)} />
-                <ModelCards
-                  models={priceBook.models.filter((item) => product.models.includes(item.id))}
-                  value={config.model}
-                  supplyNew={config.route === "new"}
-                  onChange={(value) => setOption("model", value)}
-                />
-                <div className="space-y-2">
-                  <label htmlFor="studio-size" className="text-sm font-semibold">
-                    Helmet size
-                  </label>
-                  <Select value={config.size} onValueChange={(value) => setOption("size", value)}>
-                    <SelectTrigger id="studio-size" className="w-full sm:w-56">
-                      <SelectValue>{config.size}</SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {group("size").choices.map((choice) => (
-                        <SelectItem key={choice.value} value={choice.value}>
-                          {choice.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    {config.route === "own" ? "The size of the helmet you're sending in." : "We'll order a new helmet in this size."}
-                  </p>
-                </div>
-              </>
-            )}
-
-            {step.id === "design" && (
-              <>
-                {renderOption("finish")}
-                {renderOption("base")}
-              </>
-            )}
-
-            {step.id === "materials" && (
-              <>
-                {renderOption("film")}
-                {renderOption("trim")}
-              </>
-            )}
-
-            {step.id === "details" && (
-              <>
-                {renderOption("spoiler")}
-                <p className="rounded-2xl bg-accent p-4 text-sm text-accent-foreground">
-                  Want your name, race number or sponsor logos on it? Add them in the order notes at checkout and we&apos;ll
-                  place them on your proof.
-                </p>
-              </>
-            )}
-
-            {step.id === "review" && <ReviewStep summary={summary} price={price} onEdit={setStepId} />}
+      <div className="min-w-0 space-y-5">
+        <header className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline" className="h-7 rounded-full border-carbon/20 px-3 text-xs">
+              {category.label}
+            </Badge>
+            {product.badge && <Badge className="h-7 rounded-full bg-carbon px-3 text-xs text-paper">{product.badge}</Badge>}
           </div>
+          <h1 className="display text-5xl sm:text-6xl">{product.name}</h1>
+          <p className="text-muted-foreground">{product.tagline}</p>
+          <p className="text-sm">
+            <span className="font-semibold">{formatPrice(product.startingPrice)}</span>
+            <span className="text-muted-foreground"> · design it below, the preview and price update as you go</span>
+          </p>
+        </header>
 
-          <div className="flex items-center justify-between gap-4 border-t border-carbon/10 bg-paper/60 p-5 sm:px-7">
-            <div className="min-w-0">
-              <p className="eyebrow text-[0.65rem] text-muted-foreground">Your build</p>
-              <p className="font-display text-3xl font-bold leading-tight sm:text-4xl" aria-live="polite">
-                {price ? formatMoney(price.total) : "On request"}
+        <div className="overflow-hidden rounded-[1.5rem] border border-carbon/10 bg-card">
+          <StudioSection number={1} title="Helmet" summary={summaries.helmet} open={open === "helmet"} onToggle={() => toggle("helmet")}>
+            <SegmentedControl group={group("route")} value={config.route} onChange={(value) => setOption("route", value)} />
+            <ModelCards
+              models={priceBook.models.filter((item) => product.models.includes(item.id))}
+              value={config.model}
+              supplyNew={config.route === "new"}
+              onChange={(value) => setOption("model", value)}
+            />
+            <div className="space-y-2">
+              <label htmlFor="studio-size" className="text-sm font-semibold">
+                Helmet size
+              </label>
+              <Select value={config.size} onValueChange={(value) => setOption("size", value)}>
+                <SelectTrigger id="studio-size" className="w-full sm:w-56">
+                  <SelectValue>{config.size}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {group("size").choices.map((choice) => (
+                    <SelectItem key={choice.value} value={choice.value}>
+                      {choice.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {config.route === "own" ? "The size of the helmet you're sending in." : "We'll order a new helmet in this size."}
               </p>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
-              {previousStep && (
-                <Button variant="ghost" size="icon" onClick={() => setStepId(previousStep.id)} aria-label={`Back to ${previousStep.label.toLowerCase()}`}>
-                  <ArrowLeft />
-                </Button>
-              )}
-              {nextStep ? (
-                <Button size="lg" onClick={() => setStepId(nextStep.id)}>
-                  Next: {nextStep.label.toLowerCase()} <ArrowRight />
-                </Button>
-              ) : price ? (
-                <Button size="lg" onClick={addToBasket}>
-                  <ShoppingBag /> Add to basket
-                </Button>
-              ) : (
-                <Button asChild size="lg">
-                  <Link href={enquiryHref}>
-                    <MessageSquare /> Send enquiry
-                  </Link>
-                </Button>
-              )}
+            {nextButton("helmet")}
+          </StudioSection>
+
+          <StudioSection number={2} title="Finish & colour" summary={summaries.colour} open={open === "colour"} onToggle={() => toggle("colour")}>
+            {option("finish")}
+            {option("base", "Shows through wherever a film is transparent, and on the plain areas of the design.")}
+            {nextButton("colour")}
+          </StudioSection>
+
+          <StudioSection number={3} title="Hydro-dip film" summary={summaries.film} open={open === "film"} onToggle={() => toggle("film")}>
+            <p className="text-sm text-muted-foreground">
+              Pick from our in-stock films. Turn the 3D helmet to see the pattern up close, or switch to Side to see where it
+              sits on this design.
+            </p>
+            <FilmPicker films={priceBook.films} value={config.film} onChange={(value) => setOption("film", value)} />
+            {nextButton("film")}
+          </StudioSection>
+
+          <StudioSection number={4} title="Trim & extras" summary={summaries.extras} open={open === "extras"} onToggle={() => toggle("extras")}>
+            {option("trim")}
+            {option("spoiler")}
+            <p className="rounded-2xl bg-accent p-4 text-sm text-accent-foreground">
+              Want your name, race number or sponsor logos on it? Add them in the order notes at checkout and we&apos;ll put
+              them on your proof.
+            </p>
+            {nextButton("extras")}
+          </StudioSection>
+        </div>
+
+        <div ref={totalRef} className="rounded-[1.5rem] border border-carbon/10 bg-card p-5 sm:p-6">
+          <div className="flex items-end justify-between gap-4">
+            <div className="min-w-0">
+              <p className="eyebrow text-[0.65rem] text-muted-foreground">Your build</p>
+              <p className="font-display text-4xl font-bold leading-none" aria-live="polite">
+                {price ? formatMoney(price.total) : "Price on request"}
+              </p>
             </div>
+            {price && (
+              <button
+                type="button"
+                aria-expanded={showBreakdown}
+                onClick={() => setShowBreakdown((value) => !value)}
+                className="flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-carbon"
+              >
+                What&apos;s included
+                <ChevronDown className={cn("size-4 transition-transform", showBreakdown && "rotate-180")} aria-hidden />
+              </button>
+            )}
           </div>
-        </section>
+
+          {price && showBreakdown && (
+            <dl className="mt-4 space-y-1.5 border-t border-carbon/10 pt-4 text-sm" aria-label="Price breakdown">
+              {price.lines.map((line) => (
+                <div key={line.label} className="flex justify-between gap-4">
+                  <dt className="text-muted-foreground">{line.label}</dt>
+                  <dd className="tabular-nums">{formatMoney(line.amount)}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+
+          <div className="mt-5 grid gap-2 sm:grid-cols-[1fr_auto]">
+            {price ? (
+              <Button size="lg" onClick={addToBasket}>
+                <ShoppingBag /> Add to basket
+              </Button>
+            ) : (
+              <Button asChild size="lg">
+                <Link href={enquiryHref}>
+                  <MessageSquare /> Send enquiry
+                </Link>
+              </Button>
+            )}
+            {isDirty && (
+              <Button variant="ghost" size="lg" onClick={reset}>
+                <RotateCcw /> Start over
+              </Button>
+            )}
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            You approve a proof of the exact design before anything is masked or dipped.
+          </p>
+
+          <div className="mt-4 border-t border-carbon/10 pt-4">
+            <StudioActions
+              shareUrl={`/products/${product.slug}?${configToSearchParams(config)}`}
+              enquiryHref={enquiryHref}
+              imageName={`lucas-racing-${product.slug}.png`}
+              imageCaption={`${product.name} · ${model?.name ?? ""}`}
+              getPreviewSvg={() => previewRef.current?.querySelector("svg") ?? null}
+            />
+          </div>
+        </div>
       </div>
     </div>
   )

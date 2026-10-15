@@ -32,7 +32,8 @@ export const StudioPreview = forwardRef<HTMLDivElement, StudioPreviewProps>(func
   { look, modelId, modelName, designLabel },
   ref,
 ) {
-  const [selected, setSelected] = useState<PreviewView>("full")
+  // Opens in 3D when the helmet has a model; otherwise the illustration.
+  const [selected, setSelected] = useState<PreviewView>("3d")
   const model3d = get3dModel(modelId)
   // Switching to a helmet without a 3D model drops back to the illustration.
   const view: PreviewView = selected === "3d" && !model3d ? "full" : selected
@@ -56,7 +57,7 @@ export const StudioPreview = forwardRef<HTMLDivElement, StudioPreviewProps>(func
           <p className="eyebrow text-muted-foreground">Live preview</p>
           <p className="mt-1 font-display text-2xl font-bold uppercase">{modelName}</p>
         </div>
-        <span className="rounded-full border border-carbon/20 bg-card/70 px-3 py-1.5 font-mono text-[0.68rem] font-medium uppercase tracking-wider">
+        <span className="hidden rounded-full border border-carbon/20 bg-card/70 px-3 py-1.5 font-mono text-[0.68rem] font-medium uppercase tracking-wider sm:inline">
           {designLabel}
         </span>
       </div>
@@ -70,7 +71,8 @@ export const StudioPreview = forwardRef<HTMLDivElement, StudioPreviewProps>(func
               url={model3d.url}
               tint={shellTint(look)}
               finish={look.finish}
-              label={`${modelName} in 3D with your shell colour and finish`}
+              film={look.filmTexture ?? null}
+              label={`${modelName} in 3D with your colour, finish and film`}
               fallback={art}
               className="h-[20rem] sm:h-[22rem]"
             />
@@ -86,19 +88,19 @@ export const StudioPreview = forwardRef<HTMLDivElement, StudioPreviewProps>(func
         </span>
       </div>
 
-      <div className="flex flex-col gap-3 px-5 pb-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">
+      <div className="flex min-w-0 flex-col gap-3 px-4 pb-4 sm:flex-row sm:items-center sm:justify-between sm:px-7 sm:pb-5">
         <p className="flex items-center gap-2 text-xs text-muted-foreground">
           <Box className="size-3.5 text-lime-ink" aria-hidden />
-          {view === "3d" ? "3D: colour and finish only" : model3d ? "Tap 3D to turn the real helmet" : "Illustrated preview · 3D coming soon"}
+          {view === "3d" ? "3D preview of your colour, finish and film" : model3d ? "Tap 3D to turn the real helmet" : "Illustrated preview · 3D coming soon"}
         </p>
-        <div role="group" aria-label="Preview view" className="flex items-center gap-1 self-start rounded-xl bg-card p-1 shadow-sm ring-1 ring-carbon/10 sm:self-auto">
+        <div role="group" aria-label="Preview view" className="flex max-w-full items-center gap-1 self-stretch overflow-x-auto rounded-xl bg-card p-1 shadow-sm ring-1 ring-carbon/10 sm:self-auto">
           {model3d && (
             <button
               type="button"
               aria-pressed={view === "3d"}
               onClick={() => setSelected("3d")}
               className={cn(
-                "flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors",
+                "flex flex-1 items-center justify-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors sm:flex-none sm:px-3",
                 view === "3d" ? "bg-lime text-carbon" : "text-carbon hover:bg-lime/30",
               )}
             >
@@ -112,7 +114,7 @@ export const StudioPreview = forwardRef<HTMLDivElement, StudioPreviewProps>(func
               aria-pressed={view === item.view}
               onClick={() => setSelected(item.view)}
               className={cn(
-                "rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
+                "flex-1 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors sm:flex-none sm:px-3",
                 view === item.view ? "bg-carbon text-paper" : "text-muted-foreground hover:text-carbon",
               )}
             >
@@ -121,7 +123,7 @@ export const StudioPreview = forwardRef<HTMLDivElement, StudioPreviewProps>(func
           ))}
           <button
             type="button"
-            onClick={() => setSelected("full")}
+            onClick={() => setSelected(model3d ? "3d" : "full")}
             aria-label="Reset view"
             className="grid size-7 place-items-center rounded-lg text-muted-foreground transition-colors hover:text-carbon"
           >
@@ -130,12 +132,6 @@ export const StudioPreview = forwardRef<HTMLDivElement, StudioPreviewProps>(func
         </div>
       </div>
 
-      <div className="flex items-center justify-between border-t border-carbon/10 bg-card/40 px-5 py-3 sm:px-7">
-        <p className="eyebrow text-[0.65rem] text-muted-foreground">01 / Your helmet, every angle</p>
-        <button type="button" onClick={() => setSelected("full")} className="text-xs font-medium text-muted-foreground hover:text-carbon">
-          Reset view
-        </button>
-      </div>
     </section>
   )
 })

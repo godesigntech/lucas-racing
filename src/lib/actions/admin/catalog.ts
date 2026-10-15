@@ -5,12 +5,15 @@ import { revalidatePath, updateTag } from "next/cache"
 import { databaseError, failure, validationError } from "@/lib/actions/result"
 import { cacheTags } from "@/lib/data/cache-tags"
 import { DEMO_READ_ONLY, isDemoMode } from "@/lib/demo/mode"
+import { formatMoney } from "@/lib/format"
 import { createClient } from "@/lib/supabase/server"
 import {
+  filmCategoryPriceSchema,
   filmSchema,
   helmetModelSchema,
   optionGroupSchema,
   productSchema,
+  type FilmCategoryPriceValues,
   type FilmValues,
   type HelmetModelValues,
   type OptionGroupValues,
@@ -114,6 +117,27 @@ export async function deleteFilm(id: string): Promise<ActionResult> {
   if (error) return databaseError(error, "We couldn't delete the film.")
   refreshCatalog("/admin/films")
   return { ok: true, message: "Film deleted." }
+}
+
+/** Sets one price for every film in a category, e.g. all Carbon fibre films to £55. */
+export async function setFilmCategoryPrice(values: FilmCategoryPriceValues): Promise<ActionResult> {
+  if (isDemoMode()) return DEMO_READ_ONLY
+  if (!(await getAdmin())) return NOT_ALLOWED
+  const parsed = filmCategoryPriceSchema.safeParse(values)
+  if (!parsed.success) return validationError(parsed.error)
+  const { category, price } = parsed.data
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from("films")
+    .update({ price })
+    .eq("category", category)
+    .neq("id", "none")
+    .select("id")
+  if (error) return databaseError(error, "We couldn't update the prices.")
+  refreshCatalog("/admin/films")
+  const count = data?.length ?? 0
+  return { ok: true, message: `${count} ${category} ${count === 1 ? "film" : "films"} now cost ${formatMoney(price)}.` }
 }
 
 // Pricing -------------------------------------------------------------------

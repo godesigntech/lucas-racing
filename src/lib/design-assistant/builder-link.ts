@@ -13,7 +13,7 @@ function nearestSwatch(options: PriceBook["options"]["base"], colour: string): s
 }
 
 /**
- * A link that opens a design in the builder with a concept's colours and finish.
+ * A link that opens a design's product page (where the builder is) with a concept's colours and finish.
  * Uses the same search params as the builder's share links; anything we can't
  * map is left out and the builder uses its default.
  */
@@ -32,5 +32,5 @@ export function builderHref(product: CatalogProduct, look: HelmetLook, priceBook
   const params = new URLSearchParams()
   for (const [key, value] of Object.entries(config)) if (value) params.set(key, value)
   const search = params.toString()
-  return `/products/${product.slug}/customize${search ? `?${search}` : ""}`
+  return `/products/${product.slug}${search ? `?${search}` : ""}`
 }

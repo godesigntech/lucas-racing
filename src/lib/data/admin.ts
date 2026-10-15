@@ -212,13 +212,70 @@ export async function getAdminProduct(slug: string): Promise<Product> {
   return toProduct(data)
 }
 
-export async function listAdminFilms(): Promise<Film[]> {
+export interface FilmCategorySummary {
+  name: string
+  count: number
+  activeCount: number
+  minPrice: number
+  maxPrice: number
+}
+
+/** Every film category with its size and price range, for filters and category pricing. */
+function summariseFilmCategories(films: Pick<Film, "category" | "price" | "isActive">[]): FilmCategorySummary[] {
+  const byName = new Map<string, FilmCategorySummary>()
+  for (const film of films) {
+    const entry = byName.get(film.category) ?? { name: film.category, count: 0, activeCount: 0, minPrice: Infinity, maxPrice: 0 }
+    entry.count += 1
+    if (film.isActive) entry.activeCount += 1
+    entry.minPrice = Math.min(entry.minPrice, film.price)
+    entry.maxPrice = Math.max(entry.maxPrice, film.price)
+    byName.set(film.category, entry)
+  }
+  return [...byName.values()]
+}
+
+/** The film library, filtered by category and code/name search, a page at a time. */
+export async function listAdminFilms(options: {
+  category?: string
+  query?: string
+  page?: number
+}): Promise<Paged<Film> & { categories: FilmCategorySummary[] }> {
   await requireAdmin()
-  if (isDemoMode()) return demoAdmin.films()
+  const { current, from, to } = pageRange(options.page ?? 1)
+
+  if (isDemoMode()) {
+    const all = demoAdmin.films()
+    const rows = all.filter((film) => !options.category || film.category === options.category)
+    return { rows: rows.slice(from, to + 1), total: rows.length, page: current, pageCount: Math.max(1, Math.ceil(rows.length / ADMIN_PAGE_SIZE)), categories: summariseFilmCategories(all) }
+  }
+
   const supabase = await createClient()
-  const { data, error } = await supabase.from("films").select("*").order("sort_order").order("name")
+  let request = supabase
+    .from("films")
+    .select("*", { count: "exact" })
+    .order("sort_order")
+    .order("name")
+    .range(from, to)
+  if (options.category) request = request.eq("category", options.category)
+  const term = searchTerm(options.query)
+  if (term) request = request.or(`code.ilike.%${term}%,name.ilike.%${term}%`)
+
+  const [{ data, count, error }, all] = await Promise.all([
+    request,
+    supabase.from("films").select("category, price, is_active").order("sort_order"),
+  ])
   if (error) throw new Error(error.message)
-  return (data ?? []).map(toFilm)
+
+  const total = count ?? 0
+  return {
+    rows: (data ?? []).map(toFilm),
+    total,
+    page: current,
+    pageCount: Math.max(1, Math.ceil(total / ADMIN_PAGE_SIZE)),
+    categories: summariseFilmCategories(
+      (all.data ?? []).map((row) => ({ category: row.category, price: Number(row.price), isActive: row.is_active })),
+    ),
+  }
 }
 
 export async function listAdminHelmetModels(): Promise<HelmetModel[]> {

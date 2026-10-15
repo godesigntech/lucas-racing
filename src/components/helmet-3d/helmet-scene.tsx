@@ -3,10 +3,11 @@
 import { Suspense, useEffect, useLayoutEffect, useMemo, useState } from "react"
 import { Canvas } from "@react-three/fiber"
 import { Bounds, Center, ContactShadows, Environment, Lightformer, OrbitControls, useGLTF, useProgress } from "@react-three/drei"
-import { Color, type Material, type Mesh, MeshStandardMaterial, type Object3D } from "three"
+import { Box3, Color, type Material, type Mesh, MeshStandardMaterial, type Object3D, type Texture, Vector3 } from "three"
 
 import type { HelmetFinish } from "@/types/helmet"
 
+import { addFilmProjection, createFilmUniforms, type FilmUniforms, loadFilmTexture } from "./film-projection"
 import { SceneLoading } from "./scene-loading"
 
 export interface HelmetSceneProps {
@@ -14,6 +15,8 @@ export interface HelmetSceneProps {
   /** Multiplies the shell texture: white areas take this colour, black areas stay black. */
   tint?: string
   finish?: HelmetFinish
+  /** Photo of a hydro-dip film to wrap around the shell, or null for plain paint. */
+  film?: string | null
   /** Slowly spins until the customer drags it. */
   autoRotate?: boolean
 }
@@ -25,16 +28,32 @@ const finishes: Record<HelmetFinish, { roughness: number; metalness: number; env
   chrome: { roughness: 0.12, metalness: 1, envMapIntensity: 1.6 },
 }
 
-/** A copy of the model with its own materials, so tinting one viewer never affects another. */
+/** How many film photos fit across the helmet: about the scale of a real dip. */
+const FILM_TILES_ACROSS = 2.4
+
+/** A copy of the model with its own materials (so tinting one viewer never affects another), set up for films. */
 function cloneWithOwnMaterials(scene: Object3D): Object3D {
+  const film = createFilmUniforms()
   const copy = scene.clone(true)
+  copy.userData.film = film
   copy.traverse((node) => {
     const mesh = node as Mesh
     if (!mesh.isMesh) return
     const source = mesh.material as Material
-    mesh.material = source instanceof MeshStandardMaterial ? source.clone() : new MeshStandardMaterial({ color: "#ffffff" })
+    const material = source instanceof MeshStandardMaterial ? source.clone() : new MeshStandardMaterial({ color: "#ffffff" })
+    addFilmProjection(material, film)
+    mesh.material = material
   })
+  const size = new Box3().setFromObject(copy).getSize(new Vector3())
+  film.filmScale.value = FILM_TILES_ACROSS / Math.max(size.x, size.y, size.z, 0.001)
   return copy
+}
+
+/** Puts a film on the helmet, or takes it off with null. */
+function setFilm(root: Object3D, texture: Texture | null) {
+  const film = root.userData.film as FilmUniforms
+  if (texture) film.filmMap.value = texture
+  film.filmStrength.value = texture ? 1 : 0
 }
 
 function forEachMaterial(root: Object3D, apply: (material: MeshStandardMaterial) => void) {
@@ -53,9 +72,26 @@ function applySurface(material: MeshStandardMaterial, tint: string, finish: Helm
   material.needsUpdate = true
 }
 
-function HelmetModel({ url, tint = "#ffffff", finish = "gloss" }: Required<Omit<HelmetSceneProps, "autoRotate">>) {
+function HelmetModel({ url, tint = "#ffffff", finish = "gloss", film = null }: Required<Omit<HelmetSceneProps, "autoRotate">>) {
   const { scene } = useGLTF(url)
   const root = useMemo(() => cloneWithOwnMaterials(scene), [scene])
+
+  // Swap films without a loading flash: the current film stays on until the next one has loaded.
+  useEffect(() => {
+    if (!film) {
+      setFilm(root, null)
+      return
+    }
+    let cancelled = false
+    loadFilmTexture(film)
+      .then((texture) => {
+        if (!cancelled) setFilm(root, texture)
+      })
+      .catch((error) => console.error("Couldn't load the film for the 3D helmet:", error))
+    return () => {
+      cancelled = true
+    }
+  }, [film, root])
 
   // Layout effect: the colour is set before the first frame is drawn, so the helmet never flashes white.
   useLayoutEffect(() => forEachMaterial(root, (material) => applySurface(material, tint, finish)), [root, tint, finish])
@@ -82,7 +118,7 @@ function Progress() {
 }
 
 /** The three.js scene. Load this through <HelmetViewer>, which keeps three.js out of the main bundle. */
-export default function HelmetScene({ url, tint = "#ffffff", finish = "gloss", autoRotate = true }: HelmetSceneProps) {
+export default function HelmetScene({ url, tint = "#ffffff", finish = "gloss", film = null, autoRotate = true }: HelmetSceneProps) {
   // Spin until the customer grabs the helmet; only then does the mouse wheel zoom,
   // so scrolling past the viewer still scrolls the page.
   const [grabbed, setGrabbed] = useState(false)
@@ -101,7 +137,7 @@ export default function HelmetScene({ url, tint = "#ffffff", finish = "gloss", a
           <StudioLights />
           <Bounds fit clip observe margin={1.15}>
             <Center>
-              <HelmetModel url={url} tint={tint} finish={finish} />
+              <HelmetModel url={url} tint={film ? "#ffffff" : tint} finish={finish} film={film} />
             </Center>
           </Bounds>
           <ContactShadows position={[0, -0.42, 0]} opacity={0.35} scale={3} blur={2.6} far={1} />

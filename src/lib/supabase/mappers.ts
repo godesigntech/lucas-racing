@@ -59,8 +59,12 @@ export function toFilm(row: FilmRow): Film {
   return {
     id: row.id,
     name: row.name,
+    code: row.code,
     category: row.category,
     pattern: row.pattern as FilmPattern,
+    textureUrl: row.texture_url,
+    thumbUrl: row.thumb_url,
+    widths: row.widths ?? [],
     price: num(row.price),
     isActive: row.is_active,
     sortOrder: row.sort_order,
