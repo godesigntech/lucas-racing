@@ -1,8 +1,9 @@
 "use client"
 
-import { useId, useMemo, useState } from "react"
+import { useEffect, useId, useMemo, useRef, useState } from "react"
 import { Ban, Check, Search, X } from "lucide-react"
 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { formatSurcharge } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { Film } from "@/types/catalog"
@@ -13,15 +14,17 @@ interface FilmPickerProps {
   onChange: (filmId: string) => void
 }
 
-/** How many swatches show at first, and how many more each "Show more" adds. */
-const PAGE = 30
+const ALL = "all"
+/** Cards shown at first; more load as the list is scrolled. */
+const PAGE = 24
 
 /**
- * Browse the hydro-dip film library: categories, search by film code, and a
- * swatch grid that grows on demand so hundreds of films stay quick to load.
+ * Browse the hydro-dip film library: search by code, filter by category, and a
+ * scrolling grid of film cards that loads more as you go, so hundreds of films stay quick.
  */
 export function FilmPicker({ films, value, onChange }: FilmPickerProps) {
   const searchId = useId()
+  const categoryId = useId()
   const solid = films.find((film) => !film.textureUrl)
   const library = useMemo(() => films.filter((film) => film.textureUrl), [films])
   const selected = films.find((film) => film.id === value)
@@ -32,56 +35,63 @@ export function FilmPicker({ films, value, onChange }: FilmPickerProps) {
     return [...counts.entries()].map(([name, count]) => ({ name, count }))
   }, [library])
 
-  const [category, setCategory] = useState(() =>
-    selected?.textureUrl ? selected.category : (categories[0]?.name ?? ""),
-  )
+  const [category, setCategory] = useState(ALL)
   const [query, setQuery] = useState("")
   const [visible, setVisible] = useState(PAGE)
+  const scroller = useRef<HTMLDivElement>(null)
+  const sentinel = useRef<HTMLDivElement>(null)
 
   const term = query.trim().toLowerCase()
   const matches = useMemo(
     () =>
-      term
-        ? library.filter((film) => film.code.toLowerCase().includes(term) || film.category.toLowerCase().includes(term))
-        : library.filter((film) => film.category === category),
-    [library, term, category],
+      library.filter(
+        (film) =>
+          (category === ALL || film.category === category) &&
+          (!term || film.code.toLowerCase().includes(term) || film.category.toLowerCase().includes(term)),
+      ),
+    [library, category, term],
   )
   const shown = matches.slice(0, visible)
+  const hasMore = matches.length > shown.length
 
-  function chooseCategory(name: string) {
-    setCategory(name)
-    setQuery("")
+  // Load the next batch when the bottom of the list scrolls into view.
+  useEffect(() => {
+    const root = scroller.current
+    const target = sentinel.current
+    if (!root || !target || !hasMore) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) setVisible((count) => count + PAGE)
+      },
+      { root, rootMargin: "200px" },
+    )
+    observer.observe(target)
+    return () => observer.disconnect()
+  }, [hasMore, shown.length])
+
+  function resetList() {
     setVisible(PAGE)
+    scroller.current?.scrollTo({ top: 0 })
   }
 
   return (
-    <div className="min-w-0 space-y-4">
-      {/* The current choice, large enough to see the pattern. */}
-      <div className="flex items-center gap-4 rounded-2xl border border-carbon/10 bg-paper/60 p-3">
-        <span className="grid size-20 shrink-0 place-items-center overflow-hidden rounded-xl bg-carbon/5 ring-1 ring-carbon/10">
+    <div className="min-w-0 space-y-3">
+      {/* Current choice */}
+      <div className="flex items-center gap-3 rounded-xl border border-carbon/10 bg-paper/60 p-2 pr-3">
+        <span className="grid h-10 w-16 shrink-0 place-items-center overflow-hidden rounded-lg bg-carbon/5 ring-1 ring-carbon/10">
           {selected?.textureUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element -- small static swatch, already sized
-            <img src={selected.textureUrl} alt="" className="size-full object-cover" />
+            // eslint-disable-next-line @next/next/no-img-element -- small static swatch
+            <img src={selected.thumbUrl ?? selected.textureUrl} alt="" className="size-full object-cover" />
           ) : (
-            <Ban className="size-6 text-muted-foreground" aria-hidden />
+            <Ban className="size-4 text-muted-foreground" aria-hidden />
           )}
         </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-xs text-muted-foreground">{selected?.textureUrl ? selected.category : "No film"}</p>
-          <p className="truncate font-semibold">{selected?.textureUrl ? selected.code : "Solid colour"}</p>
-          <p className="text-xs text-muted-foreground">
-            {selected?.textureUrl ? (
-              <>
-                Hydro-dipped onto your design
-                {formatSurcharge(selected.price) && (
-                  <span className="ml-1.5 font-semibold text-lime-ink">{formatSurcharge(selected.price)}</span>
-                )}
-              </>
-            ) : (
-              "Your base colour, no pattern"
-            )}
-          </p>
-        </div>
+        <p className="min-w-0 flex-1 text-sm">
+          <span className="block text-xs text-muted-foreground">Selected film</span>
+          <span className="block truncate font-semibold">
+            {selected?.textureUrl ? `${selected.code} · ${selected.category}` : "None, solid colour"}
+          </span>
+        </p>
         {solid && selected?.textureUrl && (
           <button
             type="button"
@@ -93,103 +103,117 @@ export function FilmPicker({ films, value, onChange }: FilmPickerProps) {
         )}
       </div>
 
-      <div className="relative">
-        <label htmlFor={searchId} className="sr-only">
-          Search films by code
-        </label>
-        <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-        <input
-          id={searchId}
-          type="search"
-          value={query}
-          onChange={(event) => {
-            setQuery(event.target.value)
-            setVisible(PAGE)
-          }}
-          placeholder={`Search ${library.length} films by code, e.g. TSWD`}
-          className="h-10 w-full rounded-full border border-input bg-card pl-10 pr-4 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-        />
+      {/* Search and category, side by side */}
+      <div className="grid gap-2 sm:grid-cols-2">
+        <div className="relative">
+          <label htmlFor={searchId} className="sr-only">
+            Search films
+          </label>
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+          <input
+            id={searchId}
+            type="search"
+            value={query}
+            onChange={(event) => {
+              setQuery(event.target.value)
+              resetList()
+            }}
+            placeholder={`Search ${library.length} films…`}
+            className="h-11 w-full rounded-xl border border-input bg-card pl-9 pr-3 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          />
+        </div>
+        <div>
+          <label htmlFor={categoryId} className="sr-only">
+            Film category
+          </label>
+          <Select
+            value={category}
+            onValueChange={(next) => {
+              setCategory(next)
+              resetList()
+            }}
+          >
+            <SelectTrigger id={categoryId} className="h-11 w-full rounded-xl bg-card">
+              <SelectValue>{category === ALL ? "All categories" : category}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL}>All categories ({library.length})</SelectItem>
+              {categories.map((item) => (
+                <SelectItem key={item.name} value={item.name}>
+                  {item.name} ({item.count})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      {!term && (
-        <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1" role="group" aria-label="Film categories">
-          {categories.map((item) => (
-            <button
-              key={item.name}
-              type="button"
-              aria-pressed={item.name === category}
-              onClick={() => chooseCategory(item.name)}
-              className={cn(
-                "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors",
-                item.name === category
-                  ? "border-carbon bg-carbon text-paper"
-                  : "border-carbon/15 bg-card text-carbon/75 hover:border-carbon/40 hover:text-carbon",
-              )}
-            >
-              {item.name}
-              <span className={cn("tabular-nums", item.name === category ? "text-paper/60" : "text-muted-foreground")}>
-                {item.count}
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {matches.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-carbon/15 px-4 py-8 text-center text-sm text-muted-foreground">
-          No film matches &ldquo;{query}&rdquo;. Film codes are on the supplier&apos;s catalogue, e.g. TSWD2232.
-        </p>
-      ) : (
-        <>
-          {term && (
-            <p className="text-xs text-muted-foreground">
-              {matches.length} {matches.length === 1 ? "film" : "films"} found
-            </p>
-          )}
-          <ul className="grid grid-cols-4 gap-2 sm:grid-cols-5" aria-label="Films">
+      {/* Scrolling grid of film cards */}
+      <div
+        ref={scroller}
+        className="max-h-[26rem] overflow-y-auto overscroll-contain rounded-xl border border-carbon/10 bg-paper/40 p-2"
+      >
+        {matches.length === 0 ? (
+          <p className="px-4 py-10 text-center text-sm text-muted-foreground">
+            No films match &ldquo;{query}&rdquo;. Try a film code like TSWD or another category.
+          </p>
+        ) : (
+          <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3" aria-label="Films">
             {shown.map((film) => {
               const checked = film.id === value
+              const surcharge = formatSurcharge(film.price)
               return (
                 <li key={film.id}>
                   <button
                     type="button"
                     onClick={() => onChange(film.id)}
                     aria-pressed={checked}
-                    title={film.code}
                     className={cn(
-                      "group relative block aspect-square w-full overflow-hidden rounded-xl bg-carbon/5 ring-1 ring-carbon/10 transition-[box-shadow,transform] hover:scale-[1.04] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/60",
-                      checked && "ring-2 ring-carbon ring-offset-2 ring-offset-card",
+                      "group flex w-full flex-col overflow-hidden rounded-lg border bg-card text-left transition-[border-color,box-shadow] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                      checked ? "border-carbon ring-1 ring-carbon" : "border-carbon/10 hover:border-carbon/35 hover:shadow-sm",
                     )}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element -- 160px static thumbnails, lazy loaded */}
-                    <img src={film.thumbUrl ?? film.textureUrl ?? ""} alt="" loading="lazy" decoding="async" className="size-full object-cover" />
-                    <span className="absolute inset-x-0 bottom-0 truncate bg-carbon/70 px-1 py-0.5 text-center font-mono text-[0.55rem] text-paper opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
-                      {film.code}
+                    <span className="relative block p-1.5 pb-0">
+                      {/* eslint-disable-next-line @next/next/no-img-element -- 160px static thumbnails, lazy loaded */}
+                      <img
+                        src={film.thumbUrl ?? film.textureUrl ?? ""}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        className="aspect-[2.2/1] w-full rounded-md object-cover"
+                      />
+                      {checked && (
+                        <span className="absolute right-3 top-3 grid size-5 place-items-center rounded-full bg-lime text-carbon shadow-sm">
+                          <Check className="size-3" aria-hidden />
+                        </span>
+                      )}
                     </span>
-                    {checked && (
-                      <span className="absolute right-1 top-1 grid size-5 place-items-center rounded-full bg-lime text-carbon">
-                        <Check className="size-3" aria-hidden />
+                    <span className="block min-w-0 px-2 pb-2 pt-1.5">
+                      <span className="block truncate text-xs font-semibold">{film.code}</span>
+                      <span className="flex items-center justify-between gap-1 text-[0.7rem] text-muted-foreground">
+                        <span>{surcharge || "Included"}</span>
+                        {category === ALL && <span className="truncate">{film.category}</span>}
                       </span>
-                    )}
+                    </span>
                     <span className="sr-only">
                       {film.category} film {film.code}
+                      {checked && ", selected"}
                     </span>
                   </button>
                 </li>
               )
             })}
           </ul>
-          {matches.length > shown.length && (
-            <button
-              type="button"
-              onClick={() => setVisible((count) => count + PAGE * 2)}
-              className="w-full rounded-full border border-carbon/15 py-2 text-sm font-medium transition-colors hover:border-carbon/40"
-            >
-              Show more ({matches.length - shown.length} left)
-            </button>
-          )}
-        </>
-      )}
+        )}
+        {hasMore && (
+          <div ref={sentinel} className="py-3 text-center text-xs text-muted-foreground">
+            Loading more films…
+          </div>
+        )}
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Showing {shown.length} of {matches.length} {matches.length === 1 ? "film" : "films"}
+      </p>
     </div>
   )
 }
