@@ -2,13 +2,15 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutGrid, Package, UserRound, type LucideIcon } from "lucide-react"
+import { Bookmark, LayoutGrid, Package, Sparkles, UserRound, type LucideIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
 const items: { label: string; href: string; icon: LucideIcon }[] = [
   { label: "Overview", href: "/account", icon: LayoutGrid },
   { label: "Orders", href: "/account/orders", icon: Package },
+  { label: "Saved designs", href: "/account/designs", icon: Bookmark },
+  { label: "Quote requests", href: "/account/quotes", icon: Sparkles },
   { label: "Profile", href: "/account/profile", icon: UserRound },
 ]
 

@@ -86,6 +86,16 @@ export function useBasket(): BasketItem[] {
   return useSyncExternalStore(subscribe, getSnapshot, () => EMPTY)
 }
 
+const noSubscription = () => () => {}
+
+/**
+ * False on the server and during hydration, when the basket (in localStorage) isn't
+ * known yet. Pages use it to show a loading state instead of flashing "empty".
+ */
+export function useBasketLoaded(): boolean {
+  return useSyncExternalStore(noSubscription, () => true, () => false)
+}
+
 export function useBasketCount(): number {
   return useBasket().reduce((sum, item) => sum + item.quantity, 0)
 }

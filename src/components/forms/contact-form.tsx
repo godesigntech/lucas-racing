@@ -3,7 +3,6 @@
 import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2, Send } from "lucide-react"
-import { toast } from "react-toastify"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -11,10 +10,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { sendContactMessage } from "@/lib/services/contact"
+import { sendContactMessage } from "@/lib/actions/contact"
 import { contactSchema, contactTopics, type ContactFormValues } from "@/lib/validations/contact"
 
 import { fieldA11y, FormField } from "./form-field"
+import { runAction } from "./use-action-form"
 
 const NO_DESIGN = "none"
 
@@ -46,6 +46,7 @@ export function ContactForm({ designs, initialDesign, initialMessage }: ContactF
     control,
     handleSubmit,
     reset,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<ContactFormValues>({
     resolver: zodResolver(contactSchema),
@@ -53,13 +54,8 @@ export function ContactForm({ designs, initialDesign, initialMessage }: ContactF
   })
 
   async function onSubmit(values: ContactFormValues) {
-    try {
-      const result = await sendContactMessage(values)
-      toast.success(result.message)
-      reset({ ...defaultValues, message: "", design: NO_DESIGN })
-    } catch {
-      toast.error("Your message couldn't be sent. Please try again, or email us directly.")
-    }
+    const result = await runAction(() => sendContactMessage(values), setError)
+    if (result?.ok) reset({ ...defaultValues, message: "", design: NO_DESIGN })
   }
 
   return (

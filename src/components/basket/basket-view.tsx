@@ -5,7 +5,8 @@ import { ArrowRight, Lock, ShoppingBag } from "lucide-react"
 
 import { EmptyState } from "@/components/shared/empty-state"
 import { Button } from "@/components/ui/button"
-import { useBasket } from "@/lib/basket/basket-store"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useBasket, useBasketLoaded } from "@/lib/basket/basket-store"
 import { basketSubtotal, resolveBasketLine } from "@/lib/basket/resolve-basket"
 import { formatMoney } from "@/lib/format"
 import type { PriceBook } from "@/types/catalog"
@@ -20,9 +21,12 @@ interface BasketViewProps {
 
 export function BasketView({ products, priceBook }: BasketViewProps) {
   const items = useBasket()
+  const loaded = useBasketLoaded()
   const lines = items.map((item) => resolveBasketLine(item, products, priceBook))
   const subtotal = basketSubtotal(lines)
   const orderable = lines.some((line) => line.available)
+
+  if (!loaded) return <Skeleton className="h-80 rounded-3xl" aria-label="Loading your basket" />
 
   if (items.length === 0) {
     return (

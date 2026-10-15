@@ -14,9 +14,11 @@ export interface HelmetModel {
 }
 
 /** Graphic layouts the helmet illustration knows how to draw. */
-export type HelmetLayout = "apex" | "twin" | "split" | "shard" | "halo" | "flow" | "blank"
+export const helmetLayouts = ["apex", "twin", "split", "shard", "halo", "flow", "blank"] as const
+export type HelmetLayout = (typeof helmetLayouts)[number]
 
-export type HelmetFinish = "gloss" | "matte" | "chrome"
+export const helmetFinishes = ["gloss", "matte", "chrome"] as const
+export type HelmetFinish = (typeof helmetFinishes)[number]
 
 /** How a film is drawn in the illustrated preview. */
 export type FilmPattern = "none" | "carbon" | "forged" | "hex" | "camo"

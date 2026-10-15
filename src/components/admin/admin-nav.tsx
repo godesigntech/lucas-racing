@@ -26,22 +26,36 @@ function UnreadBadge({ active }: { active: boolean }) {
 
 interface AdminNavProps {
   onNavigate?: () => void
+  /** Sales staff don't see catalogue, pricing or settings. */
+  isFullAdmin: boolean
 }
 
 /** Sidebar navigation. Reads the URL: render inside <Suspense> with <AdminNavStatic> as fallback. */
-export function AdminNav({ onNavigate }: AdminNavProps) {
+export function AdminNav({ onNavigate, isFullAdmin }: AdminNavProps) {
   const pathname = usePathname()
-  return <AdminNavList isActive={(href) => isAdminNavActive(pathname, href)} onNavigate={onNavigate} />
+  return <AdminNavList isActive={(href) => isAdminNavActive(pathname, href)} onNavigate={onNavigate} isFullAdmin={isFullAdmin} />
 }
 
+/** Shown while the session loads: only the pages every staff member can open. */
 export function AdminNavStatic() {
-  return <AdminNavList isActive={() => false} />
+  return <AdminNavList isActive={() => false} isFullAdmin={false} />
 }
 
-function AdminNavList({ isActive, onNavigate }: { isActive: (href: string) => boolean; onNavigate?: () => void }) {
+function AdminNavList({
+  isActive,
+  onNavigate,
+  isFullAdmin,
+}: {
+  isActive: (href: string) => boolean
+  onNavigate?: () => void
+  isFullAdmin: boolean
+}) {
+  const sections = adminNavSections
+    .map((section) => ({ ...section, items: section.items.filter((item) => isFullAdmin || !item.fullAdminOnly) }))
+    .filter((section) => section.items.length > 0)
   return (
     <nav aria-label="Admin" className="space-y-6">
-      {adminNavSections.map((section) => (
+      {sections.map((section) => (
         <div key={section.title}>
           <p className="eyebrow mb-2 px-3 text-[0.65rem] text-paper/40">{section.title}</p>
           <ul className="space-y-0.5">

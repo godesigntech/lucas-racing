@@ -12,15 +12,16 @@ import {
   businessSchema,
   deliveryMethodsSchema,
   socialLinksSchema,
+  staffRoles,
   type AdminEmailValues,
   type BusinessValues,
   type DeliveryMethodsValues,
   type SocialLinksValues,
 } from "@/lib/validations/admin"
-import type { ActionResult } from "@/types/account"
+import type { ActionResult, StaffRole } from "@/types/account"
 import type { SocialIconName } from "@/types/settings"
 
-import { getAdmin, NOT_ALLOWED } from "./guard"
+import { getFullAdmin, NOT_ALLOWED } from "./guard"
 
 const socialLabels: Record<SocialIconName, string> = {
   instagram: "Instagram",
@@ -44,7 +45,7 @@ function slugify(value: string): string {
 
 export async function updateBusinessDetails(values: BusinessValues): Promise<ActionResult> {
   if (isDemoMode()) return DEMO_READ_ONLY
-  if (!(await getAdmin())) return NOT_ALLOWED
+  if (!(await getFullAdmin())) return NOT_ALLOWED
   const parsed = businessSchema.safeParse(values)
   if (!parsed.success) return validationError(parsed.error)
   const data = parsed.data
@@ -72,7 +73,7 @@ export async function updateBusinessDetails(values: BusinessValues): Promise<Act
 
 export async function updateSocialLinks(values: SocialLinksValues): Promise<ActionResult> {
   if (isDemoMode()) return DEMO_READ_ONLY
-  if (!(await getAdmin())) return NOT_ALLOWED
+  if (!(await getFullAdmin())) return NOT_ALLOWED
   const parsed = socialLinksSchema.safeParse(values)
   if (!parsed.success) return validationError(parsed.error)
 
@@ -92,7 +93,7 @@ export async function updateSocialLinks(values: SocialLinksValues): Promise<Acti
 
 export async function updateDeliveryMethods(values: DeliveryMethodsValues): Promise<ActionResult> {
   if (isDemoMode()) return DEMO_READ_ONLY
-  if (!(await getAdmin())) return NOT_ALLOWED
+  if (!(await getFullAdmin())) return NOT_ALLOWED
   const parsed = deliveryMethodsSchema.safeParse(values)
   if (!parsed.success) return validationError(parsed.error)
   if (!parsed.data.methods.some((method) => method.active)) {
@@ -120,24 +121,40 @@ export async function updateDeliveryMethods(values: DeliveryMethodsValues): Prom
 
 export async function addAdmin(values: AdminEmailValues): Promise<ActionResult> {
   if (isDemoMode()) return DEMO_READ_ONLY
-  const admin = await getAdmin()
+  const admin = await getFullAdmin()
   if (!admin) return NOT_ALLOWED
   const parsed = adminEmailSchema.safeParse(values)
   if (!parsed.success) return validationError(parsed.error)
 
   const supabase = await createClient()
-  const { error } = await supabase.from("admin_users").insert({ email: parsed.data.email, created_by: admin.id })
+  const { email, role } = parsed.data
+  const { error } = await supabase.from("admin_users").insert({ email, role, created_by: admin.id })
   if (error) {
-    if (error.code === "23505") return failure("That email already has admin access.")
-    return databaseError(error, "We couldn't add that admin.")
+    if (error.code === "23505") return failure("That email already has access.")
+    return databaseError(error, "We couldn't add that person.")
   }
   revalidatePath("/admin/settings")
-  return { ok: true, message: `${parsed.data.email} can now use the admin panel.` }
+  return { ok: true, message: `${email} can now use the admin panel as ${role === "admin" ? "an admin" : "sales"}.` }
+}
+
+/** Switch a team member between Admin and Sales. */
+export async function setAdminRole(email: string, role: StaffRole): Promise<ActionResult> {
+  if (isDemoMode()) return DEMO_READ_ONLY
+  const admin = await getFullAdmin()
+  if (!admin) return NOT_ALLOWED
+  if (!staffRoles.includes(role)) return failure("Unknown role.")
+  if (email.toLowerCase() === admin.email.toLowerCase()) return failure("You can't change your own role.")
+
+  const supabase = await createClient()
+  const { error } = await supabase.from("admin_users").update({ role }).eq("email", email.toLowerCase())
+  if (error) return databaseError(error, "We couldn't change that role.")
+  revalidatePath("/admin/settings")
+  return { ok: true, message: `${email} is now ${role === "admin" ? "an admin" : "sales"}.` }
 }
 
 export async function removeAdmin(email: string): Promise<ActionResult> {
   if (isDemoMode()) return DEMO_READ_ONLY
-  const admin = await getAdmin()
+  const admin = await getFullAdmin()
   if (!admin) return NOT_ALLOWED
   if (email.toLowerCase() === admin.email.toLowerCase()) return failure("You can't remove your own admin access.")
 

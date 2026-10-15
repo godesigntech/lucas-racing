@@ -1,7 +1,10 @@
 "use server"
 
+import { after } from "next/server"
+
 import { databaseError, failure, validationError } from "@/lib/actions/result"
 import { DEMO_READ_ONLY, isDemoMode } from "@/lib/demo/mode"
+import { notifyWorkshopReply } from "@/lib/email/notifications"
 import { createClient } from "@/lib/supabase/server"
 import { chatMessageSchema, conversationStatusSchema, type ChatMessageValues } from "@/lib/validations/chat"
 import type { ActionResult } from "@/types/account"
@@ -26,7 +29,7 @@ export async function sendAdminMessage(
   const supabase = await createClient()
   const { data: conversation, error: readError } = await supabase
     .from("conversations")
-    .select("id, customer_id")
+    .select("id, customer_id, customer_unread_count, profiles(full_name, email)")
     .eq("id", conversationId)
     .maybeSingle()
   if (readError) return databaseError(readError, "We couldn't send the reply.")
@@ -46,6 +49,11 @@ export async function sendAdminMessage(
   })
   if (error && error.code !== DUPLICATE) return databaseError(error, "We couldn't send the reply.")
 
+  // Let the customer know by email, once per run of unread replies.
+  const customer = conversation.profiles as { full_name: string; email: string } | null
+  if (!error && conversation.customer_unread_count === 0 && customer) {
+    after(() => notifyWorkshopReply({ customerEmail: customer.email, customerName: customer.full_name, body }))
+  }
   return { ok: true, data: { conversationId: conversation.id } }
 }
 

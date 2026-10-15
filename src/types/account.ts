@@ -1,8 +1,14 @@
+/** Staff roles: admins run everything; sales handle orders, customers, messages, quotes and enquiries. */
+export type StaffRole = "admin" | "sales"
+
 export interface CurrentUser {
   id: string
   email: string
   fullName: string
+  /** True for all staff (admin or sales): they can open the admin panel. */
   isAdmin: boolean
+  /** Staff role, or null for customers. */
+  role: StaffRole | null
 }
 
 export interface Profile {
@@ -34,6 +40,7 @@ export interface CustomerSummary {
 
 export interface AdminUser {
   email: string
+  role: StaffRole
   createdAt: string
 }
 

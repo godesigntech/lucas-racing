@@ -12,4 +12,10 @@ export async function getAdmin(): Promise<CurrentUser | null> {
   return user?.isAdmin ? user : null
 }
 
+/** For actions that change the catalogue, prices, settings or the team. */
+export async function getFullAdmin(): Promise<CurrentUser | null> {
+  const user = await getCurrentUser()
+  return user?.role === "admin" ? user : null
+}
+
 export const NOT_ALLOWED = { ok: false as const, message: "You don't have permission to do that." }

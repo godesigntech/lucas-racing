@@ -8,9 +8,9 @@ export function ValuesGrid() {
       <Container className="space-y-12">
         <SectionHeading
           tone="light"
-          eyebrow="Mission and values"
-          title="Make every driver look like a front-runner"
-          description="Our mission is simple: give karters at every level a helmet that's genuinely theirs, finished to a standard they're proud to race in."
+          eyebrow="More than a racing team"
+          title="Supporting the person behind the helmet"
+          description="Motorsport can be fiercely competitive, but it should also be enjoyable, welcoming and rewarding. Supporting the driver is every bit as important as preparing the kart beneath them."
         />
         <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {values.map((value) => (
@@ -21,6 +21,11 @@ export function ValuesGrid() {
             </li>
           ))}
         </ul>
+        <p className="max-w-3xl text-paper/70">
+          Whether you&apos;re celebrating your first podium, recovering from a difficult weekend or preparing for a major
+          championship, we&apos;re there to share the experience. Because while trophies are important, the friendships,
+          memories and relationships built through racing last far longer.
+        </p>
       </Container>
     </section>
   )

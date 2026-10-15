@@ -30,10 +30,22 @@ export interface ConfigOptionGroup {
   choices: ConfigChoice[]
 }
 
-export type HelmetConfiguration = Record<ConfigKey, string>
+/** Optional personal touches. Free: the workshop places them on the proof. */
+export interface Personalisation {
+  /** Rider name, up to 24 characters. */
+  riderName?: string
+  /** Race number, up to 3 letters or digits. */
+  raceNumber?: string
+  /** Storage path of an uploaded logo in the design-logos bucket. */
+  logo?: string
+}
+
+export type PersonalisationKey = keyof Personalisation
+
+export type HelmetConfiguration = Record<ConfigKey, string> & Personalisation
 
 export interface ConfigSummaryLine {
-  key: ConfigKey
+  key: ConfigKey | PersonalisationKey
   label: string
   value: string
 }

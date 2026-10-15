@@ -12,7 +12,7 @@ import {
 } from "@/lib/configurator/helmet-configuration"
 import { calculateHelmetPrice } from "@/lib/pricing/helmet-price"
 import type { PriceBook } from "@/types/catalog"
-import type { ConfigKey, HelmetConfiguration } from "@/types/configurator"
+import type { ConfigKey, HelmetConfiguration, PersonalisationKey } from "@/types/configurator"
 import type { CatalogProduct } from "@/types/product"
 
 /**
@@ -27,6 +27,16 @@ export function useHelmetConfigurator(product: CatalogProduct, priceBook: PriceB
     setConfig((current) => normaliseConfiguration({ ...current, [key]: value }, product, priceBook))
   }
 
+  /** Name, race number or logo; an empty value removes it. */
+  const setPersonal = (key: PersonalisationKey, value: string) => {
+    setConfig((current) => {
+      const next = { ...current }
+      if (value) next[key] = value
+      else delete next[key]
+      return next
+    })
+  }
+
   const groups = getOptionGroups(product, priceBook, config)
   const isDirty = (Object.keys(initial) as ConfigKey[]).some((key) => initial[key] !== config[key])
 
@@ -34,6 +44,7 @@ export function useHelmetConfigurator(product: CatalogProduct, priceBook: PriceB
     groups,
     config,
     setOption,
+    setPersonal,
     reset: () => setConfig(initial),
     isDirty,
     disabled: getDisabledGroups(config),

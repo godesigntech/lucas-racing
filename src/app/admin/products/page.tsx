@@ -4,6 +4,7 @@ import { Pencil } from "lucide-react"
 
 import { AdminCard } from "@/components/admin/admin-card"
 import { AdminPageHeader } from "@/components/admin/admin-page-header"
+import { NewProductDialog } from "@/components/admin/new-product-dialog"
 import { ProductActiveSwitch } from "@/components/admin/product-active-switch"
 import { HelmetArt } from "@/components/helmet/helmet-art"
 import { Badge } from "@/components/ui/badge"
@@ -21,7 +22,8 @@ export default function AdminProductsPage() {
     <>
       <AdminPageHeader
         title="Products"
-        description="Helmet designs shown on the website. Set prices, descriptions and which helmets each design is available on."
+        description="Helmet designs shown on the website. Set prices, descriptions, the showcase look and which helmets each design is available on."
+        actions={<NewProductDialog />}
       />
       <Suspense fallback={<Skeleton className="h-[32rem] rounded-2xl" />}>
         <ProductList />

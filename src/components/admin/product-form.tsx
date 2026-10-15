@@ -19,11 +19,28 @@ import { productCategories } from "@/data/categories"
 import { updateProduct } from "@/lib/actions/admin/catalog"
 import { formatPrice } from "@/lib/format"
 import { productSchema, type ProductValues } from "@/lib/validations/admin"
-import type { HelmetModel } from "@/types/helmet"
+import { filmPatterns, helmetFinishes, helmetLayouts, type HelmetLayout, type HelmetModel } from "@/types/helmet"
 import { productBadges, type Product } from "@/types/product"
 
 import { AdminCard } from "./admin-card"
 import { MoneyInput } from "./money-input"
+
+const layoutLabels: Record<HelmetLayout, string> = {
+  apex: "Apex sweep",
+  twin: "Twin stripes",
+  split: "Split panels",
+  shard: "Shards",
+  halo: "Halo band",
+  flow: "Flowing wave",
+  blank: "Plain",
+}
+
+const colourFields = [
+  { key: "base", label: "Base colour" },
+  { key: "graphic", label: "Graphic colour" },
+  { key: "accent", label: "Pinstripe colour" },
+  { key: "trim", label: "Rubber trim" },
+] as const
 
 interface ProductFormProps {
   product: Product
@@ -51,14 +68,25 @@ export function ProductForm({ product, models }: ProductFormProps) {
       badge: product.badge ?? "none",
       features: product.features.join("\n"),
       specs: product.specs,
+      look: {
+        layout: product.look.layout,
+        finish: product.look.finish,
+        base: product.look.base,
+        graphic: product.look.graphic,
+        accent: product.look.accent,
+        trim: product.look.trim,
+        film: product.look.film,
+        spoiler: product.look.spoiler,
+        number: product.look.number ?? "",
+      },
       isActive: product.isActive,
       sortOrder: product.sortOrder,
     },
   })
   const specs = useFieldArray({ control, name: "specs" })
-  const [name, priceOnRequest, basePrice, isActive] = useWatch({
+  const [name, priceOnRequest, basePrice, isActive, look] = useWatch({
     control,
-    name: ["name", "priceOnRequest", "basePrice", "isActive"],
+    name: ["name", "priceOnRequest", "basePrice", "isActive", "look"],
   })
 
   async function onSubmit(values: ProductValues) {
@@ -201,6 +229,99 @@ export function ProductForm({ product, models }: ProductFormProps) {
           </div>
         </AdminCard>
 
+        <AdminCard title="Showcase look" description="How the design appears on product cards and as the builder's starting point.">
+          <div className="grid gap-5 sm:grid-cols-2">
+            <Controller
+              control={control}
+              name="look.layout"
+              render={({ field }) => (
+                <FormField id="look-layout" label="Graphic layout">
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger id="look-layout" className="w-full">
+                      <SelectValue>{layoutLabels[field.value]}</SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {helmetLayouts.map((layout) => (
+                        <SelectItem key={layout} value={layout}>
+                          {layoutLabels[layout]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormField>
+              )}
+            />
+            <Controller
+              control={control}
+              name="look.finish"
+              render={({ field }) => (
+                <FormField id="look-finish" label="Finish">
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger id="look-finish" className="w-full capitalize">
+                      <SelectValue>{field.value}</SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {helmetFinishes.map((finish) => (
+                        <SelectItem key={finish} value={finish} className="capitalize">
+                          {finish}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormField>
+              )}
+            />
+            {colourFields.map(({ key, label }) => (
+              <FormField key={key} id={`look-${key}`} label={label} error={errors.look?.[key]?.message}>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    {...register(`look.${key}`)}
+                    aria-label={`${label} picker`}
+                    className="h-10 w-12 shrink-0 cursor-pointer rounded-lg border border-input bg-card p-1"
+                  />
+                  <Input {...register(`look.${key}`)} {...fieldA11y(`look-${key}`, errors.look?.[key]?.message)} className="font-mono" />
+                </div>
+              </FormField>
+            ))}
+            <Controller
+              control={control}
+              name="look.film"
+              render={({ field }) => (
+                <FormField id="look-film" label="Illustrated pattern on the graphic">
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger id="look-film" className="w-full capitalize">
+                      <SelectValue>{field.value === "none" ? "Solid colour" : field.value}</SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filmPatterns.map((pattern) => (
+                        <SelectItem key={pattern} value={pattern} className="capitalize">
+                          {pattern === "none" ? "Solid colour" : pattern}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormField>
+              )}
+            />
+            <FormField id="look-number" label="Sample race number" optional error={errors.look?.number?.message}>
+              <Input {...register("look.number")} {...fieldA11y("look-number", errors.look?.number?.message)} maxLength={3} />
+            </FormField>
+            <Controller
+              control={control}
+              name="look.spoiler"
+              render={({ field }) => (
+                <div className="flex items-center justify-between gap-3 sm:col-span-2">
+                  <Label htmlFor="look-spoiler" className="font-medium">
+                    Show a rear spoiler
+                  </Label>
+                  <Switch id="look-spoiler" checked={field.value} onCheckedChange={field.onChange} />
+                </div>
+              )}
+            />
+          </div>
+        </AdminCard>
+
         <AdminCard title="Features and specification">
           <div className="grid gap-6">
             <FormField id="product-features" label="Key features" hint="One feature per line." error={errors.features?.message}>
@@ -235,7 +356,7 @@ export function ProductForm({ product, models }: ProductFormProps) {
       <div className="space-y-6 lg:sticky lg:top-24 lg:self-start">
         <AdminCard>
           <div className="grid aspect-[4/3] place-items-center rounded-xl bg-smoke p-4">
-            <HelmetArt look={product.look} />
+            <HelmetArt look={{ ...look, number: look.number || undefined }} />
           </div>
           <p className="mt-4 font-display text-2xl font-bold uppercase">{name || "Untitled"}</p>
           <p className="text-sm text-muted-foreground">

@@ -198,6 +198,13 @@ function toShippingAddress(value: Json): ShippingAddress {
   }
 }
 
+/** The customer's own race number and name replace the design's sample ones in order thumbnails. */
+function withPersonalisation(look: HelmetLook, values: Record<string, Json | undefined>): HelmetLook {
+  const number = typeof values.raceNumber === "string" && values.raceNumber.trim() ? values.raceNumber.trim() : look.number
+  const name = typeof values.riderName === "string" && values.riderName.trim() ? values.riderName.trim() : look.name
+  return { ...look, number, name }
+}
+
 export function toOrderItem(row: OrderItemRow): OrderItem {
   const configuration = asObject(row.configuration)
   return {
@@ -209,7 +216,7 @@ export function toOrderItem(row: OrderItemRow): OrderItem {
       const item = asObject(line)
       return { label: str(item.label), value: str(item.value) } satisfies OrderSummaryLine
     }),
-    look: configuration.look ? toLook(configuration.look) : null,
+    look: configuration.look ? withPersonalisation(toLook(configuration.look), asObject(configuration.values)) : null,
     unitPrice: num(row.unit_price),
     quantity: row.quantity,
     lineTotal: num(row.line_total),

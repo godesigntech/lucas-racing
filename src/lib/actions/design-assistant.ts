@@ -1,14 +1,17 @@
 "use server"
 
+import { after } from "next/server"
+
 import { databaseError, failure, validationError } from "@/lib/actions/result"
 import { getProducts, getPriceBook } from "@/lib/data/products"
 import { getDesignAdvisor } from "@/lib/design-assistant/advisor"
 import { builderHref } from "@/lib/design-assistant/builder-link"
+import { notifyNewQuote } from "@/lib/email/notifications"
 import { DEMO_READ_ONLY, isDemoMode } from "@/lib/demo/mode"
 import { createClient } from "@/lib/supabase/server"
 import { designBriefSchema, quoteRequestSchema, type QuoteRequestValues } from "@/lib/validations/design-assistant"
 import type { ActionResult } from "@/types/account"
-import type { DesignAnalysis, DesignBrief } from "@/types/design-assistant"
+import { quoteHelmetLabels, type DesignAnalysis, type DesignBrief } from "@/types/design-assistant"
 import type { HelmetLook } from "@/types/helmet"
 
 /** The parts of a look that carry the customer's colours and finish. */
@@ -62,5 +65,17 @@ export async function submitQuoteRequest(values: QuoteRequestValues): Promise<Ac
 
   const reference = data?.[0]?.reference
   if (!reference) return failure("We couldn't send your request. Please try again.")
+
+  after(() =>
+    notifyNewQuote({
+      reference,
+      name,
+      email,
+      phone,
+      helmet: quoteHelmetLabels[helmet],
+      notes,
+      summary: concept?.summary ?? "",
+    }),
+  )
   return { ok: true, data: { reference } }
 }

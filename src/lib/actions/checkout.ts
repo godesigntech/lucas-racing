@@ -1,7 +1,10 @@
 "use server"
 
+import { after } from "next/server"
+
 import { getCurrentUser } from "@/lib/auth/session"
 import { isDemoMode } from "@/lib/demo/mode"
+import { notifyOrderPlaced } from "@/lib/email/notifications"
 import { createClient } from "@/lib/supabase/server"
 import { placeOrderSchema, type PlaceOrderInput } from "@/lib/validations/checkout"
 import type { ActionResult } from "@/types/account"
@@ -48,6 +51,31 @@ export async function placeOrder(input: PlaceOrderInput): Promise<ActionResult<{
         }),
       })
       .eq("id", user.id)
+  }
+
+  // Confirmation to the customer and an alert to the workshop, after the response is sent.
+  const { data: placed } = await supabase
+    .from("orders")
+    .select("id, order_number, customer_name, customer_email, delivery_label, total, order_items(product_name, quantity, line_total, configuration)")
+    .eq("id", order.order_id)
+    .single()
+  if (placed) {
+    after(() =>
+      notifyOrderPlaced({
+        id: placed.id,
+        orderNumber: placed.order_number,
+        customerName: placed.customer_name,
+        customerEmail: placed.customer_email,
+        deliveryLabel: placed.delivery_label,
+        total: Number(placed.total),
+        items: placed.order_items.map((item) => ({
+          name: item.product_name,
+          quantity: item.quantity,
+          lineTotal: Number(item.line_total),
+          summary: ((item.configuration as { summary?: { label: string; value: string }[] })?.summary ?? []),
+        })),
+      }),
+    )
   }
 
   return { ok: true, data: { orderNumber: order.order_number } }

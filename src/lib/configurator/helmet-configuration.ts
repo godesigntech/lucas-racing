@@ -127,6 +127,9 @@ export function configurationToLook(
     base: config.finish === "chrome" ? "#c9ccd1" : config.base,
     film: film?.pattern ?? "none",
     filmTexture: film?.textureUrl ?? undefined,
+    // The customer's own name and number replace the design's sample ones on the illustration.
+    number: config.raceNumber?.trim() || product.look.number,
+    name: config.riderName?.trim() || product.look.name,
     trim: config.trim,
     spoiler: config.spoiler === "yes",
   }
@@ -137,7 +140,7 @@ export function summariseConfiguration(
   config: HelmetConfiguration,
 ): ConfigSummaryLine[] {
   const disabled = getDisabledGroups(config)
-  return groups.map((group) => {
+  const lines: ConfigSummaryLine[] = groups.map((group) => {
     const choice = group.choices.find((item) => item.value === config[group.key])
     return {
       key: group.key,
@@ -145,6 +148,10 @@ export function summariseConfiguration(
       value: disabled[group.key] ? "Chrome" : (choice?.label ?? config[group.key]),
     }
   })
+  if (config.riderName?.trim()) lines.push({ key: "riderName", label: "Name on helmet", value: config.riderName.trim() })
+  if (config.raceNumber?.trim()) lines.push({ key: "raceNumber", label: "Race number", value: config.raceNumber.trim() })
+  if (config.logo) lines.push({ key: "logo", label: "Logo", value: "Uploaded" })
+  return lines
 }
 
 /** Plain-text summary used to pre-fill the enquiry form. */

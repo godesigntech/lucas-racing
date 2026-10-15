@@ -1,8 +1,11 @@
 "use server"
 
+import { after } from "next/server"
+
 import { databaseError, failure, validationError } from "@/lib/actions/result"
 import { getCurrentUser } from "@/lib/auth/session"
 import { DEMO_READ_ONLY, isDemoMode } from "@/lib/demo/mode"
+import { notifyCustomerMessage } from "@/lib/email/notifications"
 import { createClient } from "@/lib/supabase/server"
 import { chatMessageSchema, type ChatMessageValues } from "@/lib/validations/chat"
 import type { ActionResult } from "@/types/account"
@@ -29,7 +32,7 @@ export async function sendCustomerMessage(values: ChatMessageValues): Promise<Ac
 
   const { data: conversation, error: readError } = await supabase
     .from("conversations")
-    .select("id")
+    .select("id, admin_unread_count")
     .eq("customer_id", user.id)
     .single()
   if (readError) return databaseError(readError, "We couldn't send your message. Please try again.")
@@ -44,5 +47,9 @@ export async function sendCustomerMessage(values: ChatMessageValues): Promise<Ac
   })
   if (error && error.code !== DUPLICATE) return databaseError(error, "We couldn't send your message. Please try again.")
 
+  // Email the workshop for the first unread message only, not for every message in a burst.
+  if (!error && conversation.admin_unread_count === 0) {
+    after(() => notifyCustomerMessage({ conversationId: conversation.id, customerName: user.fullName, body }))
+  }
   return { ok: true, data: { conversationId: conversation.id } }
 }

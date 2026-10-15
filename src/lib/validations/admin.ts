@@ -1,12 +1,13 @@
 import { z } from "zod"
 
 import { optionGroupKeys } from "@/types/catalog"
-import { filmPatterns } from "@/types/helmet"
+import { filmPatterns, helmetFinishes, helmetLayouts } from "@/types/helmet"
 import { orderStatuses, paymentStatuses } from "@/types/order"
 import { productBadges, productCategoryIds } from "@/types/product"
 import { socialIcons } from "@/types/settings"
 
 const price = z.number({ error: "Enter a price" }).min(0, "Price can't be negative").max(100000, "That price looks too high")
+const hexColour = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Use a colour like #1f5bd8")
 const slug = z
   .string()
   .trim()
@@ -42,10 +43,27 @@ export const productSchema = z
     badge: z.enum([...productBadges, "none"]),
     features: z.string().max(2000),
     specs: z.array(z.object({ label: z.string().trim().max(40), value: z.string().trim().max(120) })).max(12),
+    look: z.object({
+      layout: z.enum(helmetLayouts),
+      finish: z.enum(helmetFinishes),
+      base: hexColour,
+      graphic: hexColour,
+      accent: hexColour,
+      trim: hexColour,
+      film: z.enum(filmPatterns),
+      spoiler: z.boolean(),
+      number: z.string().trim().max(3),
+    }),
     isActive: z.boolean(),
     sortOrder: z.number().int().min(0).max(999),
   })
 export type ProductValues = z.infer<typeof productSchema>
+
+export const newProductSchema = z.object({
+  name: z.string().trim().min(2, "Enter a name").max(60),
+  category: z.enum(productCategoryIds),
+})
+export type NewProductValues = z.infer<typeof newProductSchema>
 
 // Films ---------------------------------------------------------------------
 
@@ -53,7 +71,10 @@ export const filmSchema = z.object({
   id: slug,
   name: z.string().trim().min(2, "Enter a name").max(60),
   category: z.string().trim().min(2, "Enter a category").max(40),
+  code: z.string().trim().max(30),
   pattern: z.enum(filmPatterns),
+  textureUrl: z.url().nullable(),
+  thumbUrl: z.url().nullable(),
   price,
   isActive: z.boolean(),
   sortOrder: z.number().int().min(0).max(999),
@@ -139,7 +160,10 @@ export const deliveryMethodsSchema = z.object({
 })
 export type DeliveryMethodsValues = z.infer<typeof deliveryMethodsSchema>
 
+export const staffRoles = ["admin", "sales"] as const
+
 export const adminEmailSchema = z.object({
   email: z.email("Enter a valid email address").trim().toLowerCase(),
+  role: z.enum(staffRoles),
 })
 export type AdminEmailValues = z.infer<typeof adminEmailSchema>

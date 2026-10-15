@@ -8,6 +8,8 @@ import { demoOrders, demoProfiles } from "@/lib/demo/people"
 import { createClient } from "@/lib/supabase/server"
 import { toOrder, toOrderListItem, toProfile } from "@/lib/supabase/mappers"
 import type { Profile } from "@/types/account"
+import type { HelmetConfiguration } from "@/types/configurator"
+import type { QuoteStatus } from "@/types/design-assistant"
 import type { Order, OrderListItem } from "@/types/order"
 
 export async function getMyProfile(): Promise<Profile> {
@@ -56,4 +58,64 @@ export async function getMyOrder(orderNumber: string): Promise<Order> {
   if (error) throw new Error(`Could not load the order: ${error.message}`)
   if (!data) notFound()
   return toOrder(data)
+}
+
+export interface SavedDesign {
+  id: string
+  productSlug: string
+  name: string
+  config: HelmetConfiguration
+  updatedAt: string
+}
+
+/** The customer's saved builds, most recently changed first. */
+export async function getMyDesigns(): Promise<SavedDesign[]> {
+  const user = await requireUser("/account/designs")
+  if (isDemoMode()) return []
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from("saved_designs")
+    .select("id, product_slug, name, config, updated_at")
+    .eq("user_id", user.id)
+    .order("updated_at", { ascending: false })
+  if (error) throw new Error(`Could not load your designs: ${error.message}`)
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    productSlug: row.product_slug,
+    name: row.name,
+    config: row.config as unknown as HelmetConfiguration,
+    updatedAt: row.updated_at,
+  }))
+}
+
+export interface MyQuoteRequest {
+  id: string
+  reference: string
+  helmet: string
+  status: QuoteStatus
+  summary: string
+  createdAt: string
+}
+
+/** Quote requests the customer sent from the design assistant while signed in. */
+export async function getMyQuotes(): Promise<MyQuoteRequest[]> {
+  const user = await requireUser("/account/quotes")
+  if (isDemoMode()) return []
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from("quote_requests")
+    .select("id, reference, helmet, status, concept, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+  if (error) throw new Error(`Could not load your quote requests: ${error.message}`)
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    reference: row.reference,
+    helmet: row.helmet,
+    status: row.status as QuoteStatus,
+    summary: ((row.concept as { summary?: string } | null)?.summary ?? "").trim(),
+    createdAt: row.created_at,
+  }))
 }

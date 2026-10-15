@@ -11,13 +11,14 @@ import { toast } from "react-toastify"
 import { AddressFields } from "@/components/forms/address-fields"
 import { fieldA11y, FormField } from "@/components/forms/form-field"
 import { EmptyState } from "@/components/shared/empty-state"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { placeOrder } from "@/lib/actions/checkout"
-import { basket, useBasket } from "@/lib/basket/basket-store"
+import { basket, useBasket, useBasketLoaded } from "@/lib/basket/basket-store"
 import { basketSubtotal, resolveBasketLine, type ResolvedBasketLine } from "@/lib/basket/resolve-basket"
 import { checkoutSchema, type CheckoutValues } from "@/lib/validations/checkout"
 import type { Profile } from "@/types/account"
@@ -41,6 +42,7 @@ type AvailableLine = Extract<ResolvedBasketLine, { available: true }>
 export function CheckoutForm({ profile, deliveryMethods, products, priceBook }: CheckoutFormProps) {
   const router = useRouter()
   const items = useBasket()
+  const loaded = useBasketLoaded()
   const [placedOrder, setPlacedOrder] = useState(false)
   const lines = items
     .map((item) => resolveBasketLine(item, products, priceBook))
@@ -98,6 +100,8 @@ export function CheckoutForm({ profile, deliveryMethods, products, priceBook }: 
     toast.success(`Order ${result.data?.orderNumber} placed. Thank you!`)
     router.push(`/account/orders/${result.data?.orderNumber}?placed=1`)
   }
+
+  if (!loaded) return <Skeleton className="h-96 rounded-3xl" aria-label="Loading your basket" />
 
   if (lines.length === 0 && !placedOrder) {
     return (

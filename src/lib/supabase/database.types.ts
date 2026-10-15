@@ -120,8 +120,30 @@ export type ProfileRow = Timestamps & {
 
 export type AdminUserRow = {
   email: string
+  role: string
   created_at: string
   created_by: string | null
+}
+
+export type ContactMessageRow = Timestamps & {
+  id: string
+  user_id: string | null
+  name: string
+  email: string
+  phone: string
+  topic: string
+  design: string
+  message: string
+  status: string
+  admin_notes: string
+}
+
+export type SavedDesignRow = Timestamps & {
+  id: string
+  user_id: string
+  product_slug: string
+  name: string
+  config: Json
 }
 
 export type OrderRow = Timestamps & {
@@ -269,12 +291,19 @@ export type Database = {
         ]
       >
       quote_requests: Table<QuoteRequestRow, "name" | "email" | "helmet", keyof QuoteRequestRow>
+      contact_messages: Table<ContactMessageRow, "name" | "email" | "topic" | "message", keyof ContactMessageRow>
+      saved_designs: Table<SavedDesignRow, "product_slug" | "name" | "config", keyof SavedDesignRow>
     }
     Views: {
       customer_summaries: { Row: CustomerSummaryRow; Relationships: [] }
     }
     Functions: {
       is_admin: { Args: Record<string, never>; Returns: boolean }
+      is_full_admin: { Args: Record<string, never>; Returns: boolean }
+      submit_contact_message: {
+        Args: { p_name: string; p_email: string; p_phone: string; p_topic: string; p_design: string; p_message: string }
+        Returns: string
+      }
       mark_conversation_read: { Args: { p_conversation_id: string; p_role: string }; Returns: undefined }
       submit_quote_request: {
         Args: {

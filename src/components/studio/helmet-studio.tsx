@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useRef, useState, useSyncExternalStore } from "react"
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react"
 import Link from "next/link"
 import { ArrowRight, ChevronDown, MessageSquare, RotateCcw, ShoppingBag } from "lucide-react"
 import { toast } from "react-toastify"
@@ -15,14 +15,17 @@ import { getCategory } from "@/lib/catalog/categories"
 import { configurationToText, getInitialConfiguration, getOptionGroups } from "@/lib/configurator/helmet-configuration"
 import { formatMoney, formatPrice } from "@/lib/format"
 import { configFromSearchParams, configToSearchParams } from "@/lib/studio/share-config"
+import { createClient } from "@/lib/supabase/browser"
 import { cn } from "@/lib/utils"
 import type { PriceBook } from "@/types/catalog"
 import type { ConfigKey, HelmetConfiguration } from "@/types/configurator"
 import type { CatalogProduct } from "@/types/product"
 
 import { FilmPicker } from "./film-picker"
+import { PersonaliseFields } from "./personalise-fields"
 import { ModelCards } from "./model-cards"
 import { SegmentedControl } from "./segmented-control"
+import { SaveDesignButton } from "./save-design-button"
 import { StudioActions } from "./studio-actions"
 import { StudioPreview } from "./studio-preview"
 import { StudioSection } from "./studio-section"
@@ -38,7 +41,7 @@ const sections: { id: SectionId; title: string }[] = [
   { id: "helmet", title: "Helmet" },
   { id: "colour", title: "Finish & colour" },
   { id: "film", title: "Hydro-dip film" },
-  { id: "extras", title: "Trim & extras" },
+  { id: "extras", title: "Trim & personalise" },
 ]
 
 const noSubscription = () => () => {}
@@ -55,17 +58,43 @@ export function HelmetStudio(props: HelmetStudioProps) {
     () => window.location.search,
     () => "",
   )
+  const designId = useMemo(() => new URLSearchParams(search).get("design"), [search])
+  const saved = useSavedDesign(designId, props.product.slug)
   const startFrom = useMemo(() => {
+    if (saved) return saved
     if (!search) return undefined
     const defaults = getInitialConfiguration(props.product, props.priceBook)
     return configFromSearchParams(new URLSearchParams(search), defaults, getOptionGroups(props.product, props.priceBook, defaults))
-  }, [search, props.product, props.priceBook])
+  }, [saved, search, props.product, props.priceBook])
 
-  return <StudioBody key={search} {...props} startFrom={startFrom} />
+  return <StudioBody key={`${search}|${saved ? "saved" : ""}`} {...props} startFrom={startFrom} />
+}
+
+/** A design saved in the customer's account (?design=<id>), once loaded. Only the owner can read it. */
+function useSavedDesign(designId: string | null, productSlug: string): HelmetConfiguration | null {
+  const [loaded, setLoaded] = useState<{ id: string; config: HelmetConfiguration } | null>(null)
+  useEffect(() => {
+    if (!designId) return
+    let cancelled = false
+    createClient()
+      .from("saved_designs")
+      .select("config, product_slug")
+      .eq("id", designId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled && data && data.product_slug === productSlug) {
+          setLoaded({ id: designId, config: data.config as unknown as HelmetConfiguration })
+        }
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [designId, productSlug])
+  return loaded && loaded.id === designId ? loaded.config : null
 }
 
 function StudioBody({ product, priceBook, startFrom }: HelmetStudioProps & { startFrom?: HelmetConfiguration }) {
-  const { groups, config, setOption, disabled, look, summary, price, reset, isDirty } = useHelmetConfigurator(
+  const { groups, config, setOption, setPersonal, disabled, look, summary, price, reset, isDirty } = useHelmetConfigurator(
     product,
     priceBook,
     startFrom,
@@ -86,7 +115,15 @@ function StudioBody({ product, priceBook, startFrom }: HelmetStudioProps & { sta
     helmet: [model?.shortName, config.route === "own" ? "Your helmet" : "New helmet", `Size ${config.size}`].filter(Boolean).join(" · "),
     colour: disabled.base ? label("finish") : `${label("finish")} · ${label("base")}`,
     film: film?.textureUrl ? `${film.category} · ${film.code}` : "Solid colour, no film",
-    extras: `${label("trim")} rubbers · ${config.spoiler === "yes" ? "Rear spoiler" : "No spoiler"}`,
+    extras: [
+      `${label("trim")} rubbers`,
+      config.spoiler === "yes" ? "Rear spoiler" : "No spoiler",
+      config.raceNumber && `#${config.raceNumber}`,
+      config.riderName,
+      config.logo && "Logo",
+    ]
+      .filter(Boolean)
+      .join(" · "),
   }
 
   function toggle(id: SectionId) {
@@ -212,13 +249,10 @@ function StudioBody({ product, priceBook, startFrom }: HelmetStudioProps & { sta
             {nextButton("film")}
           </StudioSection>
 
-          <StudioSection number={4} title="Trim & extras" summary={summaries.extras} open={open === "extras"} onToggle={() => toggle("extras")}>
+          <StudioSection number={4} title="Trim & personalise" summary={summaries.extras} open={open === "extras"} onToggle={() => toggle("extras")}>
             {option("trim")}
             {option("spoiler")}
-            <p className="rounded-2xl bg-accent p-4 text-sm text-accent-foreground">
-              Want your name, race number or sponsor logos on it? Add them in the order notes at checkout and we&apos;ll put
-              them on your proof.
-            </p>
+            <PersonaliseFields value={config} onChange={setPersonal} returnTo={`/products/${product.slug}`} />
             {nextButton("extras")}
           </StudioSection>
         </div>
@@ -277,7 +311,8 @@ function StudioBody({ product, priceBook, startFrom }: HelmetStudioProps & { sta
             You approve a proof of the exact design before anything is masked or dipped.
           </p>
 
-          <div className="mt-4 border-t border-carbon/10 pt-4">
+          <div className="mt-4 flex flex-wrap gap-2 border-t border-carbon/10 pt-4">
+            <SaveDesignButton productSlug={product.slug} productName={product.name} config={config} />
             <StudioActions
               shareUrl={`/products/${product.slug}?${configToSearchParams(config)}`}
               enquiryHref={enquiryHref}

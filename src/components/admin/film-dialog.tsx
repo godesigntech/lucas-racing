@@ -3,7 +3,8 @@
 import { useState } from "react"
 import { Controller, useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Loader2 } from "lucide-react"
+import { ImagePlus, Loader2 } from "lucide-react"
+import { toast } from "react-toastify"
 
 import { fieldA11y, FormField } from "@/components/forms/form-field"
 import { runAction } from "@/components/forms/use-action-form"
@@ -22,6 +23,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { saveFilm } from "@/lib/actions/admin/catalog"
+import { uploadFilmImage } from "@/lib/films/film-image"
 import { cn } from "@/lib/utils"
 import { filmSchema, type FilmValues } from "@/lib/validations/admin"
 import type { Film } from "@/types/catalog"
@@ -55,8 +57,19 @@ export function FilmDialog({ film, trigger }: FilmDialogProps) {
   const [open, setOpen] = useState(false)
   const mode = film ? "update" : "create"
   const defaults: FilmValues = film
-    ? { id: film.id, name: film.name, category: film.category, pattern: film.pattern, price: film.price, isActive: film.isActive, sortOrder: film.sortOrder }
-    : { id: "", name: "", category: "", pattern: "carbon", price: 0, isActive: true, sortOrder: 10 }
+    ? {
+        id: film.id,
+        name: film.name,
+        code: film.code,
+        category: film.category,
+        pattern: film.pattern,
+        textureUrl: film.textureUrl,
+        thumbUrl: film.thumbUrl,
+        price: film.price,
+        isActive: film.isActive,
+        sortOrder: film.sortOrder,
+      }
+    : { id: "", name: "", code: "", category: "", pattern: "none", textureUrl: null, thumbUrl: null, price: 45, isActive: true, sortOrder: 900 }
 
   const {
     register,
@@ -67,7 +80,26 @@ export function FilmDialog({ film, trigger }: FilmDialogProps) {
     reset,
     formState: { errors, isSubmitting, dirtyFields },
   } = useForm<FilmValues>({ resolver: zodResolver(filmSchema), defaultValues: defaults })
-  const pattern = useWatch({ control, name: "pattern" })
+  const [pattern, filmId, thumbUrl] = useWatch({ control, name: ["pattern", "id", "thumbUrl"] })
+  const [uploading, setUploading] = useState(false)
+
+  async function pickImage(file: File | undefined) {
+    if (!file) return
+    if (!filmId) {
+      toast.error("Enter the film's name or ID first.")
+      return
+    }
+    setUploading(true)
+    try {
+      const urls = await uploadFilmImage(filmId, file)
+      setValue("textureUrl", urls.textureUrl, { shouldDirty: true })
+      setValue("thumbUrl", urls.thumbUrl, { shouldDirty: true })
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "The image didn't upload.")
+    } finally {
+      setUploading(false)
+    }
+  }
 
   async function onSubmit(values: FilmValues) {
     const result = await runAction(() => saveFilm(values, mode), setError)
@@ -110,6 +142,41 @@ export function FilmDialog({ film, trigger }: FilmDialogProps) {
             </FormField>
           </div>
 
+          <div className="grid gap-5 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-end">
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Film photo</p>
+              <label className="grid size-24 cursor-pointer place-items-center overflow-hidden rounded-xl border border-dashed border-carbon/25 bg-paper/60 transition-colors hover:border-carbon/50 focus-within:ring-3 focus-within:ring-ring/50">
+                {uploading ? (
+                  <Loader2 className="size-5 animate-spin text-muted-foreground" aria-hidden />
+                ) : thumbUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- uploaded swatch
+                  <img src={thumbUrl} alt="Film photo" className="size-full object-cover" />
+                ) : (
+                  <ImagePlus className="size-5 text-muted-foreground" aria-hidden />
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  aria-label="Upload a film photo"
+                  onChange={(event) => {
+                    void pickImage(event.target.files?.[0])
+                    event.target.value = ""
+                  }}
+                />
+              </label>
+            </div>
+            <div className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                A square photo of the film works best. It&apos;s cropped to the centre and used on the 3D helmet and in the
+                film picker.
+              </p>
+              <FormField id="film-code" label="Film code" optional error={errors.code?.message}>
+                <Input {...register("code")} {...fieldA11y("film-code", errors.code?.message)} placeholder="e.g. TSWD2232" />
+              </FormField>
+            </div>
+          </div>
+
           <FormField
             id="film-id"
             label="ID"
@@ -129,7 +196,7 @@ export function FilmDialog({ film, trigger }: FilmDialogProps) {
             name="pattern"
             render={({ field }) => (
               <fieldset className="space-y-2">
-                <legend className="text-sm font-medium">Preview pattern</legend>
+                <legend className="text-sm font-medium">Fallback pattern</legend>
                 <div className="grid grid-cols-5 gap-2">
                   {filmPatterns.map((value) => (
                     <label key={value} className="cursor-pointer text-center">
@@ -158,7 +225,7 @@ export function FilmDialog({ film, trigger }: FilmDialogProps) {
                   ))}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  How the {patternLabels[pattern].toLowerCase()} film is drawn in the preview until real film scans are added.
+                  Drawn instead of the photo if it can&apos;t load ({patternLabels[pattern].toLowerCase()}).
                 </p>
               </fieldset>
             )}

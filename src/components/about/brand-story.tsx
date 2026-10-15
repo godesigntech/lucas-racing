@@ -3,28 +3,39 @@ import Image from "next/image"
 import { Container } from "@/components/layout/container"
 import { SectionHeading } from "@/components/shared/section-heading"
 import { images } from "@/constants/images"
+import { milestones } from "@/data/about"
 
 export function BrandStory() {
   return (
     <section className="py-20 sm:py-24">
       <Container className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
         <div className="space-y-6">
-          <SectionHeading eyebrow="Our story" title="Two teams, one helmet" />
+          <SectionHeading eyebrow="Our story" title="Built on passion. Proven on the circuit." />
           <div className="space-y-4 leading-relaxed text-carbon/80">
             <p>
-              Lucas Racing is a UK kart race team. A driver’s helmet is the one piece of kit everyone sees, on the grid and
-              in every photo, so we wanted custom designs to be easy to get right.
+              For nearly three decades, our family has dedicated itself to competitive karting, combining championship-winning
+              experience, technical expertise and a genuine passion for helping drivers succeed.
             </p>
             <p>
-              Hydro Karts is run by twin brothers who customise race helmets with hydro-dip films, chrome and hand-masked
-              racing lines. They are now part of the Lucas Racing team, and every helmet we sell is finished in their
-              workshop.
+              Founded by Howard Lucas, Lucas Racing has grown from a passion for motorsport into one of British karting&apos;s
+              established names. Based in Oldham, Greater Manchester, we are the exclusive UK distributor of MS Kart, and our
+              racing heritage stretches across national championships, sprint racing and some of the most demanding endurance
+              events in the sport.
             </p>
             <p>
-              This site brings the two together: choose a design, make it yours, approve the proof, and get it back ready to
-              race.
+              Our achievements include multiple victories at the Le Mans 24 Hours, the UK 24 Hours and numerous British
+              championship titles. But success has never been just about trophies. It&apos;s about the experience gained, the
+              knowledge shared and helping the next generation of racers achieve their own ambitions.
             </p>
           </div>
+          <dl className="grid gap-3 sm:grid-cols-3">
+            {milestones.map((item) => (
+              <div key={item.value} className="rounded-2xl border border-carbon/10 bg-card p-4">
+                <dt className="font-display text-3xl font-extrabold leading-none text-carbon">{item.value}</dt>
+                <dd className="mt-1.5 text-xs leading-snug text-muted-foreground">{item.label}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
 
         <div className="grid grid-cols-5 gap-4">
@@ -36,8 +47,8 @@ export function BrandStory() {
               <Image src={images.raceCorner.src} alt={images.raceCorner.alt} fill sizes="(min-width: 1024px) 20vw, 40vw" className="object-cover" />
             </div>
             <div className="rounded-[2rem] bg-lime p-5 text-carbon">
-              <p className="font-display text-4xl font-extrabold leading-none">UK</p>
-              <p className="mt-1 text-sm font-medium">Designed, dipped and lacquered in our own workshop</p>
+              <p className="font-display text-3xl font-extrabold leading-none">Family</p>
+              <p className="mt-1 text-sm font-medium">When you join Lucas Racing, that&apos;s exactly how we want you to feel.</p>
             </div>
           </div>
         </div>

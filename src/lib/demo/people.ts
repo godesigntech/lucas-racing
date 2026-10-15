@@ -10,6 +10,7 @@ export const demoUser: CurrentUser = {
   email: "demo@lucasracing.co.uk",
   fullName: "Demo Admin",
   isAdmin: true,
+  role: "admin",
 }
 
 const profile = (id: string, fullName: string, email: string, city: string, postcode: string, createdAt: string): Profile => ({
@@ -117,8 +118,8 @@ export const demoOrders: Order[] = [
 ]
 
 export const demoAdmins: AdminUser[] = [
-  { email: demoUser.email, createdAt: "2026-09-01T09:00:00Z" },
-  { email: "godesign.pk@gmail.com", createdAt: "2026-10-14T09:00:00Z" },
+  { role: "admin", email: demoUser.email, createdAt: "2026-09-01T09:00:00Z" },
+  { role: "sales", email: "godesign.pk@gmail.com", createdAt: "2026-10-14T09:00:00Z" },
 ]
 
 export function demoCustomerSummaries(): CustomerSummary[] {

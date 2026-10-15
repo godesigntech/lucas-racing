@@ -33,8 +33,7 @@ export default async function ContactPage() {
           <div className="rounded-3xl border border-carbon/10 bg-card p-6 sm:p-8">
             <h2 className="font-display text-3xl font-bold uppercase">Send a message</h2>
             <p className="mt-1 mb-7 text-sm text-muted-foreground">
-              Preview: the form checks your details, but messages aren’t delivered yet. Email us directly for anything
-              urgent.
+              The workshop reads every message and replies by email, usually within one working day.
             </p>
             <Suspense fallback={<ContactForm designs={designs} />}>
               <ContactFormFromUrl designs={designs} />

@@ -6,7 +6,7 @@ import { ArrowRight, LayoutDashboard, LogOut, Menu, Package, UserRound } from "l
 
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
-import { authNav, mainNav } from "@/constants/navigation"
+import { authNav, comingSoonNav, mainNav } from "@/constants/navigation"
 import { signOut } from "@/lib/actions/auth"
 
 import type { MenuUser } from "./account-menu"
@@ -40,7 +40,7 @@ export function MobileNav({ user, eventText }: MobileNavProps) {
         </div>
         <nav aria-label="Mobile" className="flex-1 overflow-y-auto px-3 py-4">
           <NavLinks
-            items={[...mainNav, { label: "Basket", href: "/basket" }]}
+            items={[...mainNav, ...comingSoonNav, { label: "Basket", href: "/basket" }]}
             onNavigate={close}
             className="flex flex-col gap-1"
             linkClassName="flex items-center justify-between rounded-xl px-3 py-3 font-display text-2xl font-bold uppercase tracking-tight text-carbon transition-colors hover:bg-foreground/5"

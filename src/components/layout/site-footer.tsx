@@ -3,7 +3,7 @@ import { Clock, Mail, MapPin, Phone } from "lucide-react"
 
 import { SocialLinks } from "@/components/shared/social-links"
 import { siteConfig } from "@/config/site"
-import { legalNav, mainNav } from "@/constants/navigation"
+import { comingSoonNav, legalNav, mainNav } from "@/constants/navigation"
 import { getProducts } from "@/lib/data/products"
 import { getSiteSettings } from "@/lib/data/settings"
 
@@ -46,6 +46,13 @@ export async function SiteFooter() {
                 My account
               </Link>
             </li>
+            {comingSoonNav.map((item) => (
+              <li key={item.href}>
+                <Link href={item.href} className={linkClass}>
+                  {item.label} <span className="ml-1 rounded-full bg-white/10 px-1.5 py-0.5 text-[0.6rem] uppercase tracking-wide text-paper/60">Soon</span>
+                </Link>
+              </li>
+            ))}
           </ul>
         </nav>
 

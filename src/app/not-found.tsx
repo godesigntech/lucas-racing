@@ -1,15 +1,23 @@
+import { Suspense } from "react"
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 
 import { Container } from "@/components/layout/container"
 import { SiteFooter } from "@/components/layout/site-footer"
 import { SiteHeader } from "@/components/layout/site-header"
+import { Wordmark } from "@/components/layout/wordmark"
 import { Button } from "@/components/ui/button"
 
+/**
+ * Shown for unknown URLs, including inside dynamic routes. The header and footer load
+ * site data, so they stream in behind simple placeholders instead of blocking the page.
+ */
 export default function NotFound() {
   return (
     <>
-      <SiteHeader />
+      <Suspense fallback={<HeaderPlaceholder />}>
+        <SiteHeader />
+      </Suspense>
       <main id="main" className="grid-texture flex flex-1 items-center bg-carbon text-paper">
         <Container className="py-24 text-center">
           <p className="eyebrow text-lime">Error 404</p>
@@ -29,7 +37,19 @@ export default function NotFound() {
           </div>
         </Container>
       </main>
-      <SiteFooter />
+      <Suspense fallback={null}>
+        <SiteFooter />
+      </Suspense>
     </>
+  )
+}
+
+function HeaderPlaceholder() {
+  return (
+    <header className="border-b border-carbon/10 bg-paper">
+      <Container className="flex h-16 items-center lg:h-[4.5rem]">
+        <Wordmark />
+      </Container>
+    </header>
   )
 }

@@ -12,7 +12,7 @@ import { OrderTimeline } from "@/components/orders/order-timeline"
 import { OrderTotals } from "@/components/orders/order-totals"
 import { OrderStatusBadge, PaymentStatusBadge } from "@/components/orders/status-badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { getAdminOrder } from "@/lib/data/admin"
+import { getAdminOrder, getOrderLogos } from "@/lib/data/admin"
 import { formatDateTime } from "@/lib/format"
 
 export const metadata = { title: "Order" }
@@ -29,6 +29,7 @@ export default function AdminOrderPage({ params }: PageProps<"/admin/orders/[id]
 
 async function OrderDetail({ id }: { id: string }) {
   const order = await getAdminOrder(id)
+  const logos = await getOrderLogos(order)
 
   return (
     <>
@@ -52,6 +53,24 @@ async function OrderDetail({ id }: { id: string }) {
               <OrderTotals order={order} />
             </div>
           </AdminCard>
+
+          {logos.length > 0 && (
+            <AdminCard title="Customer logos" description="Uploaded in the builder. Links work for an hour; reload to refresh them.">
+              <ul className="grid gap-3 sm:grid-cols-3">
+                {logos.map((logo, index) => (
+                  <li key={logo.url}>
+                    <a href={logo.url} target="_blank" rel="noreferrer" className="block rounded-xl border border-carbon/10 p-2 transition-colors hover:border-carbon/30">
+                      {/* eslint-disable-next-line @next/next/no-img-element -- private signed URL */}
+                      <img src={logo.url} alt={`Logo for ${logo.itemName}`} className="aspect-square w-full rounded-lg bg-[repeating-conic-gradient(#eee_0_25%,#fff_0_50%)] bg-[length:16px_16px] object-contain" />
+                      <span className="mt-2 block text-xs text-muted-foreground">
+                        {logo.itemName} · helmet {index + 1}
+                      </span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </AdminCard>
+          )}
 
           {order.customerNotes && (
             <AdminCard title="Customer notes">

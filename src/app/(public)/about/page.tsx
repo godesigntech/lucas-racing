@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 
 import { BrandStory } from "@/components/about/brand-story"
+import { MsKartDistributor } from "@/components/about/ms-kart-distributor"
 import { TeamGrid } from "@/components/about/team-grid"
 import { ValuesGrid } from "@/components/about/values-grid"
 import { CtaBand } from "@/components/shared/cta-band"
@@ -10,25 +11,26 @@ import { images } from "@/constants/images"
 export const metadata: Metadata = {
   title: "About us",
   description:
-    "Lucas Racing is a UK kart race team. Hydro Karts, run by the next generation of the sport, finishes every custom helmet in-house.",
+    "Lucas Racing is a family-run karting team from Oldham, Greater Manchester, and the exclusive UK distributor of MS Kart since 1999. Family run. Race proven.",
 }
 
 export default function AboutPage() {
   return (
     <>
       <PageHero
-        eyebrow="About us"
-        title="A race team with a paint shop"
-        description="Lucas Racing brings the team, the track experience and the reach. Hydro Karts brings the hands that mask, dip and finish every helmet."
+        eyebrow="About Lucas Racing"
+        title="A family built around racing"
+        description="A reputation built on results. At Lucas Racing, karting is more than a sport. It's a way of life."
         image={images.orangeKart}
       />
       <BrandStory />
-      <ValuesGrid />
       <TeamGrid />
+      <ValuesGrid />
+      <MsKartDistributor />
       <CtaBand
-        eyebrow="Start your design"
-        title="Your colours, finished by our team"
-        description="Browse the launch designs or tell the workshop what you have in mind."
+        eyebrow="Lucas Racing · Family run. Race proven."
+        title="Racing is in our blood"
+        description="Early mornings at the circuit, late nights preparing karts, and the satisfaction of seeing someone achieve something they once thought impossible. Join the family. Enjoy the racing."
       />
     </>
   )

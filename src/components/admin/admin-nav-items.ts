@@ -1,5 +1,6 @@
 import {
   Droplets,
+  Inbox,
   LayoutDashboard,
   MessagesSquare,
   Package,
@@ -17,6 +18,8 @@ export interface AdminNavItem {
   icon: LucideIcon
   /** Shows the live count of conversations awaiting a reply. */
   unreadBadge?: boolean
+  /** Hidden from Sales staff: catalogue, pricing and settings. */
+  fullAdminOnly?: boolean
 }
 
 export const adminNavSections: { title: string; items: AdminNavItem[] }[] = [
@@ -28,19 +31,20 @@ export const adminNavSections: { title: string; items: AdminNavItem[] }[] = [
       { label: "Customers", href: "/admin/customers", icon: Users },
       { label: "Quotes", href: "/admin/quotes", icon: Sparkles },
       { label: "Messages", href: "/admin/messages", icon: MessagesSquare, unreadBadge: true },
+      { label: "Enquiries", href: "/admin/enquiries", icon: Inbox },
     ],
   },
   {
     title: "Catalogue",
     items: [
-      { label: "Products", href: "/admin/products", icon: Package },
-      { label: "Films", href: "/admin/films", icon: Droplets },
-      { label: "Pricing", href: "/admin/pricing", icon: PoundSterling },
+      { label: "Products", href: "/admin/products", icon: Package, fullAdminOnly: true },
+      { label: "Films", href: "/admin/films", icon: Droplets, fullAdminOnly: true },
+      { label: "Pricing", href: "/admin/pricing", icon: PoundSterling, fullAdminOnly: true },
     ],
   },
   {
     title: "Store",
-    items: [{ label: "Settings", href: "/admin/settings", icon: Settings }],
+    items: [{ label: "Settings", href: "/admin/settings", icon: Settings, fullAdminOnly: true }],
   },
 ]
 

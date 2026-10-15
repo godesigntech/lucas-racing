@@ -3,6 +3,7 @@ import Link from "next/link"
 import { ExternalLink } from "lucide-react"
 
 import { Wordmark } from "@/components/layout/wordmark"
+import { getCurrentUser } from "@/lib/auth/session"
 
 import { AdminNav, AdminNavStatic } from "./admin-nav"
 
@@ -15,7 +16,7 @@ export function AdminSidebar() {
       </div>
       <div className="mt-8 flex-1 overflow-y-auto">
         <Suspense fallback={<AdminNavStatic />}>
-          <AdminNav />
+          <SessionAdminNav />
         </Suspense>
       </div>
       <Link
@@ -26,4 +27,10 @@ export function AdminSidebar() {
       </Link>
     </aside>
   )
+}
+
+/** The nav for the signed-in staff member's role. Reads the session: render in <Suspense>. */
+async function SessionAdminNav() {
+  const user = await getCurrentUser()
+  return <AdminNav isFullAdmin={user?.role === "admin"} />
 }

@@ -10,18 +10,20 @@ import { createClient } from "@/lib/supabase/server"
 import {
   filmCategoryPriceSchema,
   filmSchema,
+  newProductSchema,
   helmetModelSchema,
   optionGroupSchema,
   productSchema,
   type FilmCategoryPriceValues,
   type FilmValues,
   type HelmetModelValues,
+  type NewProductValues,
   type OptionGroupValues,
   type ProductValues,
 } from "@/lib/validations/admin"
 import type { ActionResult } from "@/types/account"
 
-import { getAdmin, NOT_ALLOWED } from "./guard"
+import { getFullAdmin, NOT_ALLOWED } from "./guard"
 
 /** Public pages read the catalogue from a tagged cache; expire it after every change. */
 function refreshCatalog(...paths: string[]) {
@@ -33,7 +35,7 @@ function refreshCatalog(...paths: string[]) {
 
 export async function updateProduct(productId: string, values: ProductValues): Promise<ActionResult> {
   if (isDemoMode()) return DEMO_READ_ONLY
-  if (!(await getAdmin())) return NOT_ALLOWED
+  if (!(await getFullAdmin())) return NOT_ALLOWED
   const parsed = productSchema.safeParse(values)
   if (!parsed.success) return validationError(parsed.error)
   const data = parsed.data
@@ -54,6 +56,7 @@ export async function updateProduct(productId: string, values: ProductValues): P
         .map((line) => line.trim())
         .filter(Boolean),
       specs: data.specs.filter((spec) => spec.label && spec.value),
+      look: { ...data.look, number: data.look.number || undefined },
       is_active: data.isActive,
       sort_order: data.sortOrder,
     })
@@ -66,9 +69,52 @@ export async function updateProduct(productId: string, values: ProductValues): P
   return { ok: true, message: `${data.name} saved.` }
 }
 
+/** Creates a hidden draft design with sensible defaults; the admin fills it in and switches it live. */
+export async function createProduct(values: NewProductValues): Promise<ActionResult<{ slug: string }>> {
+  if (isDemoMode()) return DEMO_READ_ONLY
+  if (!(await getFullAdmin())) return NOT_ALLOWED
+  const parsed = newProductSchema.safeParse(values)
+  if (!parsed.success) return validationError(parsed.error)
+
+  const supabase = await createClient()
+  const base =
+    parsed.data.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 50) || "design"
+  // Find a free slug: "night-run", then "night-run-2", and so on.
+  const { data: taken } = await supabase.from("products").select("slug").like("slug", `${base}%`)
+  const used = new Set((taken ?? []).map((row) => row.slug))
+  let slug = base
+  for (let n = 2; used.has(slug); n += 1) slug = `${base}-${n}`
+
+  const [{ data: models }, { data: last }] = await Promise.all([
+    supabase.from("helmet_models").select("id").eq("is_active", true),
+    supabase.from("products").select("sort_order").order("sort_order", { ascending: false }).limit(1).maybeSingle(),
+  ])
+
+  const { error } = await supabase.from("products").insert({
+    slug,
+    name: parsed.data.name,
+    category: parsed.data.category,
+    tagline: "",
+    description: "",
+    model_ids: (models ?? []).map((model) => model.id),
+    base_price: null,
+    look: { layout: "twin", finish: "gloss", base: "#f4f3ee", graphic: "#111412", accent: "#c6f432", film: "none", trim: "#111412", spoiler: false },
+    is_active: false,
+    sort_order: (last?.sort_order ?? 0) + 1,
+  })
+  if (error) return databaseError(error, "We couldn't create the design.")
+
+  refreshCatalog("/admin/products")
+  return { ok: true, message: `${parsed.data.name} created. Fill in the details, then switch it live.`, data: { slug } }
+}
+
 export async function setProductActive(productId: string, isActive: boolean): Promise<ActionResult> {
   if (isDemoMode()) return DEMO_READ_ONLY
-  if (!(await getAdmin())) return NOT_ALLOWED
+  if (!(await getFullAdmin())) return NOT_ALLOWED
   const supabase = await createClient()
   const { error } = await supabase.from("products").update({ is_active: isActive }).eq("id", productId)
   if (error) return databaseError(error, "We couldn't update the product.")
@@ -80,7 +126,7 @@ export async function setProductActive(productId: string, isActive: boolean): Pr
 
 export async function saveFilm(values: FilmValues, mode: "create" | "update"): Promise<ActionResult> {
   if (isDemoMode()) return DEMO_READ_ONLY
-  if (!(await getAdmin())) return NOT_ALLOWED
+  if (!(await getFullAdmin())) return NOT_ALLOWED
   const parsed = filmSchema.safeParse(values)
   if (!parsed.success) return validationError(parsed.error)
   const film = parsed.data
@@ -88,8 +134,11 @@ export async function saveFilm(values: FilmValues, mode: "create" | "update"): P
   const supabase = await createClient()
   const row = {
     name: film.name,
+    code: film.code,
     category: film.category,
     pattern: film.pattern,
+    texture_url: film.textureUrl,
+    thumb_url: film.thumbUrl,
     price: film.price,
     is_active: film.isActive,
     sort_order: film.sortOrder,
@@ -109,7 +158,7 @@ export async function saveFilm(values: FilmValues, mode: "create" | "update"): P
 
 export async function deleteFilm(id: string): Promise<ActionResult> {
   if (isDemoMode()) return DEMO_READ_ONLY
-  if (!(await getAdmin())) return NOT_ALLOWED
+  if (!(await getFullAdmin())) return NOT_ALLOWED
   if (id === "none") return failure("Solid colour is required by the configurator and can't be deleted.")
 
   const supabase = await createClient()
@@ -122,7 +171,7 @@ export async function deleteFilm(id: string): Promise<ActionResult> {
 /** Sets one price for every film in a category, e.g. all Carbon fibre films to £55. */
 export async function setFilmCategoryPrice(values: FilmCategoryPriceValues): Promise<ActionResult> {
   if (isDemoMode()) return DEMO_READ_ONLY
-  if (!(await getAdmin())) return NOT_ALLOWED
+  if (!(await getFullAdmin())) return NOT_ALLOWED
   const parsed = filmCategoryPriceSchema.safeParse(values)
   if (!parsed.success) return validationError(parsed.error)
   const { category, price } = parsed.data
@@ -144,7 +193,7 @@ export async function setFilmCategoryPrice(values: FilmCategoryPriceValues): Pro
 
 export async function updateHelmetModel(id: string, values: HelmetModelValues): Promise<ActionResult> {
   if (isDemoMode()) return DEMO_READ_ONLY
-  if (!(await getAdmin())) return NOT_ALLOWED
+  if (!(await getFullAdmin())) return NOT_ALLOWED
   const parsed = helmetModelSchema.safeParse(values)
   if (!parsed.success) return validationError(parsed.error)
 
@@ -166,7 +215,7 @@ export async function updateHelmetModel(id: string, values: HelmetModelValues): 
 
 export async function updateOptionGroup(values: OptionGroupValues): Promise<ActionResult> {
   if (isDemoMode()) return DEMO_READ_ONLY
-  if (!(await getAdmin())) return NOT_ALLOWED
+  if (!(await getFullAdmin())) return NOT_ALLOWED
   const parsed = optionGroupSchema.safeParse(values)
   if (!parsed.success) return validationError(parsed.error)
 

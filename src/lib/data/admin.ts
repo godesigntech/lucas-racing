@@ -2,7 +2,7 @@ import "server-only"
 
 import { notFound } from "next/navigation"
 
-import { requireAdmin } from "@/lib/auth/session"
+import { requireAdmin, requireFullAdmin } from "@/lib/auth/session"
 import { demoAdmin } from "@/lib/demo/admin"
 import { isDemoMode } from "@/lib/demo/mode"
 import { createClient } from "@/lib/supabase/server"
@@ -17,7 +17,7 @@ import {
   toProfile,
   toSiteSettings,
 } from "@/lib/supabase/mappers"
-import type { AdminUser, CustomerSummary, Profile } from "@/types/account"
+import type { AdminUser, CustomerSummary, Profile, StaffRole } from "@/types/account"
 import type { ConfiguratorOption, Film } from "@/types/catalog"
 import type { HelmetModel } from "@/types/helmet"
 import { orderStatuses, type Order, type OrderListItem, type OrderStatus } from "@/types/order"
@@ -194,7 +194,7 @@ export async function getCustomer(id: string): Promise<{ profile: Profile; summa
 // ---------------------------------------------------------------------------
 
 export async function listAdminProducts(): Promise<Product[]> {
-  await requireAdmin()
+  await requireFullAdmin()
   if (isDemoMode()) return demoAdmin.products()
   const supabase = await createClient()
   const { data, error } = await supabase.from("products").select("*").order("sort_order")
@@ -203,7 +203,7 @@ export async function listAdminProducts(): Promise<Product[]> {
 }
 
 export async function getAdminProduct(slug: string): Promise<Product> {
-  await requireAdmin()
+  await requireFullAdmin()
   if (isDemoMode()) return demoAdmin.product(slug)
   const supabase = await createClient()
   const { data, error } = await supabase.from("products").select("*").eq("slug", slug).maybeSingle()
@@ -240,7 +240,7 @@ export async function listAdminFilms(options: {
   query?: string
   page?: number
 }): Promise<Paged<Film> & { categories: FilmCategorySummary[] }> {
-  await requireAdmin()
+  await requireFullAdmin()
   const { current, from, to } = pageRange(options.page ?? 1)
 
   if (isDemoMode()) {
@@ -279,7 +279,7 @@ export async function listAdminFilms(options: {
 }
 
 export async function listAdminHelmetModels(): Promise<HelmetModel[]> {
-  await requireAdmin()
+  await requireFullAdmin()
   if (isDemoMode()) return demoAdmin.models()
   const supabase = await createClient()
   const { data, error } = await supabase.from("helmet_models").select("*").order("sort_order")
@@ -288,7 +288,7 @@ export async function listAdminHelmetModels(): Promise<HelmetModel[]> {
 }
 
 export async function listAdminOptions(): Promise<ConfiguratorOption[]> {
-  await requireAdmin()
+  await requireFullAdmin()
   if (isDemoMode()) return demoAdmin.options()
   const supabase = await createClient()
   const { data, error } = await supabase.from("configurator_options").select("*").order("sort_order")
@@ -301,7 +301,7 @@ export async function listAdminOptions(): Promise<ConfiguratorOption[]> {
 // ---------------------------------------------------------------------------
 
 export async function getAdminSettings(): Promise<{ settings: SiteSettings; admins: AdminUser[]; currentEmail: string }> {
-  const user = await requireAdmin()
+  const user = await requireFullAdmin()
   if (isDemoMode()) return demoAdmin.settings()
   const supabase = await createClient()
   const [settings, admins] = await Promise.all([
@@ -311,7 +311,22 @@ export async function getAdminSettings(): Promise<{ settings: SiteSettings; admi
   if (settings.error) throw new Error(settings.error.message)
   return {
     settings: toSiteSettings(settings.data),
-    admins: (admins.data ?? []).map((row) => ({ email: row.email, createdAt: row.created_at })),
+    admins: (admins.data ?? []).map((row) => ({ email: row.email, role: row.role as StaffRole, createdAt: row.created_at })),
     currentEmail: user.email.toLowerCase(),
   }
+}
+
+/** Short-lived links to the logos customers uploaded for an order's helmets. */
+export async function getOrderLogos(order: Order): Promise<{ itemName: string; url: string }[]> {
+  await requireAdmin()
+  const items = order.items.filter((item) => item.values.logo)
+  if (isDemoMode() || items.length === 0) return []
+  const supabase = await createClient()
+  const links = await Promise.all(
+    items.map(async (item) => {
+      const { data } = await supabase.storage.from("design-logos").createSignedUrl(item.values.logo!, 60 * 60)
+      return data ? { itemName: item.productName, url: data.signedUrl } : null
+    }),
+  )
+  return links.filter((link): link is { itemName: string; url: string } => link !== null)
 }

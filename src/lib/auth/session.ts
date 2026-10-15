@@ -7,7 +7,7 @@ import { connection } from "next/server"
 import { isDemoMode } from "@/lib/demo/mode"
 import { demoUser } from "@/lib/demo/people"
 import { createClient } from "@/lib/supabase/server"
-import type { CurrentUser } from "@/types/account"
+import type { CurrentUser, StaffRole } from "@/types/account"
 
 /**
  * The signed-in user, or null. Reads the session cookie, so call it inside a
@@ -23,17 +23,21 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const claims = data?.claims
   if (!claims?.sub) return null
 
-  const [{ data: profile }, { data: isAdmin }] = await Promise.all([
+  const email = (claims.email ?? "").toLowerCase()
+  // The staff list is only readable by staff, so customers simply get no row back.
+  const [{ data: profile }, { data: staff }] = await Promise.all([
     supabase.from("profiles").select("full_name, email").eq("id", claims.sub).maybeSingle(),
-    supabase.rpc("is_admin"),
+    supabase.from("admin_users").select("role").eq("email", email).maybeSingle(),
   ])
 
   const metadata = (claims.user_metadata ?? {}) as { full_name?: string }
+  const role = staff ? (staff.role as StaffRole) : null
   return {
     id: claims.sub,
     email: profile?.email ?? claims.email ?? "",
     fullName: profile?.full_name || metadata.full_name || "",
-    isAdmin: isAdmin === true,
+    isAdmin: role !== null,
+    role,
   }
 })
 
@@ -44,9 +48,16 @@ export async function requireUser(returnTo = "/account"): Promise<CurrentUser> {
   return user
 }
 
-/** Only admins get past this; everyone else sees a 404. For pages. */
+/** Only staff (admin or sales) get past this; everyone else sees a 404. For pages. */
 export async function requireAdmin(): Promise<CurrentUser> {
   const user = await requireUser("/admin")
   if (!user.isAdmin) notFound()
+  return user
+}
+
+/** Catalogue, pricing, settings and team pages: full admins only. Sales go back to the dashboard. */
+export async function requireFullAdmin(): Promise<CurrentUser> {
+  const user = await requireAdmin()
+  if (user.role !== "admin") redirect("/admin")
   return user
 }

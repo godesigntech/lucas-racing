@@ -51,6 +51,16 @@ export const basketItemSchema = z.object({
     film: z.string(),
     trim: z.string(),
     spoiler: z.string(),
+    riderName: z.string().trim().max(24, "Names on helmets can be up to 24 characters").optional(),
+    raceNumber: z
+      .string()
+      .trim()
+      .regex(/^[0-9A-Za-z]{0,3}$/, "Race numbers can be up to 3 letters or digits")
+      .optional(),
+    logo: z
+      .string()
+      .regex(/^[0-9a-f-]{36}\/[0-9a-f-]{36}\.(png|jpg|webp)$/, "That logo isn't valid")
+      .optional(),
   }),
 })
 

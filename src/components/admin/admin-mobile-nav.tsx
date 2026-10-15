@@ -11,7 +11,7 @@ import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from 
 import { AdminNav } from "./admin-nav"
 import { useAdminUnreadCount } from "./chat/admin-unread-provider"
 
-export function AdminMobileNav() {
+export function AdminMobileNav({ isFullAdmin }: { isFullAdmin: boolean }) {
   const [open, setOpen] = useState(false)
   const close = () => setOpen(false)
   const unread = useAdminUnreadCount()
@@ -38,7 +38,7 @@ export function AdminMobileNav() {
           <Wordmark tone="light" />
         </div>
         <div className="mt-6 flex-1 overflow-y-auto">
-          <AdminNav onNavigate={close} />
+          <AdminNav onNavigate={close} isFullAdmin={isFullAdmin} />
         </div>
         <Link
           href="/"
