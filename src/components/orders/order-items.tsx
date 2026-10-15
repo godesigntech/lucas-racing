@@ -23,7 +23,7 @@ export function OrderItems({ items, linkProducts = true }: OrderItemsProps) {
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h3 className="font-display text-xl font-bold uppercase">
                 {linkProducts ? (
-                  <Link href={`/products/${item.productSlug}`} className="underline-offset-4 hover:underline">
+                  <Link href={`/helmet-builder?template=${item.productSlug}`} className="underline-offset-4 hover:underline">
                     {item.productName}
                   </Link>
                 ) : (

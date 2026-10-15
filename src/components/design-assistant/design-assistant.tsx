@@ -66,6 +66,7 @@ export function DesignAssistant() {
       <button
         ref={launcher}
         type="button"
+        data-floating-launcher
         onClick={() => {
           setHasOpened(true)
           setOpen((value) => !value)

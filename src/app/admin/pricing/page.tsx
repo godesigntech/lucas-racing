@@ -11,9 +11,9 @@ import type { OptionGroupKey } from "@/types/catalog"
 export const metadata = { title: "Pricing" }
 
 const groups: { key: OptionGroupKey; title: string; description: string }[] = [
-  { key: "route", title: "Helmet supply", description: "Fee for each route. The new helmet price is set per helmet above." },
-  { key: "finish", title: "Base finish", description: "Gloss, matte and chrome surcharges." },
-  { key: "base", title: "Base colours", description: "Colours offered for the shell." },
+  { key: "finish", title: "Finish", description: "Gloss, satin and matte lacquer surcharges." },
+  { key: "material", title: "Chrome", description: "Surcharge for a polished chrome shell." },
+  { key: "base", title: "Paint colours", description: "Colours customers can use on every part (shell, graphic, pinstripe)." },
   { key: "trim", title: "Rubber trim", description: "Eye-port and base rubber colours." },
   { key: "spoiler", title: "Rear spoiler", description: "Spoiler surcharge." },
 ]

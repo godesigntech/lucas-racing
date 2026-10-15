@@ -7,9 +7,13 @@ const nextConfig: NextConfig = {
   devIndicators: { position: "top-left" },
   // Dev logs would otherwise print Server Action arguments, including passwords from the login form.
   logging: { serverFunctions: false },
-  // The builder now lives on each product page; old studio links (and their shared builds) land there.
+  // Designs open in the helmet builder with that template selected. Old product and
+  // studio links land there too (Next.js keeps their query string, so shared builds survive).
   async redirects() {
-    return [{ source: "/products/:slug/customize", destination: "/products/:slug", permanent: true }]
+    return [
+      { source: "/products/:slug/customize", destination: "/helmet-builder?template=:slug", permanent: false },
+      { source: "/products/:slug", destination: "/helmet-builder?template=:slug", permanent: false },
+    ]
   },
   images: {
     qualities: [75, 85],

@@ -43,7 +43,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
         </div>
         <h3 className="font-display text-3xl font-bold uppercase leading-none">
           <Link
-            href={`/products/${product.slug}`}
+            href={`/helmet-builder?template=${product.slug}`}
             className="outline-none after:absolute after:inset-0 after:content-['']"
           >
             {product.name}

@@ -6,63 +6,14 @@ import { ImagePlus, Loader2, X } from "lucide-react"
 import { toast } from "react-toastify"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { createClient } from "@/lib/supabase/browser"
-import type { Personalisation, PersonalisationKey } from "@/types/configurator"
 
 const LOGO_BUCKET = "design-logos"
 const LOGO_TYPES: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" }
 const LOGO_MAX_BYTES = 5 * 1024 * 1024
 
-interface PersonaliseFieldsProps {
-  value: Personalisation
-  onChange: (key: PersonalisationKey, value: string) => void
-  /** Where "Log in to add a logo" returns to. */
-  returnTo: string
-}
-
-/** Rider name, race number and an optional logo. All free; the workshop places them on the proof. */
-export function PersonaliseFields({ value, onChange, returnTo }: PersonaliseFieldsProps) {
-  const nameId = useId()
-  const numberId = useId()
-  return (
-    <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_7rem]">
-        <div className="space-y-1.5">
-          <label htmlFor={nameId} className="text-sm font-semibold">
-            Name on helmet <span className="font-normal text-muted-foreground">(optional)</span>
-          </label>
-          <Input
-            id={nameId}
-            value={value.riderName ?? ""}
-            maxLength={24}
-            onChange={(event) => onChange("riderName", event.target.value.replace(/^\s+/, ""))}
-            placeholder="e.g. J. SMITH"
-            autoComplete="off"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <label htmlFor={numberId} className="text-sm font-semibold">
-            Race number
-          </label>
-          <Input
-            id={numberId}
-            value={value.raceNumber ?? ""}
-            maxLength={3}
-            inputMode="text"
-            onChange={(event) => onChange("raceNumber", event.target.value.replace(/[^0-9a-z]/gi, "").toUpperCase())}
-            placeholder="29"
-            autoComplete="off"
-            className="text-center font-display text-lg font-bold"
-          />
-        </div>
-      </div>
-      <LogoUpload path={value.logo} onChange={(path) => onChange("logo", path)} returnTo={returnTo} />
-    </div>
-  )
-}
-
-function LogoUpload({ path, onChange, returnTo }: { path?: string; onChange: (path: string) => void; returnTo: string }) {
+/** Uploads a customer's logo to their private folder. Signed-in customers only. */
+export function LogoUpload({ path, onChange, returnTo }: { path?: string; onChange: (path: string) => void; returnTo: string }) {
   const inputId = useId()
   const [userId, setUserId] = useState<string | null | undefined>(undefined)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)

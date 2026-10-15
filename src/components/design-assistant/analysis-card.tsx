@@ -41,7 +41,7 @@ export function AnalysisCard({ analysis, showActions, onQuote, onRestart, onNavi
             {analysis.suggestions.map((suggestion) => (
               <li key={suggestion.slug}>
                 <Link
-                  href={suggestion.builderHref ?? `/products/${suggestion.slug}`}
+                  href={suggestion.builderHref ?? `/helmet-builder?template=${suggestion.slug}`}
                   onClick={onNavigate}
                   className="group flex items-center gap-3 rounded-2xl border border-carbon/10 p-2 transition-colors hover:border-carbon/30 hover:bg-carbon/[0.02]"
                 >

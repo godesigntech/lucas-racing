@@ -363,7 +363,7 @@ export function ProductForm({ product, models }: ProductFormProps) {
             {formatPrice(priceOnRequest ? null : Number.isFinite(basePrice) ? basePrice : 0)}
           </p>
           <Link
-            href={`/products/${product.slug}`}
+            href={`/helmet-builder?template=${product.slug}`}
             target="_blank"
             className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium underline-offset-4 hover:underline"
           >

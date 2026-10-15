@@ -37,7 +37,7 @@ export function BasketLine({ line }: { line: ResolvedBasketLine }) {
   return (
     <li className="grid gap-5 rounded-3xl border border-carbon/10 bg-card p-5 sm:grid-cols-[10rem_minmax(0,1fr)] sm:p-6">
       <Link
-        href={`/products/${line.product.slug}`}
+        href={`/helmet-builder?template=${line.product.slug}`}
         className="grid aspect-[4/3] place-items-center rounded-2xl bg-[radial-gradient(circle_at_50%_35%,#ffffff,#e8e7e0_75%)] p-3"
         aria-label={`View ${line.product.name}`}
       >

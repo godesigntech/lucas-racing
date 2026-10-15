@@ -64,7 +64,7 @@ async function Designs() {
               <div className="mt-auto flex items-center gap-2">
                 {product && (
                   <Button asChild size="sm">
-                    <Link href={`/products/${product.slug}?design=${design.id}`}>
+                    <Link href={`/helmet-builder?design=${design.id}`}>
                       <PenLine /> Open in builder
                     </Link>
                   </Button>

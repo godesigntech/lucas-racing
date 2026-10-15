@@ -33,7 +33,7 @@ export type QuoteFormValues = z.infer<typeof quoteFormSchema>
 
 const look = z.object({
   layout: z.enum(["apex", "twin", "split", "shard", "halo", "flow", "blank"]),
-  finish: z.enum(["gloss", "matte", "chrome"]),
+  finish: z.enum(["gloss", "satin", "matte", "chrome"]),
   base: hex,
   graphic: hex,
   accent: hex,

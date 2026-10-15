@@ -19,6 +19,8 @@ interface HelmetArtProps {
   /** Accessible description. Omit for decorative use. */
   title?: string
   className?: string
+  /** Outlines one part, e.g. while the customer is painting it in the builder. */
+  highlight?: "base" | "graphic" | "accent"
 }
 
 const PLASTIC = "#1b1e1c"
@@ -35,7 +37,7 @@ function hashLook(value: string): string {
 }
 
 /** Illustrated side profile of a custom helmet, driven entirely by `look`. */
-export function HelmetArt({ look, view = "full", title, className }: HelmetArtProps) {
+export function HelmetArt({ look, view = "full", title, className, highlight }: HelmetArtProps) {
   const uid = `h${hashLook(JSON.stringify(look))}-${view}`
   const ids = {
     clip: `${uid}-clip`,
@@ -45,12 +47,16 @@ export function HelmetArt({ look, view = "full", title, className }: HelmetArtPr
     shade: `${uid}-shade`,
     visor: `${uid}-visor`,
     shadow: `${uid}-shadow`,
+    baseFilm: `${uid}-base-film`,
+    accentFilm: `${uid}-accent-film`,
   }
   const layout = LAYOUTS[look.layout]
   const hasFilm = Boolean(look.filmTexture) || look.film !== "none"
   const graphicFill = hasFilm ? `url(#${ids.film})` : look.graphic
-  const baseFill = look.finish === "chrome" ? `url(#${ids.chrome})` : look.base
-  const glossOpacity = look.finish === "matte" ? 0.12 : look.finish === "chrome" ? 0.7 : 0.5
+  const baseFill = look.finish === "chrome" ? `url(#${ids.chrome})` : look.baseTexture ? `url(#${ids.baseFilm})` : look.base
+  const accentStroke = look.accentTexture ? `url(#${ids.accentFilm})` : look.accent
+  const glossOpacity = { matte: 0.12, satin: 0.28, gloss: 0.5, chrome: 0.7 }[look.finish]
+  const outline = { stroke: "#c6f432", strokeWidth: 4, strokeDasharray: "10 7", fill: "none" } as const
 
   return (
     <svg
@@ -71,6 +77,16 @@ export function HelmetArt({ look, view = "full", title, className }: HelmetArtPr
           </pattern>
         ) : (
           look.film !== "none" && <FilmPattern id={ids.film} film={look.film} tint={look.graphic} />
+        )}
+        {look.baseTexture && (
+          <pattern id={ids.baseFilm} width={FILM_TILE} height={FILM_TILE} patternUnits="userSpaceOnUse">
+            <image href={look.baseTexture} width={FILM_TILE} height={FILM_TILE} preserveAspectRatio="xMidYMid slice" />
+          </pattern>
+        )}
+        {look.accentTexture && (
+          <pattern id={ids.accentFilm} width={FILM_TILE / 2} height={FILM_TILE / 2} patternUnits="userSpaceOnUse">
+            <image href={look.accentTexture} width={FILM_TILE / 2} height={FILM_TILE / 2} preserveAspectRatio="xMidYMid slice" />
+          </pattern>
         )}
         <linearGradient id={ids.chrome} x1="0" y1="0" x2="0.35" y2="1">
           <stop offset="0" stopColor="#fbfcfd" />
@@ -113,7 +129,7 @@ export function HelmetArt({ look, view = "full", title, className }: HelmetArtPr
           <path key={band.d} d={band.d} fill="none" stroke={graphicFill} strokeWidth={band.width} strokeLinecap="round" />
         ))}
         {layout.strokes.map((stroke) => (
-          <path key={stroke.d} d={stroke.d} fill="none" stroke={look.accent} strokeWidth={stroke.width} strokeLinecap="round" />
+          <path key={stroke.d} d={stroke.d} fill="none" stroke={accentStroke} strokeWidth={stroke.width} strokeLinecap="round" />
         ))}
         {layout.guides?.map((d) => (
           <path key={d} d={d} fill="none" stroke={look.graphic} strokeOpacity="0.35" strokeWidth="2" strokeDasharray="6 7" />
@@ -170,6 +186,18 @@ export function HelmetArt({ look, view = "full", title, className }: HelmetArtPr
 
       <ellipse cx="296" cy="174" rx="15" ry="17" fill={PLASTIC} />
       <circle cx="296" cy="174" r="4.5" fill="#3a3f3c" />
+
+      {highlight === "base" && <path d={SHELL_PATH} {...outline} />}
+      {highlight && highlight !== "base" && (
+        <g clipPath={`url(#${ids.clip})`}>
+          {highlight === "graphic" &&
+            layout.fills.map((d) => <path key={d} d={d} {...outline} />)}
+          {highlight === "graphic" &&
+            layout.bands?.map((band) => <path key={band.d} d={band.d} {...outline} strokeWidth={band.width + 6} strokeOpacity={0.55} />)}
+          {highlight === "accent" &&
+            layout.strokes.map((stroke) => <path key={stroke.d} d={stroke.d} {...outline} strokeWidth={stroke.width + 7} strokeDasharray="none" strokeOpacity={0.6} />)}
+        </g>
+      )}
     </svg>
   )
 }

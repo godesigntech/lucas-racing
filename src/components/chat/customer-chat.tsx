@@ -80,6 +80,7 @@ export function CustomerChat({ customerId, firstName }: CustomerChatProps) {
       <button
         ref={launcher}
         type="button"
+        data-floating-launcher
         onClick={toggle}
         aria-expanded={open}
         aria-controls={hasOpened ? PANEL_ID : undefined}

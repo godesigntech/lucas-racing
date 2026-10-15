@@ -61,7 +61,7 @@ export async function SiteFooter() {
           <ul className="space-y-3">
             {products.slice(0, 5).map((product) => (
               <li key={product.slug}>
-                <Link href={`/products/${product.slug}`} className={linkClass}>
+                <Link href={`/helmet-builder?template=${product.slug}`} className={linkClass}>
                   {product.name}
                 </Link>
               </li>

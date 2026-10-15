@@ -90,7 +90,7 @@ async function QuoteDetail({ id }: { id: string }) {
                 {suggestions.map((product) => (
                   <li key={product.slug}>
                     <Link
-                      href={`/products/${product.slug}`}
+                      href={`/helmet-builder?template=${product.slug}`}
                       target="_blank"
                       className="group block rounded-2xl border border-carbon/10 p-3 transition-colors hover:border-carbon/30"
                     >

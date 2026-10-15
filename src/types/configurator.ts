@@ -1,51 +1,50 @@
-export type ConfigKey =
-  | "model"
-  | "route"
-  | "size"
-  | "finish"
-  | "base"
-  | "film"
-  | "trim"
-  | "spoiler"
+// The helmet builder's data model. A build is stored flat (plain string fields)
+// so it travels unchanged through share links, the basket, saved designs and
+// public.place_order(), which re-prices it in the database.
 
-export const configKeys: ConfigKey[] = ["model", "route", "size", "finish", "base", "film", "trim", "spoiler"]
+/** Paintable parts of a template. Plain templates only have a shell (and pinstripe). */
+export type PartId = "base" | "graphic" | "accent"
+export const partIds: PartId[] = ["base", "graphic", "accent"]
 
-export type ConfigOptionKind = "swatch" | "choice"
+/** What a part is painted with. Chrome is for the shell only. */
+export type PartKind = "colour" | "film" | "chrome"
 
-export interface ConfigChoice {
-  value: string
-  label: string
-  /** CSS colour shown for swatch options. */
-  swatch?: string
-  hint?: string
-  /** Extra cost of this choice, if any. */
-  price?: number
-}
+export type FinishId = "gloss" | "satin" | "matte"
 
-export interface ConfigOptionGroup {
-  key: ConfigKey
-  label: string
-  kind: ConfigOptionKind
-  description?: string
-  choices: ConfigChoice[]
-}
+/** Where text and logos go on the helmet. */
+export type Placement = "sides" | "left" | "right" | "front" | "back" | "top"
 
-/** Optional personal touches. Free: the workshop places them on the proof. */
-export interface Personalisation {
-  /** Rider name, up to 24 characters. */
+export interface HelmetConfiguration {
+  /** Helmet model id, e.g. "bell-kc7". Always supplied new. */
+  model: string
+  size: string
+  /** Template (design) slug. */
+  template: string
+  finish: FinishId
+
+  baseKind: PartKind
+  /** Hex colour, or film id when the kind is "film" (ignored for chrome). */
+  base: string
+  graphicKind?: PartKind
+  graphic?: string
+  accentKind?: PartKind
+  accent?: string
+
+  /** Rubber trim colour (hex). */
+  trim: string
+  spoiler: "yes" | "no"
+
   riderName?: string
-  /** Race number, up to 3 letters or digits. */
+  namePosition?: Placement
   raceNumber?: string
+  numberPosition?: Placement
   /** Storage path of an uploaded logo in the design-logos bucket. */
   logo?: string
+  logoPosition?: Placement
 }
 
-export type PersonalisationKey = keyof Personalisation
-
-export type HelmetConfiguration = Record<ConfigKey, string> & Personalisation
-
 export interface ConfigSummaryLine {
-  key: ConfigKey | PersonalisationKey
+  key: string
   label: string
   value: string
 }

@@ -39,7 +39,7 @@ export function SaveDesignButton({ productSlug, productName, config }: SaveDesig
   if (signedIn === false) {
     return (
       <Button asChild variant="ghost" size="sm">
-        <Link href={`/login?next=${encodeURIComponent(`/products/${productSlug}`)}`}>
+        <Link href={`/login?next=${encodeURIComponent(`/helmet-builder?template=${productSlug}`)}`}>
           <Bookmark /> Log in to save
         </Link>
       </Button>

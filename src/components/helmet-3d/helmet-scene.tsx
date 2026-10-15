@@ -41,6 +41,7 @@ const angles: Record<HelmetAngle, { azimuth: number; polar: number }> = {
 // Surface settings per finish. The model's own roughness/metal map still adds detail on top.
 const finishes: Record<HelmetFinish, { roughness: number; metalness: number; envMapIntensity: number }> = {
   gloss: { roughness: 0.35, metalness: 0, envMapIntensity: 1.1 },
+  satin: { roughness: 0.6, metalness: 0, envMapIntensity: 0.85 },
   matte: { roughness: 1, metalness: 0, envMapIntensity: 0.6 },
   chrome: { roughness: 0.12, metalness: 1, envMapIntensity: 1.6 },
 }

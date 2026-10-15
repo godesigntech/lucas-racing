@@ -39,18 +39,27 @@ export const checkoutSchema = z
 
 export type CheckoutValues = z.infer<typeof checkoutSchema>
 
+const placement = z.enum(["sides", "left", "right", "front", "back", "top"])
+
 export const basketItemSchema = z.object({
   slug: z.string().min(1),
   quantity: z.number().int().min(1).max(10),
   config: z.object({
     model: z.string(),
-    route: z.string(),
     size: z.string(),
-    finish: z.string(),
+    template: z.string(),
+    finish: z.enum(["gloss", "satin", "matte"]),
+    baseKind: z.enum(["colour", "film", "chrome"]),
     base: z.string(),
-    film: z.string(),
+    graphicKind: z.enum(["colour", "film", "chrome"]).optional(),
+    graphic: z.string().optional(),
+    accentKind: z.enum(["colour", "film", "chrome"]).optional(),
+    accent: z.string().optional(),
     trim: z.string(),
-    spoiler: z.string(),
+    spoiler: z.enum(["yes", "no"]),
+    namePosition: placement.optional(),
+    numberPosition: placement.optional(),
+    logoPosition: placement.optional(),
     riderName: z.string().trim().max(24, "Names on helmets can be up to 24 characters").optional(),
     raceNumber: z
       .string()

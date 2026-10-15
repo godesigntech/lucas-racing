@@ -45,17 +45,17 @@ export const StudioPreview = forwardRef<HTMLDivElement, StudioPreviewProps>(func
       aria-label="Helmet preview"
       className="flex flex-col overflow-hidden rounded-[1.75rem] border border-carbon/10 bg-[radial-gradient(circle_at_50%_40%,#ffffff,#e3e2da_78%)]"
     >
-      <div className="flex items-start justify-between gap-4 p-5 sm:p-7">
+      <div className="flex items-start justify-between gap-4 px-5 pt-4 sm:p-7">
         <div>
           <p className="eyebrow text-muted-foreground">Live preview</p>
-          <p className="mt-1 font-display text-2xl font-bold uppercase">{modelName}</p>
+          <p className="mt-1 font-display text-xl font-bold uppercase sm:text-2xl">{modelName}</p>
         </div>
         <span className="hidden rounded-full border border-carbon/20 bg-card/70 px-3 py-1.5 font-mono text-[0.68rem] font-medium uppercase tracking-wider sm:inline">
           {designLabel}
         </span>
       </div>
 
-      <div ref={ref} className="relative grid flex-1 place-items-center px-6 py-4 sm:px-12 lg:min-h-[22rem]">
+      <div ref={ref} className="relative grid flex-1 place-items-center px-6 py-1 sm:px-12 sm:py-4 lg:min-h-[22rem]">
         {model3d ? (
           <>
             {/* Kept for "Social image", which saves the illustrated design. */}
@@ -64,11 +64,11 @@ export const StudioPreview = forwardRef<HTMLDivElement, StudioPreviewProps>(func
               url={model3d.url}
               tint={shellTint(look)}
               finish={look.finish}
-              film={look.filmTexture ?? null}
+              film={look.baseTexture ?? null}
               view={view}
-              label={`${modelName} in 3D with your colour, finish and film`}
+              label={`${modelName} in 3D with your shell colour, film and finish`}
               fallback={art}
-              className="h-[20rem] sm:h-[22rem]"
+              className="h-[15rem] sm:h-[22rem]"
             />
           </>
         ) : (
@@ -83,9 +83,9 @@ export const StudioPreview = forwardRef<HTMLDivElement, StudioPreviewProps>(func
       </div>
 
       <div className="flex min-w-0 flex-col gap-3 px-4 pb-4 sm:flex-row sm:items-center sm:justify-between sm:px-7 sm:pb-5">
-        <p className="flex items-center gap-2 text-xs text-muted-foreground">
+        <p className="flex items-center gap-2 text-xs text-muted-foreground max-sm:hidden">
           <Box className="size-3.5 text-lime-ink" aria-hidden />
-          {model3d ? "3D preview of your colour, finish and film" : `Illustrated preview · 3D for the ${modelName} is coming soon`}
+          {model3d ? "3D shows your shell colour, film and finish" : `Illustrated preview · 3D for the ${modelName} is coming soon`}
         </p>
         {model3d && (
           <div

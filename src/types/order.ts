@@ -1,4 +1,3 @@
-import type { HelmetConfiguration } from "@/types/configurator"
 import type { HelmetLook } from "@/types/helmet"
 
 export const orderStatuses = [
@@ -33,7 +32,8 @@ export interface OrderItem {
   id: string
   productSlug: string
   productName: string
-  values: Partial<HelmetConfiguration>
+  /** The build as it was ordered (older orders use the earlier, single-film format). */
+  values: Record<string, string | undefined>
   summary: OrderSummaryLine[]
   look: HelmetLook | null
   unitPrice: number

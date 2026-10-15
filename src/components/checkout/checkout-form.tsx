@@ -103,7 +103,17 @@ export function CheckoutForm({ profile, deliveryMethods, products, priceBook }: 
 
   if (!loaded) return <Skeleton className="h-96 rounded-3xl" aria-label="Loading your basket" />
 
-  if (lines.length === 0 && !placedOrder) {
+  if (placedOrder) {
+    return (
+      <div role="status" className="flex min-h-80 flex-col items-center justify-center gap-3 rounded-3xl border border-carbon/10 bg-card p-8 text-center">
+        <Loader2 className="size-8 animate-spin text-lime-ink" aria-hidden />
+        <p className="font-display text-2xl font-bold uppercase">Order placed</p>
+        <p className="text-sm text-muted-foreground">Taking you to your order…</p>
+      </div>
+    )
+  }
+
+  if (lines.length === 0) {
     return (
       <EmptyState
         icon={ShoppingBag}
@@ -239,7 +249,7 @@ export function CheckoutForm({ profile, deliveryMethods, products, priceBook }: 
           deliveryLabel={delivery?.label}
           deliveryPrice={delivery?.price ?? 0}
         >
-          <Button type="submit" size="lg" className="w-full" disabled={isSubmitting || placedOrder}>
+          <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? <Loader2 className="animate-spin" aria-hidden /> : null}
             {isSubmitting ? "Placing order…" : "Place order"}
           </Button>

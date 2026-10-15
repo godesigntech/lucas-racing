@@ -59,13 +59,13 @@ export function HomeHero() {
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg">
-              <Link href="/products">
-                Explore helmet designs
+              <Link href="/helmet-builder">
+                Customise my helmet
                 <ArrowRight className="transition-transform group-hover/button:translate-x-0.5" />
               </Link>
             </Button>
             <Button asChild size="lg" variant="inverse">
-              <Link href="#how-it-works">See how it works</Link>
+              <Link href="/products">Browse designs</Link>
             </Button>
           </div>
           <dl className="grid max-w-md grid-cols-3 gap-4 border-t border-white/10 pt-6">

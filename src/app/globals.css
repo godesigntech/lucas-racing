@@ -149,3 +149,11 @@
   --toastify-color-progress-info: var(--lime);
   --toastify-toast-bd-radius: 0.75rem;
 }
+
+/* On phones and tablets the builder's step bar sits at the bottom of the screen,
+   so the floating chat and design assistant buttons step aside while it's open. */
+@media (max-width: 1023px) {
+  body:has([data-helmet-builder]) [data-floating-launcher] {
+    display: none;
+  }
+}

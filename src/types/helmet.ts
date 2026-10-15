@@ -17,7 +17,7 @@ export interface HelmetModel {
 export const helmetLayouts = ["apex", "twin", "split", "shard", "halo", "flow", "blank"] as const
 export type HelmetLayout = (typeof helmetLayouts)[number]
 
-export const helmetFinishes = ["gloss", "matte", "chrome"] as const
+export const helmetFinishes = ["gloss", "satin", "matte", "chrome"] as const
 export type HelmetFinish = (typeof helmetFinishes)[number]
 
 /** How a film is drawn in the illustrated preview. */
@@ -40,8 +40,11 @@ export interface HelmetLook {
   accent: string
   /** Film pattern applied to the graphic area ("none" for solid colour). */
   film: FilmPattern
-  /** Photo of the chosen hydro-dip film. When set it replaces the illustrated pattern. */
+  /** Photo of the chosen hydro-dip film on the graphic. When set it replaces the illustrated pattern. */
   filmTexture?: string
+  /** Film photos on the shell and pinstripe (the graphic uses filmTexture). */
+  baseTexture?: string
+  accentTexture?: string
   /** Rubber trim colour (eye-port and base). */
   trim: string
   spoiler: boolean
