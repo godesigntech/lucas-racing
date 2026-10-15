@@ -1,5 +1,5 @@
 function required(name: string, value: string | undefined): string {
-  if (!value) throw new Error(`Missing environment variable ${name}. Add it to .env.local.`)
+  if (!value) throw new Error(`Missing environment variable ${name}. Add it to .env.local locally, or to netlify.toml / the host's environment variables when deploying.`)
   return value
 }
 
