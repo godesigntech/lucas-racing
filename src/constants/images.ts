@@ -49,3 +49,19 @@ export const images = {
     alt: "Rows of numbered karts lined up in the pit lane",
   },
 } satisfies Record<string, SiteImage>
+
+/** Cut-out helmet photos on transparent backgrounds, shown in the homepage hero. */
+export const helmetPhotos = {
+  araiSk6: {
+    src: "/images/helmets/arai-sk6-custom.webp",
+    alt: "Custom-painted Arai SK-6 kart helmet in orange, blue and lime with a mirrored visor",
+    width: 647,
+    height: 550,
+  },
+  bellKc7: {
+    src: "/images/helmets/bell-kc7-championship.webp",
+    alt: "Bell KC7 kart helmet in fluorescent yellow with green and grey racing lines",
+    width: 685,
+    height: 693,
+  },
+} satisfies Record<string, SiteImage & { width: number; height: number }>

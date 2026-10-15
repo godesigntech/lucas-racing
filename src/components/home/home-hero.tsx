@@ -2,29 +2,14 @@ import Image from "next/image"
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 
-import { HelmetArt } from "@/components/helmet/helmet-art"
 import { Container } from "@/components/layout/container"
 import { Button } from "@/components/ui/button"
-import { images } from "@/constants/images"
-import type { HelmetLook } from "@/types/helmet"
-
-const heroLook: HelmetLook = {
-  layout: "apex",
-  finish: "gloss",
-  base: "#f4f3ee",
-  graphic: "#c6f432",
-  accent: "#111412",
-  film: "forged",
-  trim: "#c6f432",
-  spoiler: true,
-  number: "29",
-  name: "LUCAS",
-}
+import { helmetPhotos, images } from "@/constants/images"
 
 const heroTags = [
-  { label: "Shell", value: "Arai SK-6", className: "left-[4%] top-[12%]" },
-  { label: "Film", value: "Forged carbon, lime tint", className: "bottom-[6%] right-[4%]" },
-  { label: "Trim", value: "Lime rubbers", className: "bottom-[14%] left-[4%]" },
+  { label: "Shell", value: "Bell KC7", className: "right-[2%] top-[4%]" },
+  { label: "Shell", value: "Arai SK-6", className: "bottom-[10%] left-[0%]" },
+  { label: "Finish", value: "Hydro-dip films & chrome", className: "bottom-[2%] right-[4%]" },
 ]
 
 export function HomeHero() {
@@ -87,14 +72,30 @@ export function HomeHero() {
           <div aria-hidden className="absolute inset-[12%] rounded-full bg-lime/20 blur-2xl" />
           <div aria-hidden className="absolute inset-[8%] rounded-full border border-white/10" />
           <div aria-hidden className="absolute inset-[20%] rounded-full border border-dashed border-white/10" />
-          <HelmetArt
-            look={heroLook}
-            title="Custom Arai SK-6 with a lime forged-carbon sweep and number 29"
-            className="relative drop-shadow-[0_30px_40px_rgb(0_0_0/0.45)]"
-          />
+          {/* Bell KC7 sits behind, the Arai SK-6 in front; both face the headline. */}
+          <div className="relative aspect-[6/5] w-full">
+            <Image
+              src={helmetPhotos.bellKc7.src}
+              alt={helmetPhotos.bellKc7.alt}
+              width={helmetPhotos.bellKc7.width}
+              height={helmetPhotos.bellKc7.height}
+              preload
+              sizes="(min-width: 1024px) 26vw, 55vw"
+              className="absolute right-[2%] top-[2%] w-[56%] drop-shadow-[0_24px_30px_rgb(0_0_0/0.5)]"
+            />
+            <Image
+              src={helmetPhotos.araiSk6.src}
+              alt={helmetPhotos.araiSk6.alt}
+              width={helmetPhotos.araiSk6.width}
+              height={helmetPhotos.araiSk6.height}
+              preload
+              sizes="(min-width: 1024px) 34vw, 70vw"
+              className="absolute bottom-[4%] left-[2%] w-[70%] drop-shadow-[0_30px_40px_rgb(0_0_0/0.55)]"
+            />
+          </div>
           {heroTags.map((tag) => (
             <div
-              key={tag.label}
+              key={tag.value}
               className={`absolute hidden rounded-2xl border border-white/10 bg-carbon-2/85 px-3.5 py-2 backdrop-blur sm:block ${tag.className}`}
             >
               <p className="eyebrow text-[0.62rem] text-lime">{tag.label}</p>
