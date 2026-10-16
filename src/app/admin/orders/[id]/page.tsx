@@ -47,7 +47,7 @@ async function OrderDetail({ id }: { id: string }) {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="min-w-0 space-y-6">
-          <AdminCard title={`Helmets (${order.itemCount})`}>
+          <AdminCard title={`Items (${order.itemCount})`}>
             <OrderItems items={order.items} />
             <div className="mt-6 border-t border-carbon/10 pt-5">
               <OrderTotals order={order} />

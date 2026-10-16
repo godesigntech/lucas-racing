@@ -13,7 +13,15 @@ import { orderStatuses } from "@/types/order"
 
 export const metadata = { title: "Orders" }
 
-type Query = { q?: string; status?: string; page?: string }
+type Query = { q?: string; status?: string; shop?: string; page?: string }
+
+const shopTabs = [
+  { value: "", label: "Everything" },
+  { value: "helmets", label: "Custom helmets" },
+  { value: "ms-kart", label: "MS Kart" },
+  { value: "teamwear", label: "Teamwear" },
+  { value: "hydrokarts-parts", label: "HydroKarts parts" },
+]
 
 function buildHref(query: Query, changes: Partial<Query>) {
   const params = new URLSearchParams()
@@ -38,10 +46,17 @@ export default function AdminOrdersPage({ searchParams }: PageProps<"/admin/orde
 
 async function OrdersList({ query }: { query: Query }) {
   const status = typeof query.status === "string" ? query.status : ""
-  const result = await listOrders({ query: query.q, status, page: Number(query.page) || 1 })
+  const shop = shopTabs.some((tab) => tab.value === query.shop) ? (query.shop ?? "") : ""
+  const result = await listOrders({ query: query.q, status, shop, page: Number(query.page) || 1 })
 
   return (
     <div className="space-y-4">
+      <FilterTabs
+        label="Filter by what was bought"
+        active={shop}
+        hrefFor={(value) => buildHref(query, { shop: value || undefined, page: undefined })}
+        tabs={shopTabs}
+      />
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <FilterTabs
           label="Filter by status"
@@ -56,7 +71,7 @@ async function OrdersList({ query }: { query: Query }) {
       <AdminCard flush>
         <OrdersTable
           orders={result.rows}
-          emptyMessage={query.q || status ? "No orders match these filters." : "No orders yet."}
+          emptyMessage={query.q || status || shop ? "No orders match these filters." : "No orders yet."}
         />
         <Pagination
           page={result.page}

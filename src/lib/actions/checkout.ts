@@ -22,8 +22,14 @@ export async function placeOrder(input: PlaceOrderInput): Promise<ActionResult<{
   const { items, checkout } = parsed.data
 
   const supabase = await createClient()
+  // place_order() takes helmet builds as { slug, quantity, config } and products as { kind, variant_id, quantity }.
+  const orderItems = items.map((item) =>
+    item.kind === "product"
+      ? { kind: "product", variant_id: item.variantId, quantity: item.quantity }
+      : { slug: item.slug, quantity: item.quantity, config: item.config },
+  )
   const { data, error } = await supabase.rpc("place_order", {
-    p_items: items,
+    p_items: orderItems,
     p_customer: { name: checkout.name, email: checkout.email, phone: checkout.phone },
     p_shipping: checkout.requiresAddress ? checkout.address : {},
     p_delivery_method: checkout.deliveryMethod,
@@ -56,7 +62,7 @@ export async function placeOrder(input: PlaceOrderInput): Promise<ActionResult<{
   // Confirmation to the customer and an alert to the workshop, after the response is sent.
   const { data: placed } = await supabase
     .from("orders")
-    .select("id, order_number, customer_name, customer_email, delivery_label, total, order_items(product_name, quantity, line_total, configuration)")
+    .select("id, order_number, customer_name, customer_email, delivery_label, total, order_items(product_name, quantity, line_total, configuration, line_kind)")
     .eq("id", order.order_id)
     .single()
   if (placed) {
@@ -68,6 +74,7 @@ export async function placeOrder(input: PlaceOrderInput): Promise<ActionResult<{
         customerEmail: placed.customer_email,
         deliveryLabel: placed.delivery_label,
         total: Number(placed.total),
+        hasHelmets: placed.order_items.some((item) => item.line_kind === "helmet"),
         items: placed.order_items.map((item) => ({
           name: item.product_name,
           quantity: item.quantity,

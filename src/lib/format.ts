@@ -1,9 +1,5 @@
-const gbp = new Intl.NumberFormat("en-GB", {
-  style: "currency",
-  currency: "GBP",
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 2,
-})
+const gbpWhole = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })
+const gbpPence = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 const dateFormat = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" })
 const dateTimeFormat = new Intl.DateTimeFormat("en-GB", {
@@ -16,7 +12,8 @@ const dateTimeFormat = new Intl.DateTimeFormat("en-GB", {
 
 /** £1,234 or £12.50. */
 export function formatMoney(amount: number): string {
-  return gbp.format(amount)
+  // Whole pounds stay short (£549); anything with pence shows both digits (£19.50, not £19.5).
+  return Number.isInteger(amount) ? gbpWhole.format(amount) : gbpPence.format(amount)
 }
 
 /** Starting price for product listings. */

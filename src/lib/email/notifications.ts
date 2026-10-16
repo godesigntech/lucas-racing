@@ -48,6 +48,8 @@ export interface PlacedOrder {
   deliveryLabel: string
   total: number
   items: { name: string; quantity: number; lineTotal: number; summary: { label: string; value: string }[] }[]
+  /** Helmet orders get a proof to approve; product-only orders don't. */
+  hasHelmets: boolean
 }
 
 export async function notifyOrderPlaced(order: PlacedOrder): Promise<void> {
@@ -70,7 +72,9 @@ export async function notifyOrderPlaced(order: PlacedOrder): Promise<void> {
       heading: `Thanks ${firstName}, we've got your order`,
       body:
         paragraphs(
-          `Your order ${order.orderNumber} is with the workshop. We'll email you a digital proof of your helmet to approve, along with how to pay. Nothing is painted until you've signed it off.`,
+          order.hasHelmets
+            ? `Your order ${order.orderNumber} is with the workshop. We'll email you a digital proof of your helmet to approve, along with how to pay. Nothing is painted until you've signed it off.`
+            : `Your order ${order.orderNumber} is with the team. We'll confirm it and send you a secure payment link.`,
         ) +
         itemsHtml +
         detailRows([
@@ -79,7 +83,7 @@ export async function notifyOrderPlaced(order: PlacedOrder): Promise<void> {
         ]),
       action: { label: "View your order", href: siteUrl(`/account/orders/${order.orderNumber}`) },
     }),
-    text: `Thanks ${firstName}, we've got your order ${order.orderNumber}.\n\n${itemsText}\n\nDelivery: ${order.deliveryLabel}\nTotal: ${formatMoney(order.total)}\n\nWe'll email you a proof to approve before anything is painted.\n${siteUrl(`/account/orders/${order.orderNumber}`)}`,
+    text: `Thanks ${firstName}, we've got your order ${order.orderNumber}.\n\n${itemsText}\n\nDelivery: ${order.deliveryLabel}\nTotal: ${formatMoney(order.total)}\n\n${order.hasHelmets ? "We'll email you a proof to approve before anything is painted." : "We'll confirm your order and send a secure payment link."}\n${siteUrl(`/account/orders/${order.orderNumber}`)}`,
   })
 
   const inbox = await workshopInbox()

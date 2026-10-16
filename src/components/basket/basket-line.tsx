@@ -1,29 +1,41 @@
 "use client"
 
+import Image from "next/image"
 import Link from "next/link"
-import { AlertTriangle, Trash2 } from "lucide-react"
+import { AlertTriangle, Package, Trash2 } from "lucide-react"
 
 import { HelmetArt } from "@/components/helmet/helmet-art"
+import { StockBadge } from "@/components/shop/stock-badge"
 import { basket } from "@/lib/basket/basket-store"
-import type { ResolvedBasketLine } from "@/lib/basket/resolve-basket"
+import type { ResolvedBasketLine, ResolvedHelmetLine, ResolvedProductLine } from "@/lib/basket/resolve-basket"
 import { formatMoney } from "@/lib/format"
 
 import { QuantityStepper } from "./quantity-stepper"
 
-export function BasketLine({ line }: { line: ResolvedBasketLine }) {
-  const { item } = line
+function RemoveButton({ id }: { id: string }) {
+  return (
+    <button
+      type="button"
+      onClick={() => basket.remove(id)}
+      className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+    >
+      <Trash2 className="size-4" aria-hidden /> Remove
+    </button>
+  )
+}
 
+export function BasketLine({ line }: { line: ResolvedBasketLine }) {
   if (!line.available) {
     return (
       <li className="flex items-center gap-4 rounded-3xl border border-dashed border-destructive/40 bg-card p-5">
         <AlertTriangle className="size-5 shrink-0 text-destructive" aria-hidden />
         <div className="min-w-0 flex-1">
-          <p className="font-semibold">{item.name}</p>
-          <p className="text-sm text-muted-foreground">This design is no longer available, so it won&apos;t be ordered.</p>
+          <p className="font-semibold">{line.item.name}</p>
+          <p className="text-sm text-muted-foreground">{line.reason}</p>
         </div>
         <button
           type="button"
-          onClick={() => basket.remove(item.id)}
+          onClick={() => basket.remove(line.item.id)}
           className="rounded-full px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/10"
         >
           Remove
@@ -31,7 +43,11 @@ export function BasketLine({ line }: { line: ResolvedBasketLine }) {
       </li>
     )
   }
+  return line.kind === "product" ? <ProductLine line={line} /> : <HelmetLine line={line} />
+}
 
+function HelmetLine({ line }: { line: ResolvedHelmetLine }) {
+  const { item } = line
   const details = line.summary.filter((row) => row.key !== "model")
 
   return (
@@ -69,17 +85,60 @@ export function BasketLine({ line }: { line: ResolvedBasketLine }) {
               onChange={(quantity) => basket.setQuantity(item.id, quantity)}
               label={`Quantity of ${line.product.name}`}
             />
-            {item.quantity > 1 && (
-              <span className="text-xs text-muted-foreground">{formatMoney(line.unitPrice)} each</span>
-            )}
+            {item.quantity > 1 && <span className="text-xs text-muted-foreground">{formatMoney(line.unitPrice)} each</span>}
           </div>
-          <button
-            type="button"
-            onClick={() => basket.remove(item.id)}
-            className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-          >
-            <Trash2 className="size-4" aria-hidden /> Remove
-          </button>
+          <RemoveButton id={item.id} />
+        </div>
+      </div>
+    </li>
+  )
+}
+
+function ProductLine({ line }: { line: ResolvedProductLine }) {
+  const { item, product, variant } = line
+  const image = product.images[0]
+  const href = `/shop/p/${product.slug}`
+
+  return (
+    <li className="grid gap-5 rounded-3xl border border-carbon/10 bg-card p-5 sm:grid-cols-[10rem_minmax(0,1fr)] sm:p-6">
+      <Link href={href} className="relative grid aspect-[4/3] place-items-center overflow-hidden rounded-2xl bg-carbon/5" aria-label={`View ${product.title}`}>
+        {image ? (
+          <Image src={image} alt="" fill sizes="160px" className="object-contain p-2" />
+        ) : (
+          <Package className="size-8 text-muted-foreground" aria-hidden />
+        )}
+      </Link>
+
+      <div className="flex min-w-0 flex-col gap-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="font-display text-2xl font-bold uppercase leading-none">
+              <Link href={href} className="underline-offset-4 hover:underline">
+                {product.title}
+              </Link>
+            </h3>
+            {line.variantLabel && <p className="mt-1 text-sm text-muted-foreground">{line.variantLabel}</p>}
+            {variant.sku && <p className="mt-0.5 font-mono text-xs text-muted-foreground">Part no. {variant.sku}</p>}
+          </div>
+          <p className="font-display text-2xl font-bold">{formatMoney(line.lineTotal)}</p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <StockBadge status={line.status} />
+          {line.note && <p className="text-xs font-medium text-destructive">{line.note}</p>}
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <QuantityStepper
+              value={line.quantity}
+              max={line.maxQuantity}
+              onChange={(quantity) => basket.setQuantity(item.id, quantity)}
+              label={`Quantity of ${product.title}`}
+            />
+            {line.quantity > 1 && <span className="text-xs text-muted-foreground">{formatMoney(line.unitPrice)} each</span>}
+          </div>
+          <RemoveButton id={item.id} />
         </div>
       </div>
     </li>

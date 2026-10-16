@@ -12,7 +12,7 @@ import { OrderStatusBadge, PaymentStatusBadge } from "@/components/orders/status
 import { Skeleton } from "@/components/ui/skeleton"
 import { getMyOrder } from "@/lib/data/account"
 import { formatDateTime } from "@/lib/format"
-import { orderStatusMeta, paymentStatusMeta } from "@/lib/orders/status"
+import { paymentDescription, statusDescription } from "@/lib/orders/status"
 
 export const metadata = { title: "Order details" }
 
@@ -36,6 +36,8 @@ export default function AccountOrderPage({ params, searchParams }: PageProps<"/a
 
 async function OrderDetail({ orderNumber, justPlaced }: { orderNumber: string; justPlaced: boolean }) {
   const order = await getMyOrder(decodeURIComponent(orderNumber))
+  const hasHelmets = order.items.some((item) => item.kind === "helmet")
+  const hasProducts = order.items.some((item) => item.kind === "product")
 
   return (
     <div className="space-y-6">
@@ -45,8 +47,9 @@ async function OrderDetail({ orderNumber, justPlaced }: { orderNumber: string; j
           <div>
             <p className="font-display text-2xl font-bold uppercase">Order placed. Thank you!</p>
             <p className="text-sm">
-              We&apos;ll email your digital proof to {order.customerEmail}. Once you approve it, we&apos;ll send a payment
-              link and get started.
+              {hasHelmets
+                ? `We'll email your digital proof to ${order.customerEmail}. Once you approve it, we'll send a payment link and get started.`
+                : `We'll confirm your order by email at ${order.customerEmail} and send a secure payment link.`}
             </p>
           </div>
         </div>
@@ -66,13 +69,13 @@ async function OrderDetail({ orderNumber, justPlaced }: { orderNumber: string; j
       <InfoCard title="Progress">
         <OrderProgress status={order.status} />
         <p className="mt-4 text-sm text-muted-foreground">
-          {orderStatusMeta[order.status].description}{" "}
-          {order.status !== "cancelled" && paymentStatusMeta[order.paymentStatus].description}
+          {statusDescription(order.status, hasHelmets)}{" "}
+          {order.status !== "cancelled" && paymentDescription(order.paymentStatus, hasHelmets)}
         </p>
       </InfoCard>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
-        <InfoCard title="Helmets">
+        <InfoCard title={hasHelmets && !hasProducts ? "Helmets" : "Items"}>
           <OrderItems items={order.items} />
           <div className="mt-6 border-t border-carbon/10 pt-5">
             <OrderTotals order={order} />

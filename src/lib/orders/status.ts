@@ -25,6 +25,25 @@ export const paymentStatusMeta: Record<PaymentStatus, StatusMeta> = {
   refunded: { label: "Refunded", tone: "neutral", description: "Payment refunded." },
 }
 
+// Orders without a custom helmet have no proof to approve: they use this wording instead.
+const productStatusText: Partial<Record<OrderStatus, string>> = {
+  pending: "We've got your order and will be in touch to confirm it.",
+  confirmed: "Order confirmed and payment arranged.",
+  in_production: "Your order is being picked and prepared.",
+}
+const productPaymentText: Partial<Record<PaymentStatus, string>> = {
+  unpaid: "We'll send a secure payment link once we've confirmed your order.",
+}
+
+/** What a status means for this order (helmet orders mention the proof). */
+export function statusDescription(status: OrderStatus, hasHelmets: boolean): string {
+  return (!hasHelmets && productStatusText[status]) || orderStatusMeta[status].description
+}
+
+export function paymentDescription(status: PaymentStatus, hasHelmets: boolean): string {
+  return (!hasHelmets && productPaymentText[status]) || paymentStatusMeta[status].description
+}
+
 export const toneClasses: Record<Tone, string> = {
   neutral: "bg-carbon/8 text-carbon ring-carbon/15",
   info: "bg-sky-100 text-sky-900 ring-sky-300/60",

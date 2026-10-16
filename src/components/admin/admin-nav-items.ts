@@ -8,6 +8,7 @@ import {
   Settings,
   ShoppingBag,
   Sparkles,
+  Store,
   Users,
   UsersRound,
   type LucideIcon,
@@ -38,7 +39,8 @@ export const adminNavSections: { title: string; items: AdminNavItem[] }[] = [
   {
     title: "Catalogue",
     items: [
-      { label: "Products", href: "/admin/products", icon: Package, fullAdminOnly: true },
+      { label: "Shop products", href: "/admin/shop", icon: Store, fullAdminOnly: true },
+      { label: "Helmet designs", href: "/admin/products", icon: Package, fullAdminOnly: true },
       { label: "Films", href: "/admin/films", icon: Droplets, fullAdminOnly: true },
       { label: "Pricing", href: "/admin/pricing", icon: PoundSterling, fullAdminOnly: true },
     ],

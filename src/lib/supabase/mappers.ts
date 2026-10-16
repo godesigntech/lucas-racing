@@ -209,6 +209,9 @@ export function toOrderItem(row: OrderItemRow): OrderItem {
   const configuration = asObject(row.configuration)
   return {
     id: row.id,
+    kind: row.line_kind === "product" ? "product" : "helmet",
+    storeId: row.store_id,
+    imageUrl: typeof configuration.image === "string" ? configuration.image : null,
     productSlug: row.product_slug,
     productName: row.product_name,
     values: asObject(configuration.values) as OrderItem["values"],

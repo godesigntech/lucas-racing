@@ -18,8 +18,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { placeOrder } from "@/lib/actions/checkout"
-import { basket, useBasket, useBasketLoaded } from "@/lib/basket/basket-store"
-import { basketSubtotal, resolveBasketLine, type ResolvedBasketLine } from "@/lib/basket/resolve-basket"
+import { basket } from "@/lib/basket/basket-store"
+import { basketSubtotal, toOrderItems, type AvailableLine } from "@/lib/basket/resolve-basket"
+import { useResolvedBasket } from "@/lib/basket/use-resolved-basket"
 import { checkoutSchema, type CheckoutValues } from "@/lib/validations/checkout"
 import type { Profile } from "@/types/account"
 import type { PriceBook } from "@/types/catalog"
@@ -37,17 +38,14 @@ interface CheckoutFormProps {
   priceBook: PriceBook
 }
 
-type AvailableLine = Extract<ResolvedBasketLine, { available: true }>
-
 export function CheckoutForm({ profile, deliveryMethods, products, priceBook }: CheckoutFormProps) {
   const router = useRouter()
-  const items = useBasket()
-  const loaded = useBasketLoaded()
+  const basketState = useResolvedBasket(products, priceBook)
+  const loaded = basketState.loaded
   const [placedOrder, setPlacedOrder] = useState(false)
-  const lines = items
-    .map((item) => resolveBasketLine(item, products, priceBook))
-    .filter((line): line is AvailableLine => line.available)
+  const lines = basketState.lines.filter((line): line is AvailableLine => line.available)
   const subtotal = basketSubtotal(lines)
+  const hasHelmets = lines.some((line) => line.kind === "helmet")
 
   const firstMethod = deliveryMethods[0]
   const {
@@ -83,7 +81,7 @@ export function CheckoutForm({ profile, deliveryMethods, products, priceBook }: 
 
   async function onSubmit(values: CheckoutValues) {
     const result = await placeOrder({
-      items: lines.map((line) => ({ slug: line.item.slug, quantity: line.item.quantity, config: line.item.config })),
+      items: toOrderItems(lines),
       checkout: values,
     })
 
@@ -118,11 +116,11 @@ export function CheckoutForm({ profile, deliveryMethods, products, priceBook }: 
       <EmptyState
         icon={ShoppingBag}
         title="Nothing to check out"
-        description="Your basket is empty. Configure a helmet and add it to your basket first."
+        description="Your basket is empty. Add MS Kart parts, teamwear or a custom helmet first."
         action={
           <Button asChild>
-            <Link href="/customisation">
-              Browse helmet designs <ArrowRight />
+            <Link href="/shop">
+              Shop MS Kart <ArrowRight />
             </Link>
           </Button>
         }
@@ -143,7 +141,7 @@ export function CheckoutForm({ profile, deliveryMethods, products, priceBook }: 
       className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-10"
     >
       <div className="min-w-0 space-y-5">
-        <CheckoutSection step={1} title="Your details" description="We'll use these to send your proof and updates.">
+        <CheckoutSection step={1} title="Your details" description="We'll use these to confirm your order and send updates.">
           <div className="grid gap-5 sm:grid-cols-2">
             <FormField id="checkout-name" label="Full name" error={errors.name?.message} className="sm:col-span-2">
               <Input {...register("name")} {...fieldA11y("checkout-name", errors.name?.message)} autoComplete="name" />
@@ -167,7 +165,7 @@ export function CheckoutForm({ profile, deliveryMethods, products, priceBook }: 
           </div>
         </CheckoutSection>
 
-        <CheckoutSection step={2} title="Delivery" description="How you'd like to get your finished helmet.">
+        <CheckoutSection step={2} title="Delivery" description="How you'd like to receive your order.">
           <Controller
             control={control}
             name="deliveryMethod"
@@ -203,13 +201,13 @@ export function CheckoutForm({ profile, deliveryMethods, products, priceBook }: 
           )}
         </CheckoutSection>
 
-        <CheckoutSection step={3} title="Anything else?" description="Optional notes for the workshop.">
+        <CheckoutSection step={3} title="Anything else?" description="Optional notes for the team.">
           <FormField id="checkout-notes" label="Order notes" optional error={errors.notes?.message}>
             <Textarea
               {...register("notes")}
               {...fieldA11y("checkout-notes", errors.notes?.message)}
               rows={4}
-              placeholder="e.g. race date you need it for, or the name and number to put on the helmet."
+              placeholder="e.g. the race date you need it for, or anything we should know about your order."
             />
           </FormField>
           <Controller
@@ -235,8 +233,9 @@ export function CheckoutForm({ profile, deliveryMethods, products, priceBook }: 
           <div className="space-y-1 text-sm">
             <p className="font-semibold">No payment needed today</p>
             <p>
-              We&apos;ll email your digital proof. Once you approve it, we send a secure payment link before any work
-              starts.
+              {hasHelmets
+                ? "We'll email your digital proof. Once you approve it, we send a secure payment link before any work starts."
+                : "We'll confirm your order and stock, then send you a secure payment link."}
             </p>
           </div>
         </div>

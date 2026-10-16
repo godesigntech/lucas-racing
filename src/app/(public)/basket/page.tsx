@@ -7,7 +7,7 @@ import { getPriceBook, getProducts } from "@/lib/data/products"
 
 export const metadata: Metadata = {
   title: "Basket",
-  description: "Review your custom helmets before checkout.",
+  description: "Review your basket before checkout.",
 }
 
 export default async function BasketPage() {
@@ -16,7 +16,7 @@ export default async function BasketPage() {
   return (
     <section className="py-12 sm:py-16">
       <Container className="space-y-10">
-        <SectionHeading as="h1" eyebrow="Basket" title="Your helmets" />
+        <SectionHeading as="h1" eyebrow="Basket" title="Your basket" />
         <BasketView products={products} priceBook={priceBook} />
       </Container>
     </section>

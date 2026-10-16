@@ -41,7 +41,8 @@ export type CheckoutValues = z.infer<typeof checkoutSchema>
 
 const placement = z.enum(["sides", "left", "right", "front", "back", "top"])
 
-export const basketItemSchema = z.object({
+export const helmetItemSchema = z.object({
+  kind: z.literal("helmet"),
   slug: z.string().min(1),
   quantity: z.number().int().min(1).max(10),
   config: z.object({
@@ -73,8 +74,16 @@ export const basketItemSchema = z.object({
   }),
 })
 
+export const productItemSchema = z.object({
+  kind: z.literal("product"),
+  variantId: z.uuid(),
+  quantity: z.number().int().min(1).max(99),
+})
+
+export const basketItemSchema = z.discriminatedUnion("kind", [helmetItemSchema, productItemSchema])
+
 export const placeOrderSchema = z.object({
-  items: z.array(basketItemSchema).min(1, "Your basket is empty").max(20),
+  items: z.array(basketItemSchema).min(1, "Your basket is empty").max(50),
   checkout: checkoutSchema,
 })
 

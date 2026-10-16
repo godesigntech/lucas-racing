@@ -106,11 +106,24 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 // Orders
 // ---------------------------------------------------------------------------
 
-export async function listOrders(options: { query?: string; status?: string; page?: number }): Promise<Paged<OrderListItem>> {
+/** Order filters by what was bought: custom helmets, or a shop's products. */
+export const orderShopFilters = ["helmets", "ms-kart", "teamwear", "hydrokarts-parts"] as const
+
+export async function listOrders(options: { query?: string; status?: string; shop?: string; page?: number }): Promise<Paged<OrderListItem>> {
   await requireAdmin()
   if (isDemoMode()) return demoAdmin.listOrders(options)
   const supabase = await createClient()
   const { current, from, to } = pageRange(options.page ?? 1)
+
+  // Shop filter: find the orders with a matching line first.
+  let orderIds: string[] | null = null
+  if (options.shop && (orderShopFilters as readonly string[]).includes(options.shop)) {
+    const lines = supabase.from("order_items").select("order_id")
+    const { data, error } = await (options.shop === "helmets" ? lines.eq("line_kind", "helmet") : lines.eq("store_id", options.shop)).limit(5000)
+    if (error) throw new Error(error.message)
+    orderIds = [...new Set(data.map((line) => line.order_id))]
+    if (orderIds.length === 0) return { rows: [], total: 0, page: current, pageCount: 1 }
+  }
 
   let request = supabase
     .from("orders")
@@ -121,6 +134,7 @@ export async function listOrders(options: { query?: string; status?: string; pag
   if (options.status && (orderStatuses as readonly string[]).includes(options.status)) {
     request = request.eq("status", options.status)
   }
+  if (orderIds) request = request.in("id", orderIds)
   const term = searchTerm(options.query)
   if (term) {
     request = request.or(`order_number.ilike.%${term}%,customer_name.ilike.%${term}%,customer_email.ilike.%${term}%`)

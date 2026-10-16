@@ -176,6 +176,9 @@ export type OrderItemRow = {
   quantity: number
   line_total: number
   created_at: string
+  line_kind: string
+  store_id: string | null
+  shop_variant_id: string | null
 }
 
 export type OrderStatusEventRow = {
@@ -252,6 +255,73 @@ export type TeamMemberRow = Timestamps & {
   sort_order: number
 }
 
+export type StoreRow = {
+  id: string
+  name: string
+  description: string
+  purchasable: boolean
+  sort_order: number
+}
+
+export type ShopCategoryRow = Timestamps & {
+  id: string
+  store_id: string
+  parent_id: string | null
+  name: string
+  slug: string
+  description: string
+  image_url: string | null
+  is_active: boolean
+  sort_order: number
+}
+
+export type ShopProductRow = Timestamps & {
+  id: string
+  store_id: string
+  category_id: string | null
+  slug: string
+  title: string
+  brand: string
+  description: string
+  specs: Json
+  images: string[]
+  option_names: string[]
+  source: string
+  external_id: string | null
+  external_url: string | null
+  is_active: boolean
+  featured: boolean
+  customisable: boolean
+  sort_order: number
+}
+
+export type ShopVariantRow = Timestamps & {
+  id: string
+  product_id: string
+  sku: string | null
+  option_values: Json
+  price: number
+  compare_at_price: number | null
+  stock_quantity: number
+  track_stock: boolean
+  allow_backorder: boolean
+  weight_grams: number | null
+  is_active: boolean
+  sort_order: number
+}
+
+export type InventoryMovementRow = {
+  id: number
+  variant_id: string
+  change: number
+  quantity_after: number
+  reason: string
+  order_id: string | null
+  note: string
+  created_by: string | null
+  created_at: string
+}
+
 export type Database = {
   public: {
     Tables: {
@@ -307,6 +377,70 @@ export type Database = {
       contact_messages: Table<ContactMessageRow, "name" | "email" | "topic" | "message", keyof ContactMessageRow>
       saved_designs: Table<SavedDesignRow, "product_slug" | "name" | "config", keyof SavedDesignRow>
       team_members: Table<TeamMemberRow, "name", keyof TeamMemberRow>
+      stores: Table<StoreRow, "id" | "name", keyof StoreRow>
+      shop_categories: Table<
+        ShopCategoryRow,
+        "store_id" | "name" | "slug",
+        keyof ShopCategoryRow,
+        [
+          {
+            foreignKeyName: "shop_categories_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      >
+      shop_products: Table<
+        ShopProductRow,
+        "store_id" | "slug" | "title",
+        keyof ShopProductRow,
+        [
+          {
+            foreignKeyName: "shop_products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "shop_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_products_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      >
+      shop_variants: Table<
+        ShopVariantRow,
+        "product_id" | "price",
+        keyof ShopVariantRow,
+        [
+          {
+            foreignKeyName: "shop_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "shop_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      >
+      inventory_movements: Table<
+        InventoryMovementRow,
+        "variant_id" | "change" | "quantity_after" | "reason",
+        keyof InventoryMovementRow,
+        [
+          {
+            foreignKeyName: "inventory_movements_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "shop_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      >
     }
     Views: {
       customer_summaries: { Row: CustomerSummaryRow; Relationships: [] }
@@ -314,6 +448,7 @@ export type Database = {
     Functions: {
       is_admin: { Args: Record<string, never>; Returns: boolean }
       is_full_admin: { Args: Record<string, never>; Returns: boolean }
+      set_variant_stock: { Args: { p_variant_id: string; p_quantity: number; p_note?: string }; Returns: number }
       submit_contact_message: {
         Args: { p_name: string; p_email: string; p_phone: string; p_topic: string; p_design: string; p_message: string }
         Returns: string

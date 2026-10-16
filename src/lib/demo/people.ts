@@ -38,6 +38,9 @@ function item(slug: string, model: string, size: string, finish: string, film: s
   const product = demoProducts.find((candidate) => candidate.slug === slug)!
   return {
     id: `${slug}-${model}-${size}`,
+    kind: "helmet",
+    storeId: null,
+    imageUrl: null,
     productSlug: slug,
     productName: product.name,
     values: { model, size, finish, film, trim, route: "new", spoiler: product.look.spoiler ? "yes" : "no", base: product.look.base },

@@ -8,9 +8,11 @@ interface QuantityStepperProps {
   value: number
   onChange: (value: number) => void
   label: string
+  /** Highest allowed value (helmets: 10; products: what's in stock). */
+  max?: number
 }
 
-export function QuantityStepper({ value, onChange, label }: QuantityStepperProps) {
+export function QuantityStepper({ value, onChange, label, max = MAX_QUANTITY }: QuantityStepperProps) {
   const button =
     "grid size-9 place-items-center rounded-full text-carbon transition-colors hover:bg-foreground/5 disabled:opacity-35 disabled:hover:bg-transparent"
 
@@ -26,7 +28,7 @@ export function QuantityStepper({ value, onChange, label }: QuantityStepperProps
         type="button"
         className={button}
         onClick={() => onChange(value + 1)}
-        disabled={value >= MAX_QUANTITY}
+        disabled={value >= max}
         aria-label="Increase quantity"
       >
         <Plus className="size-4" />

@@ -1,13 +1,37 @@
+import Image from "next/image"
+import { Package } from "lucide-react"
+
 import { HelmetArt } from "@/components/helmet/helmet-art"
-import type { ResolvedBasketLine } from "@/lib/basket/resolve-basket"
+import type { AvailableLine } from "@/lib/basket/resolve-basket"
 import { formatMoney } from "@/lib/format"
 
 interface OrderSummaryCardProps {
-  lines: Extract<ResolvedBasketLine, { available: true }>[]
+  lines: AvailableLine[]
   subtotal: number
   deliveryLabel?: string
   deliveryPrice: number
   children?: React.ReactNode
+}
+
+function LineThumb({ line }: { line: AvailableLine }) {
+  if (line.kind === "helmet") return <HelmetArt look={line.look} />
+  const image = line.product.images[0]
+  return image ? (
+    <span className="relative block size-full">
+      <Image src={image} alt="" fill sizes="64px" className="object-contain" />
+    </span>
+  ) : (
+    <Package className="size-6 text-carbon/50" aria-hidden />
+  )
+}
+
+function lineDetail(line: AvailableLine): string {
+  const parts =
+    line.kind === "helmet"
+      ? [line.summary.find((row) => row.key === "model")?.value, `Size ${line.item.config.size}`]
+      : [line.variantLabel]
+  if (line.quantity > 1) parts.push(`×${line.quantity}`)
+  return parts.filter(Boolean).join(" · ")
 }
 
 export function OrderSummaryCard({ lines, subtotal, deliveryLabel, deliveryPrice, children }: OrderSummaryCardProps) {
@@ -17,15 +41,12 @@ export function OrderSummaryCard({ lines, subtotal, deliveryLabel, deliveryPrice
       <ul className="space-y-4">
         {lines.map((line) => (
           <li key={line.item.id} className="flex items-center gap-3">
-            <span className="grid size-16 shrink-0 place-items-center rounded-xl bg-paper/95 p-1.5">
-              <HelmetArt look={line.look} />
+            <span className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-xl bg-paper/95 p-1.5">
+              <LineThumb line={line} />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block truncate font-semibold">{line.product.name}</span>
-              <span className="block truncate text-xs text-paper/55">
-                {line.summary.find((row) => row.key === "model")?.value} · Size {line.item.config.size}
-                {line.item.quantity > 1 && ` · ×${line.item.quantity}`}
-              </span>
+              <span className="block truncate font-semibold">{line.kind === "helmet" ? line.product.name : line.product.title}</span>
+              <span className="block truncate text-xs text-paper/55">{lineDetail(line)}</span>
             </span>
             <span className="text-sm font-semibold tabular-nums">{formatMoney(line.lineTotal)}</span>
           </li>

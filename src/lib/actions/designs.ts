@@ -7,7 +7,7 @@ import { databaseError, failure, validationError } from "@/lib/actions/result"
 import { getCurrentUser } from "@/lib/auth/session"
 import { DEMO_READ_ONLY, isDemoMode } from "@/lib/demo/mode"
 import { createClient } from "@/lib/supabase/server"
-import { basketItemSchema } from "@/lib/validations/checkout"
+import { helmetItemSchema } from "@/lib/validations/checkout"
 import type { ActionResult } from "@/types/account"
 import type { HelmetConfiguration } from "@/types/configurator"
 
@@ -16,7 +16,7 @@ const MAX_DESIGNS = 50
 const saveDesignSchema = z.object({
   productSlug: z.string().min(1).max(80),
   name: z.string().trim().min(1, "Give your design a name").max(60, "Keep the name under 60 characters"),
-  config: basketItemSchema.shape.config,
+  config: helmetItemSchema.shape.config,
 })
 
 /** Saves a build to the signed-in customer's account. */

@@ -30,6 +30,12 @@ export interface OrderSummaryLine {
 
 export interface OrderItem {
   id: string
+  /** A custom helmet build, or a shop product (MS Kart part, teamwear…). */
+  kind: "helmet" | "product"
+  /** Which shop a product came from; null for helmets. */
+  storeId: string | null
+  /** Product photo at the time of ordering; null for helmets (drawn from look). */
+  imageUrl: string | null
   productSlug: string
   productName: string
   /** The build as it was ordered (older orders use the earlier, single-film format). */

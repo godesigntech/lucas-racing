@@ -6,8 +6,7 @@ import { ArrowRight, Lock, ShoppingBag } from "lucide-react"
 import { EmptyState } from "@/components/shared/empty-state"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useBasket, useBasketLoaded } from "@/lib/basket/basket-store"
-import { basketSubtotal, resolveBasketLine } from "@/lib/basket/resolve-basket"
+import { useResolvedBasket } from "@/lib/basket/use-resolved-basket"
 import { formatMoney } from "@/lib/format"
 import type { PriceBook } from "@/types/catalog"
 import type { CatalogProduct } from "@/types/product"
@@ -20,11 +19,9 @@ interface BasketViewProps {
 }
 
 export function BasketView({ products, priceBook }: BasketViewProps) {
-  const items = useBasket()
-  const loaded = useBasketLoaded()
-  const lines = items.map((item) => resolveBasketLine(item, products, priceBook))
-  const subtotal = basketSubtotal(lines)
+  const { items, lines, subtotal, loaded } = useResolvedBasket(products, priceBook)
   const orderable = lines.some((line) => line.available)
+  const hasHelmets = lines.some((line) => line.available && line.kind === "helmet")
 
   if (!loaded) return <Skeleton className="h-80 rounded-3xl" aria-label="Loading your basket" />
 
@@ -33,13 +30,18 @@ export function BasketView({ products, priceBook }: BasketViewProps) {
       <EmptyState
         icon={ShoppingBag}
         title="Your basket is empty"
-        description="Pick a helmet design, make it yours in the configurator, then add it here."
+        description="Shop MS Kart karts and parts, or design a custom helmet and add it here."
         action={
-          <Button asChild>
-            <Link href="/customisation">
-              Browse helmet designs <ArrowRight />
-            </Link>
-          </Button>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button asChild>
+              <Link href="/shop">
+                Shop MS Kart <ArrowRight />
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/customisation">Custom helmets</Link>
+            </Button>
+          </div>
         }
       />
     )
@@ -82,9 +84,11 @@ export function BasketView({ products, priceBook }: BasketViewProps) {
         )}
         <p className="flex items-start gap-2 text-xs text-paper/55">
           <Lock className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-          You approve a digital proof before anything is painted. Nothing is charged today.
+          {hasHelmets
+            ? "You approve a digital proof before any helmet is painted. Nothing is charged today."
+            : "Nothing is charged today. We confirm your order and send a secure payment link."}
         </p>
-        <Link href="/customisation" className="block text-center text-sm text-paper/70 underline-offset-4 hover:underline">
+        <Link href="/shop" className="block text-center text-sm text-paper/70 underline-offset-4 hover:underline">
           Continue shopping
         </Link>
       </aside>
