@@ -68,7 +68,7 @@ async function Post({ slug }: { slug: string }) {
           "@type": "NewsArticle",
           headline: post.title,
           description: post.seoDescription || summaryOf(post.excerpt, post.body, 155),
-          image: post.coverUrl ? [post.coverUrl] : undefined,
+          image: post.coverUrl ? [new URL(post.coverUrl, siteConfig.url).toString()] : undefined,
           datePublished: post.publishedAt,
           dateModified: post.updatedAt,
           author: { "@type": "Organization", name: post.authorName, url: siteConfig.url },

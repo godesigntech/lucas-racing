@@ -17,7 +17,7 @@ export async function GET() {
       <link>${link}</link>
       <guid isPermaLink="true">${link}</guid>
       <pubDate>${new Date(post.publishedAt ?? post.updatedAt).toUTCString()}</pubDate>
-      <description>${escape(summaryOf(post.excerpt, post.body, 300))}</description>${post.category ? `\n      <category>${escape(post.category.name)}</category>` : ""}${post.coverUrl ? `\n      <enclosure url="${escape(post.coverUrl)}" type="image/webp" length="0" />` : ""}
+      <description>${escape(summaryOf(post.excerpt, post.body, 300))}</description>${post.category ? `\n      <category>${escape(post.category.name)}</category>` : ""}${post.coverUrl ? `\n      <enclosure url="${escape(new URL(post.coverUrl, site).toString())}" type="image/webp" length="0" />` : ""}
     </item>`
     })
     .join("\n")

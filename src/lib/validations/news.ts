@@ -19,7 +19,8 @@ export const newsPostSchema = z
     slug,
     excerpt: z.string().trim().max(320, "Keep the summary under 320 characters"),
     body: z.string().max(60000, "That article is too long"),
-    coverUrl: z.string().regex(/^https:\/\/\S+$/, "Upload the photo again").nullable(),
+    // An uploaded photo, or one of the site's own photos in /images.
+    coverUrl: z.string().regex(/^(https:\/\/\S+|\/images\/[\w./-]+)$/, "Upload the photo again").nullable(),
     coverAlt: z.string().trim().max(200),
     categoryId: z.uuid().nullable(),
     status: z.enum(["draft", "published"]),
