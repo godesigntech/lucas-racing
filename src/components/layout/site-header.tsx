@@ -30,8 +30,8 @@ export async function SiteHeader() {
         </div>
       )}
       <div className="border-b border-carbon/10 bg-paper/85 backdrop-blur-md supports-[backdrop-filter]:bg-paper/70">
-        <Container className="flex h-16 items-center justify-between gap-3 lg:h-[4.5rem]">
-          <Logo preload height={38} />
+        <Container className="flex h-16 items-center justify-between gap-3 lg:h-20">
+          <Logo preload height={56} imageClassName="h-11 w-auto lg:h-14" />
 
           {/* Eight sections need the room: below xl the menu lives in the slide-out sheet. */}
           <div className="hidden xl:block">

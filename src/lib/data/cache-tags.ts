@@ -4,4 +4,5 @@ export const cacheTags = {
   settings: "settings",
   team: "team",
   shop: "shop",
+  news: "news",
 } as const

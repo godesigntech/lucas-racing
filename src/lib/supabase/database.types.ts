@@ -243,6 +243,31 @@ export type QuoteRequestRow = Timestamps & {
   admin_notes: string
 }
 
+export type NewsCategoryRow = Timestamps & {
+  id: string
+  name: string
+  slug: string
+  description: string
+  sort_order: number
+}
+
+export type NewsPostRow = Timestamps & {
+  id: string
+  slug: string
+  title: string
+  excerpt: string
+  body: string
+  cover_url: string | null
+  cover_alt: string
+  category_id: string | null
+  status: string
+  published_at: string | null
+  featured: boolean
+  author_name: string
+  seo_title: string
+  seo_description: string
+}
+
 export type TeamMemberRow = Timestamps & {
   id: string
   name: string
@@ -418,6 +443,13 @@ export type Database = {
       contact_messages: Table<ContactMessageRow, "name" | "email" | "topic" | "message", keyof ContactMessageRow>
       saved_designs: Table<SavedDesignRow, "product_slug" | "name" | "config", keyof SavedDesignRow>
       team_members: Table<TeamMemberRow, "name", keyof TeamMemberRow>
+      news_categories: Table<NewsCategoryRow, "name" | "slug", keyof NewsCategoryRow>
+      news_posts: Table<
+        NewsPostRow,
+        "slug" | "title",
+        keyof NewsPostRow,
+        [{ foreignKeyName: "news_posts_category_id_fkey"; columns: ["category_id"]; isOneToOne: false; referencedRelation: "news_categories"; referencedColumns: ["id"] }]
+      >
       stores: Table<StoreRow, "id" | "name", keyof StoreRow>
       import_runs: Table<ImportRunRow, "store_id", keyof ImportRunRow>
       shop_categories: Table<

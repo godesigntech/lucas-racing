@@ -3,6 +3,7 @@ import {
   Inbox,
   LayoutDashboard,
   MessagesSquare,
+  Newspaper,
   Package,
   PoundSterling,
   Settings,
@@ -48,6 +49,7 @@ export const adminNavSections: { title: string; items: AdminNavItem[] }[] = [
   {
     title: "Website",
     items: [
+      { label: "News", href: "/admin/news", icon: Newspaper, fullAdminOnly: true },
       { label: "Team", href: "/admin/team", icon: UsersRound, fullAdminOnly: true },
       { label: "Settings", href: "/admin/settings", icon: Settings, fullAdminOnly: true },
     ],

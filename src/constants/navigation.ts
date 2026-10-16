@@ -10,20 +10,19 @@ export interface NavGroup extends NavItem {
   children?: NavItem[]
 }
 
-/** The client's top-level menu: eight items, details in dropdowns. */
+/** The client's top-level menu, details in dropdowns. */
 export const mainNav: NavGroup[] = [
-  { label: "Home", href: "/" },
   {
     label: "About Us",
     href: "/about",
     children: [
       { label: "About Lucas Racing", href: "/about", description: "A family-run racing team since day one" },
+      { label: "Meet the team", href: "/team", description: "Howard, Connor, Wendy and the people behind the team" },
       { label: "Racing support", href: "/about/racing-support", description: "Coaching, race weekends and driver development" },
       { label: "News and results", href: "/news", description: "What's happening at Lucas Racing" },
       { label: "Gallery", href: "/gallery", description: "Race weekends, the team and the paddock" },
     ],
   },
-  { label: "Meet the Team", href: "/team" },
   {
     label: "MS Kart Shop",
     href: "/shop",

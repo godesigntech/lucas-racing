@@ -1,6 +1,7 @@
 import { TeamGrid } from "@/components/about/team-grid"
 import { HomeContact } from "@/components/home/home-contact"
 import { HomeCustomisation } from "@/components/home/home-customisation"
+import { HomeNews } from "@/components/home/home-news"
 import { HomePaddock } from "@/components/home/home-paddock"
 import { HomeServices } from "@/components/home/home-services"
 import { HomeTicker } from "@/components/home/home-ticker"
@@ -9,8 +10,7 @@ import { PartnerShops } from "@/components/home/partner-shops"
 import { ShopCategories } from "@/components/home/shop-categories"
 
 // The client's order: Lucas Racing, the team, MS Kart and racing support, the shop,
-// customisation, racewear and teamwear, then contact. News and results join above
-// contact once posts exist.
+// customisation, racewear and teamwear, then news (once posts exist) and contact.
 export default function HomePage() {
   return (
     <>
@@ -26,6 +26,7 @@ export default function HomePage() {
       <ShopCategories />
       <HomeCustomisation />
       <PartnerShops />
+      <HomeNews />
       <HomeContact />
     </>
   )

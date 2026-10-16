@@ -13,10 +13,12 @@ interface LogoProps {
   /** Load straight away (above the fold). */
   preload?: boolean
   className?: string
+  /** Responsive sizing for the image, e.g. a larger logo on desktop. */
+  imageClassName?: string
 }
 
 /** The Lucas Racing logo, linking home. Uses the client's artwork as supplied. */
-export function Logo({ tone = "dark", height = 40, preload, className }: LogoProps) {
+export function Logo({ tone = "dark", height = 40, preload, className, imageClassName }: LogoProps) {
   const { src, width: naturalWidth, height: naturalHeight } = brandLogos.lucasRacing
   const width = Math.round((naturalWidth / naturalHeight) * height)
 
@@ -30,7 +32,7 @@ export function Logo({ tone = "dark", height = 40, preload, className }: LogoPro
         className,
       )}
     >
-      <Image src={src} alt="" width={width} height={height} preload={preload} sizes={`${width}px`} />
+      <Image src={src} alt="" width={width} height={height} preload={preload} sizes={`${width}px`} className={imageClassName} />
     </Link>
   )
 }

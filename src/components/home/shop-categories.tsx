@@ -19,26 +19,26 @@ interface Category {
 const categories: Category[] = [
   {
     title: "Complete karts",
-    description: "MS Kart chassis and race-ready packages",
+    description: "MS Kart chassis and race-ready packages, set up by the team",
     href: "/shop/complete-karts",
     image: images.teamAwning,
   },
   {
     title: "Parts and spares",
-    description: "Genuine MS Kart parts and components",
+    description: "Genuine MS Kart parts, components and race-day spares",
     href: "/shop/parts",
     image: images.connor,
   },
   {
     title: "Custom helmets",
-    description: "Arai SK-6 and Bell KC7 by HydroKarts",
+    description: "Arai SK-6 and Bell KC7 designs, finished by HydroKarts",
     href: "/customisation",
     image: helmetPhotos.araiSk6,
     cutout: true,
   },
   {
-    title: "Teamwear",
-    description: "Hoodies, T-shirts and polos from Wendy's shop",
+    title: "Teamwear & racewear",
+    description: "Wendy's Teamwear kit and Delta Racewear custom race suits",
     href: "/teamwear",
     image: images.wendy,
   },
@@ -79,11 +79,11 @@ export function ShopCategories() {
                 )}
                 <div aria-hidden className={cn("absolute inset-0 bg-gradient-to-t from-carbon via-carbon/40 to-transparent")} />
                 <div className="relative space-y-1 p-6">
-                  <h3 className="flex items-center justify-between gap-2 font-display text-3xl font-bold uppercase leading-none">
+                  <h3 className="flex min-h-[2lh] items-end justify-between gap-2 font-display text-3xl font-bold uppercase leading-none">
                     {category.title}
                     <ArrowUpRight className="size-5 shrink-0 text-brand transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden />
                   </h3>
-                  <p className="text-sm text-paper/75">{category.description}</p>
+                  <p className="line-clamp-2 min-h-[2lh] text-sm text-paper/75">{category.description}</p>
                 </div>
               </Link>
             </li>

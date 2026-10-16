@@ -143,6 +143,14 @@
     .ken-burns {
       animation: ken-burns 24s ease-in-out infinite alternate;
     }
+    /* Slow bob for decorative chips; set --float-delay inline to stagger. */
+    .float-slow {
+      animation: float-slow 6s ease-in-out infinite alternate;
+      animation-delay: var(--float-delay, 0s);
+    }
+    .spin-slow {
+      animation: spin-slow 28s linear infinite;
+    }
   }
   /* Fades sections up as they scroll into view. CSS only: browsers without
      scroll-driven animations simply show the content. */
@@ -165,6 +173,15 @@
 @keyframes ken-burns {
   from { transform: scale(1); }
   to { transform: scale(1.08) translate(-1%, -1%); }
+}
+
+@keyframes float-slow {
+  from { translate: 0 0; }
+  to { translate: 0 -14px; }
+}
+
+@keyframes spin-slow {
+  to { rotate: 360deg; }
 }
 
 @keyframes reveal-up {

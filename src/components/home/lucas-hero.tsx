@@ -23,14 +23,14 @@ export async function LucasHero() {
 
       {/* The paddock photo: on top with a slanted bottom edge on small screens, filling the
           right-hand side behind a slanted edge (with an orange stripe along it) on large ones. */}
-      <div className="relative aspect-[4/3] sm:aspect-[16/9] lg:absolute lg:inset-y-0 lg:right-0 lg:-z-10 lg:aspect-auto lg:w-[56%]">
+      <div className="relative aspect-[4/3] sm:aspect-[16/9] lg:absolute lg:inset-y-0 lg:right-0 lg:-z-10 lg:aspect-auto lg:w-[52%]">
         <div className="absolute inset-0 overflow-hidden [clip-path:polygon(0_0,100%_0,100%_86%,0_100%)] lg:[clip-path:polygon(16%_0,100%_0,100%_100%,0_100%)]">
           <Image
             src={images.fatherAndSonPaddock.src}
             alt={images.fatherAndSonPaddock.alt}
             fill
             preload
-            sizes="(min-width: 1024px) 56vw, 100vw"
+            sizes="(min-width: 1024px) 52vw, 100vw"
             className="ken-burns object-cover lg:object-[60%_center]"
           />
           <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-carbon via-carbon/20 to-transparent lg:bg-gradient-to-r lg:from-carbon/70 lg:via-carbon/10" />
@@ -40,7 +40,7 @@ export async function LucasHero() {
       </div>
 
       <Container className="relative flex flex-col justify-center pb-14 pt-4 sm:pb-16 lg:min-h-[calc(100svh-7.5rem)] lg:py-24">
-        <div className="max-w-2xl space-y-7 lg:max-w-[46%]">
+        <div className="max-w-2xl space-y-7 lg:max-w-[min(44%,36rem)]">
           <p
             className="hero-in inline-flex items-center gap-2.5 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 font-mono text-[0.7rem] uppercase tracking-[0.16em] text-paper/80 backdrop-blur"
             style={delay(0)}
@@ -49,7 +49,9 @@ export async function LucasHero() {
               <span className="absolute inline-flex size-full animate-ping rounded-full bg-brand opacity-75" />
               <span className="relative inline-flex size-2 rounded-full bg-brand" />
             </span>
-            Oldham<span className="hidden sm:inline">, Greater Manchester</span> · MS Kart since 1999
+            <span>
+              Oldham<span className="hidden sm:inline">, Greater Manchester</span> · MS Kart since 1999
+            </span>
           </p>
 
           <h1 className="display text-[3.4rem] min-[420px]:text-[4rem] sm:text-8xl lg:text-[5.25rem] xl:text-[6.25rem] 2xl:text-[7rem]">

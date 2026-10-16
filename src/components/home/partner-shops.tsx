@@ -27,7 +27,7 @@ const shops = [
 /** Racewear and teamwear promos. */
 export function PartnerShops() {
   return (
-    <section className="pb-20 sm:pb-24">
+    <section className="py-20 sm:py-24">
       <Container className="grid gap-6 lg:grid-cols-2">
         {shops.map((shop) => (
           <Link
