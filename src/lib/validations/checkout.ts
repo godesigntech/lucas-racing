@@ -74,10 +74,17 @@ export const helmetItemSchema = z.object({
   }),
 })
 
+export const partFinishSchema = z.object({
+  type: z.enum(["paint", "film", "chrome"]),
+  value: z.string().trim().min(1).max(80),
+  lacquer: z.string().trim().max(40),
+})
+
 export const productItemSchema = z.object({
   kind: z.literal("product"),
   variantId: z.uuid(),
   quantity: z.number().int().min(1).max(99),
+  finish: partFinishSchema.optional(),
 })
 
 export const basketItemSchema = z.discriminatedUnion("kind", [helmetItemSchema, productItemSchema])

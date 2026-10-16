@@ -18,6 +18,7 @@ export const demoSettings: SiteSettings = {
   eventName: "Kartmania",
   eventDates: "14–15 November 2026",
   showEventBanner: true,
+  kartPartsLive: false,
   socialLinks: [
     { label: "Instagram", icon: "instagram", href: "https://www.instagram.com/" },
     { label: "Facebook", icon: "facebook", href: "https://www.facebook.com/" },

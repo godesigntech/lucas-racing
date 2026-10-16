@@ -54,7 +54,7 @@ export function ComingSoon({ eyebrow, title, description, image, logo, points, e
                 </Link>
               </Button>
               <Button asChild variant="outline">
-                <Link href="/customisation">Design a helmet</Link>
+                <Link href="/customisation/helmets">Design a helmet</Link>
               </Button>
             </div>
           </div>

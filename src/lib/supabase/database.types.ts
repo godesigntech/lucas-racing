@@ -45,6 +45,7 @@ export type SiteSettingsRow = {
   event_name: string
   event_dates: string
   show_event_banner: boolean
+  kart_parts_live: boolean
   social_links: Json
   delivery_methods: Json
   updated_at: string
@@ -292,6 +293,8 @@ export type ShopProductRow = Timestamps & {
   is_active: boolean
   featured: boolean
   customisable: boolean
+  custom_finishes: string[]
+  custom_fee: number
   sort_order: number
   manual_fields: string[]
 }

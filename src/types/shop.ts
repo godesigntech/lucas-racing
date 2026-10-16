@@ -1,3 +1,7 @@
+/** How a customisable part can be finished, priced from the helmet price list. */
+export type FinishType = "paint" | "film" | "chrome"
+export const finishTypes: FinishType[] = ["paint", "film", "chrome"]
+
 export type StoreId = "ms-kart" | "teamwear" | "hydrokarts-parts" | "delta"
 
 export interface Store {
@@ -62,6 +66,10 @@ export interface ShopProduct {
   isActive: boolean
   featured: boolean
   customisable: boolean
+  /** Finishes a customisable part can be ordered in; empty means it is sold as it comes. */
+  customFinishes: FinishType[]
+  /** Added to the variant price when a finish is chosen. */
+  customFee: number
   sortOrder: number
   variants: ShopVariant[]
 }

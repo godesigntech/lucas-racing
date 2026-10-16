@@ -17,7 +17,7 @@ export function OrderList({ orders }: { orders: OrderListItem[] }) {
         description="When you order a custom helmet it will appear here, with its status at every step."
         action={
           <Button asChild>
-            <Link href="/customisation">Browse helmet designs</Link>
+            <Link href="/customisation/helmets">Browse helmet designs</Link>
           </Button>
         }
       />

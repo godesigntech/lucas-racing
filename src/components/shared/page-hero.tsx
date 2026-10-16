@@ -15,12 +15,14 @@ interface PageHeroProps {
   image?: SiteImage
   /** A section's own brand (MS Kart, HydroKarts, Delta), shown on a light panel above the heading. */
   logo?: BrandLogo
+  /** Custom brand lockup in place of `logo`, e.g. two logos side by side. */
+  brand?: React.ReactNode
   children?: React.ReactNode
   className?: string
 }
 
 /** Dark intro band used at the top of inner pages. */
-export function PageHero({ eyebrow, title, description, image, logo, children, className }: PageHeroProps) {
+export function PageHero({ eyebrow, title, description, image, logo, brand, children, className }: PageHeroProps) {
   return (
     <section className={cn("relative isolate overflow-hidden bg-carbon text-paper", className)}>
       {image && (
@@ -45,6 +47,7 @@ export function PageHero({ eyebrow, title, description, image, logo, children, c
             />
           </div>
         )}
+        {brand && <div className="mb-8">{brand}</div>}
         <SectionHeading as="h1" tone="light" eyebrow={eyebrow} title={title} description={description} />
         {children}
       </Container>

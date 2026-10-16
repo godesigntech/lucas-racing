@@ -17,6 +17,11 @@ export const brandLogos = {
     width: 2057,
     height: 437,
   },
+  /**
+   * The HydroKarts.co.uk wordmark, cut from the supplied Lucas Racing by HydroKarts logo.
+   * Shown beside the MS Kart logo with a plain "by" until a combined logo is approved.
+   */
+  hydroKarts: { src: "/images/brand/hydrokarts-logo.png", alt: "HydroKarts.co.uk", width: 599, height: 207 },
   /** MS Kart shop and distributor sections only. */
   msKart: { src: "/images/brand/ms-kart-logo.png", alt: "MS Kart Racing Technology", width: 734, height: 216 },
 } satisfies Record<string, BrandLogo>

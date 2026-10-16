@@ -25,7 +25,7 @@ export async function placeOrder(input: PlaceOrderInput): Promise<ActionResult<{
   // place_order() takes helmet builds as { slug, quantity, config } and products as { kind, variant_id, quantity }.
   const orderItems = items.map((item) =>
     item.kind === "product"
-      ? { kind: "product", variant_id: item.variantId, quantity: item.quantity }
+      ? { kind: "product", variant_id: item.variantId, quantity: item.quantity, ...(item.finish ? { finish: item.finish } : {}) }
       : { slug: item.slug, quantity: item.quantity, config: item.config },
   )
   const { data, error } = await supabase.rpc("place_order", {

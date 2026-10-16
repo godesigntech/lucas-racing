@@ -39,7 +39,7 @@ export function BasketView({ products, priceBook }: BasketViewProps) {
               </Link>
             </Button>
             <Button asChild variant="outline">
-              <Link href="/customisation">Custom helmets</Link>
+              <Link href="/customisation/helmets">Custom helmets</Link>
             </Button>
           </div>
         }

@@ -37,7 +37,13 @@ export const shopProductSchema = z.object({
   isActive: z.boolean(),
   featured: z.boolean(),
   customisable: z.boolean(),
+  /** Finishes a customisable part can be ordered in (priced from the helmet price list). */
+  customFinishes: z.array(z.enum(["paint", "film", "chrome"])).max(3),
+  customFee: money,
   sortOrder: z.number({ error: "Enter a number" }).int().min(0).max(100000),
+}).refine((values) => !values.customisable || values.customFinishes.length > 0, {
+  error: "Choose at least one finish",
+  path: ["customFinishes"],
 })
 export type ShopProductValues = z.infer<typeof shopProductSchema>
 

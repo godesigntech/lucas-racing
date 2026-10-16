@@ -1,7 +1,7 @@
 import { Suspense } from "react"
 import type { Metadata } from "next"
 import Link from "next/link"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { ExternalLink } from "lucide-react"
 
 import { Container } from "@/components/layout/container"
@@ -49,6 +49,8 @@ export default function ShopProductPage({ params }: PageProps<"/shop/p/[slug]">)
 async function ProductView({ slug }: { slug: string }) {
   const product = await getShopProductBySlug(slug)
   if (!product) notFound()
+  // Customisable HydroKarts parts have their own page with the finish picker.
+  if (product.storeId === "hydrokarts-parts") redirect(`/customisation/kart-parts/${product.slug}`)
   const store = storePages[product.storeId]
 
   return (

@@ -17,7 +17,7 @@ export async function HomeContact() {
   return (
     <section className="pb-20 sm:pb-24">
       <Container>
-        <div className="reveal relative isolate grid gap-8 overflow-hidden rounded-[2rem] bg-brand p-8 text-carbon sm:p-12 lg:grid-cols-[1.2fr_1fr] lg:items-center">
+        <div className="reveal relative isolate grid gap-8 overflow-clip rounded-[2rem] bg-brand p-8 text-carbon sm:p-12 lg:grid-cols-[1.2fr_1fr] lg:items-center">
           <div aria-hidden className="chequer absolute -right-10 -top-10 -z-10 size-40 rotate-12 rounded-2xl opacity-10" />
           <div className="space-y-4">
             <p className="eyebrow">Get in touch</p>

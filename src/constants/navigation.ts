@@ -37,7 +37,8 @@ export const mainNav: NavGroup[] = [
     label: "Customisation",
     href: "/customisation",
     children: [
-      { label: "Custom helmets", href: "/customisation", description: "Arai SK-6 and Bell KC7 designs by HydroKarts" },
+      { label: "Customisation by HydroKarts", href: "/customisation", description: "Helmets and kart parts in your own finish" },
+      { label: "Custom helmets", href: "/customisation/helmets", description: "Arai SK-6 and Bell KC7 designs by HydroKarts" },
       { label: "Helmet builder", href: "/helmet-builder", description: "Design yours step by step, in 3D" },
       { label: "MS Kart parts by HydroKarts", href: "/customisation/kart-parts", description: "Kart parts in your own finish" },
     ],
@@ -63,7 +64,7 @@ export const footerNav: { title: string; items: NavItem[] }[] = [
     title: "Shop",
     items: [
       { label: "MS Kart shop", href: "/shop" },
-      { label: "Custom helmets", href: "/customisation" },
+      { label: "Custom helmets", href: "/customisation/helmets" },
       { label: "MS Kart parts by HydroKarts", href: "/customisation/kart-parts" },
       { label: "Delta Racewear", href: "/racewear" },
       { label: "Wendy's Teamwear", href: "/teamwear" },

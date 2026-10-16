@@ -62,7 +62,7 @@ export function HomePaddock() {
             </figcaption>
           </figure>
 
-          <blockquote className="reveal relative flex min-h-60 flex-col justify-between overflow-hidden rounded-[2rem] bg-brand p-6 text-carbon sm:p-7">
+          <blockquote className="reveal relative flex min-h-60 flex-col justify-between overflow-clip rounded-[2rem] bg-brand p-6 text-carbon sm:p-7">
             <Quote className="size-8 opacity-80" aria-hidden />
             <p className="font-display text-2xl font-bold uppercase leading-[1.05] sm:text-[1.7rem]">
               It&apos;s about dedication, hard work, friendship and family.

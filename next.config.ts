@@ -16,7 +16,10 @@ const nextConfig: NextConfig = {
     return [
       { source: "/products/:slug/customize", destination: "/helmet-builder?template=:slug", permanent: false },
       { source: "/products/:slug", destination: "/helmet-builder?template=:slug", permanent: false },
-      { source: "/products", destination: "/customisation", permanent: true },
+      { source: "/products", destination: "/customisation/helmets", permanent: true },
+      // Filtered design lists moved from /customisation to /customisation/helmets.
+      { source: "/customisation", has: [{ type: "query", key: "category" }], destination: "/customisation/helmets", permanent: true },
+      { source: "/customisation", has: [{ type: "query", key: "helmet" }], destination: "/customisation/helmets", permanent: true },
       { source: "/kart-parts", destination: "/shop", permanent: true },
       { source: "/kart-customiser", destination: "/customisation/kart-parts", permanent: true },
     ]

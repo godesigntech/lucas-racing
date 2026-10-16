@@ -32,7 +32,7 @@ export default function NotFound() {
               </Link>
             </Button>
             <Button asChild size="lg" variant="inverse">
-              <Link href="/customisation">Browse helmet designs</Link>
+              <Link href="/customisation/helmets">Browse helmet designs</Link>
             </Button>
           </div>
         </Container>

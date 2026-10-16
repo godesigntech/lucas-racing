@@ -122,6 +122,7 @@ export function toSiteSettings(row: SiteSettingsRow): SiteSettings {
     eventName: row.event_name,
     eventDates: row.event_dates,
     showEventBanner: row.show_event_banner,
+    kartPartsLive: row.kart_parts_live ?? false,
     socialLinks: asArray(row.social_links).map((link) => {
       const item = asObject(link)
       return { label: str(item.label), icon: str(item.icon, "instagram") as SocialIconName, href: str(item.href) } satisfies SocialLink

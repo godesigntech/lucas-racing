@@ -1,12 +1,14 @@
 import type { Json, ShopCategoryRow, ShopProductRow, ShopVariantRow, StoreRow } from "@/lib/supabase/database.types"
-import type {
-  ShopCategory,
-  ShopProduct,
-  ShopProductSource,
-  ShopSpec,
-  ShopVariant,
-  Store,
-  StoreId,
+import {
+  finishTypes,
+  type FinishType,
+  type ShopCategory,
+  type ShopProduct,
+  type ShopProductSource,
+  type ShopSpec,
+  type ShopVariant,
+  type Store,
+  type StoreId,
 } from "@/types/shop"
 
 // Shared by server data loaders and the browser (basket), so no server-only imports.
@@ -86,6 +88,8 @@ export function toShopProduct(row: ShopProductRow & { shop_variants?: ShopVarian
     isActive: row.is_active,
     featured: row.featured,
     customisable: row.customisable,
+    customFinishes: (row.custom_finishes ?? []).filter((type): type is FinishType => (finishTypes as string[]).includes(type)),
+    customFee: Number(row.custom_fee ?? 0),
     sortOrder: row.sort_order,
     variants: (row.shop_variants ?? []).map(toShopVariant).sort((a, b) => a.sortOrder - b.sortOrder),
   }

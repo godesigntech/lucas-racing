@@ -92,6 +92,8 @@ export async function updateShopProduct(id: string, values: ShopProductValues): 
       is_active: data.isActive,
       featured: data.featured,
       customisable: data.customisable,
+      custom_finishes: data.customisable ? data.customFinishes : [],
+      custom_fee: data.customFee,
       sort_order: data.sortOrder,
     })
     .eq("id", id)

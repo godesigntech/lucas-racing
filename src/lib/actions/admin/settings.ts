@@ -164,3 +164,15 @@ export async function removeAdmin(email: string): Promise<ActionResult> {
   revalidatePath("/admin/settings")
   return { ok: true, message: `${email} no longer has admin access.` }
 }
+
+/** Makes MS Kart parts by HydroKarts public once the client approves the branding (off: admins only). */
+export async function setKartPartsLive(live: boolean): Promise<ActionResult> {
+  if (isDemoMode()) return DEMO_READ_ONLY
+  if (!(await getFullAdmin())) return NOT_ALLOWED
+  const supabase = await createClient()
+  const { error } = await supabase.from("site_settings").update({ kart_parts_live: live === true }).eq("id", 1)
+  if (error) return databaseError(error, "We couldn't change that.")
+  refreshSettings()
+  revalidatePath("/customisation/kart-parts")
+  return { ok: true, message: live ? "MS Kart parts by HydroKarts is now public." : "MS Kart parts by HydroKarts is now admin-only." }
+}

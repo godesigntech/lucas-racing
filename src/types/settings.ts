@@ -27,6 +27,8 @@ export interface SiteSettings {
   eventName: string
   eventDates: string
   showEventBanner: boolean
+  /** MS Kart parts by HydroKarts is public (off: admins only, until the branding is approved). */
+  kartPartsLive: boolean
   socialLinks: SocialLink[]
   deliveryMethods: DeliveryMethod[]
 }

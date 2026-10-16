@@ -10,6 +10,7 @@ import { basket } from "@/lib/basket/basket-store"
 import type { ResolvedBasketLine, ResolvedHelmetLine, ResolvedProductLine } from "@/lib/basket/resolve-basket"
 import { formatMoney } from "@/lib/format"
 import { isExternalImage } from "@/lib/shop/images"
+import { productHref } from "@/lib/shop/part-finish"
 
 import { QuantityStepper } from "./quantity-stepper"
 
@@ -98,7 +99,7 @@ function HelmetLine({ line }: { line: ResolvedHelmetLine }) {
 function ProductLine({ line }: { line: ResolvedProductLine }) {
   const { item, product, variant } = line
   const image = product.images[0]
-  const href = `/shop/p/${product.slug}`
+  const href = productHref(product)
 
   return (
     <li className="grid gap-5 rounded-3xl border border-carbon/10 bg-card p-5 sm:grid-cols-[10rem_minmax(0,1fr)] sm:p-6">
@@ -119,6 +120,11 @@ function ProductLine({ line }: { line: ResolvedProductLine }) {
               </Link>
             </h3>
             {line.variantLabel && <p className="mt-1 text-sm text-muted-foreground">{line.variantLabel}</p>}
+            {line.finishSummary.map((row) => (
+              <p key={row.key} className="mt-0.5 text-sm text-muted-foreground">
+                <span className="font-medium text-carbon">{row.label}:</span> {row.value}
+              </p>
+            ))}
             {variant.sku && <p className="mt-0.5 font-mono text-xs text-muted-foreground">Part no. {variant.sku}</p>}
           </div>
           <p className="font-display text-2xl font-bold">{formatMoney(line.lineTotal)}</p>

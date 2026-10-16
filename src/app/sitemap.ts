@@ -11,6 +11,7 @@ const pages: { path: string; priority: number }[] = [
   { path: "/team", priority: 0.8 },
   { path: "/shop", priority: 0.9 },
   { path: "/customisation", priority: 0.8 },
+  { path: "/customisation/helmets", priority: 0.8 },
   { path: "/helmet-builder", priority: 0.7 },
   { path: "/customisation/kart-parts", priority: 0.6 },
   { path: "/racewear", priority: 0.6 },

@@ -4,9 +4,10 @@ import { cacheLife, cacheTag } from "next/cache"
 import { notFound } from "next/navigation"
 import { connection } from "next/server"
 
-import { requireFullAdmin } from "@/lib/auth/session"
+import { getCurrentUser, requireFullAdmin } from "@/lib/auth/session"
 import { ADMIN_PAGE_SIZE, type Paged } from "@/lib/data/admin"
 import { isDemoMode } from "@/lib/demo/mode"
+import { getSiteSettings } from "@/lib/data/settings"
 import { toShopCategory, toShopProduct, toStore } from "@/lib/shop/mappers"
 import { LOW_STOCK } from "@/lib/shop/stock"
 import type { ShopProductRow, ShopVariantRow } from "@/lib/supabase/database.types"
@@ -77,7 +78,7 @@ export async function getShopSitemapEntries(): Promise<{ path: string; lastModif
   if (isDemoMode()) return []
   const supabase = createPublicClient()
   const [products, categories] = await Promise.all([
-    supabase.from("shop_products").select("slug, updated_at, store_id").eq("is_active", true).neq("store_id", "delta").limit(5000),
+    supabase.from("shop_products").select("slug, updated_at, store_id").eq("is_active", true).not("store_id", "in", "(delta,hydrokarts-parts)").limit(5000),
     supabase.from("shop_categories").select("slug").eq("store_id", "ms-kart").eq("is_active", true),
   ])
   return [
@@ -235,4 +236,38 @@ export async function listImportRuns(limit = 15): Promise<ImportRun[]> {
       createdAt: row.created_at,
     }
   })
+}
+
+// ---------------------------------------------------------------------------
+// MS Kart parts by HydroKarts (customisation)
+// ---------------------------------------------------------------------------
+
+/**
+ * Whether this visitor may see MS Kart parts by HydroKarts: everyone once the client
+ * approves the branding (Admin > Settings), admins only until then. Request-time.
+ */
+export async function canSeeKartParts(): Promise<{ visible: boolean; preview: boolean }> {
+  const [settings, user] = await Promise.all([getSiteSettings(), getCurrentUser()])
+  if (settings.kartPartsLive) return { visible: true, preview: false }
+  const admin = Boolean(user?.isAdmin)
+  return { visible: admin, preview: admin }
+}
+
+/** Active customisable parts in the HydroKarts parts store, with their variants. */
+export async function listCustomParts(): Promise<ShopProduct[]> {
+  await connection()
+  if (isDemoMode()) return []
+  const { data, error } = await createPublicClient()
+    .from("shop_products")
+    .select(PRODUCT_SELECT)
+    .eq("store_id", "hydrokarts-parts")
+    .eq("is_active", true)
+    .eq("customisable", true)
+    .order("sort_order")
+    .order("title")
+  if (error) throw new Error(`Could not load the parts: ${error.message}`)
+  return (data as ProductWithVariants[])
+    .map(toShopProduct)
+    .map((product) => ({ ...product, variants: product.variants.filter((variant) => variant.isActive) }))
+    .filter((product) => product.customFinishes.length > 0 && product.variants.length > 0)
 }

@@ -4,6 +4,7 @@ import { AdminPageHeader } from "@/components/admin/admin-page-header"
 import { AdminUsersCard } from "@/components/admin/settings/admin-users-card"
 import { BusinessForm } from "@/components/admin/settings/business-form"
 import { DeliveryMethodsForm } from "@/components/admin/settings/delivery-methods-form"
+import { LaunchesCard } from "@/components/admin/settings/launches-card"
 import { SocialLinksForm } from "@/components/admin/settings/social-links-form"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -14,7 +15,7 @@ export const metadata = { title: "Settings" }
 export default function AdminSettingsPage() {
   return (
     <>
-      <AdminPageHeader title="Settings" description="Business details, social links, delivery options and admin access." />
+      <AdminPageHeader title="Settings" description="Business details, social links, delivery options, page launches and admin access." />
       <Suspense fallback={<Skeleton className="h-[36rem] rounded-2xl" />}>
         <SettingsEditor />
       </Suspense>
@@ -38,6 +39,9 @@ async function SettingsEditor() {
           <TabsTrigger value="delivery" className="rounded-full px-4">
             Delivery
           </TabsTrigger>
+          <TabsTrigger value="launches" className="rounded-full px-4">
+            Launches
+          </TabsTrigger>
           <TabsTrigger value="admins" className="rounded-full px-4">
             Admins
           </TabsTrigger>
@@ -51,6 +55,9 @@ async function SettingsEditor() {
       </TabsContent>
       <TabsContent value="delivery">
         <DeliveryMethodsForm methods={settings.deliveryMethods} />
+      </TabsContent>
+      <TabsContent value="launches">
+        <LaunchesCard kartPartsLive={settings.kartPartsLive} />
       </TabsContent>
       <TabsContent value="admins">
         <AdminUsersCard admins={admins} currentEmail={currentEmail} />

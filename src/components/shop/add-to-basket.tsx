@@ -9,10 +9,13 @@ import { QuantityStepper } from "@/components/basket/quantity-stepper"
 import { Button } from "@/components/ui/button"
 import { basket } from "@/lib/basket/basket-store"
 import { formatMoney } from "@/lib/format"
+import { defaultFinish, isCustomisable, priceFinish, type PartFinish } from "@/lib/shop/part-finish"
 import { canBuy, maxQuantity, stockStatus, variantLabel } from "@/lib/shop/stock"
 import { cn } from "@/lib/utils"
+import type { PriceBook } from "@/types/catalog"
 import type { ShopProduct, ShopVariant } from "@/types/shop"
 
+import { PartFinishPicker } from "./part-finish-picker"
 import { StockBadge } from "./stock-badge"
 
 /** Values offered for one option name, in the order the variants are listed. */
@@ -20,12 +23,18 @@ function optionValues(variants: ShopVariant[], name: string): string[] {
   return [...new Set(variants.map((variant) => variant.options[name]).filter(Boolean))]
 }
 
-/** Option picker (size, colour…), live price and stock, quantity and Add to basket. */
-export function AddToBasket({ product }: { product: ShopProduct }) {
+/**
+ * Option picker (size, colour…), live price and stock, quantity and Add to basket.
+ * Customisable parts also pick a finish, priced from the helmet price list (`priceBook`).
+ */
+export function AddToBasket({ product, priceBook }: { product: ShopProduct; priceBook?: PriceBook }) {
   const variants = product.variants
   const firstBuyable = variants.find((variant) => canBuy(variant)) ?? variants[0]
   const [selected, setSelected] = useState<Record<string, string>>(firstBuyable?.options ?? {})
   const [quantity, setQuantity] = useState(1)
+  const customisable = Boolean(priceBook) && isCustomisable(product)
+  const [finish, setFinish] = useState<PartFinish | null>(() => (customisable && priceBook ? defaultFinish(product, priceBook) : null))
+  const finishPrice = customisable && priceBook && finish ? priceFinish(product, finish, priceBook) : null
 
   const variant =
     variants.find((candidate) => product.optionNames.every((name) => candidate.options[name] === selected[name])) ??
@@ -37,7 +46,8 @@ export function AddToBasket({ product }: { product: ShopProduct }) {
 
   const status = variant ? stockStatus(variant) : null
   const max = variant ? maxQuantity(variant) : 0
-  const buyable = Boolean(variant) && max > 0
+  const buyable = Boolean(variant) && max > 0 && (!customisable || Boolean(finishPrice))
+  const price = variant ? variant.price + (finishPrice?.extra ?? 0) : null
 
   function choose(name: string, value: string) {
     setSelected((current) => ({ ...current, [name]: value }))
@@ -54,6 +64,7 @@ export function AddToBasket({ product }: { product: ShopProduct }) {
         name: product.title,
         variantLabel: variantLabel(variant),
         imageUrl: product.images[0] ?? null,
+        ...(customisable && finish ? { finish } : {}),
       },
       quantity,
       max,
@@ -71,8 +82,8 @@ export function AddToBasket({ product }: { product: ShopProduct }) {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-baseline gap-3">
-        <p className="font-display text-5xl font-bold">{variant ? formatMoney(variant.price) : "Choose an option"}</p>
-        {variant?.compareAtPrice !== null && variant?.compareAtPrice !== undefined && variant.compareAtPrice > variant.price && (
+        <p className="font-display text-5xl font-bold">{price !== null ? formatMoney(price) : "Choose an option"}</p>
+        {!customisable && variant?.compareAtPrice !== null && variant?.compareAtPrice !== undefined && variant.compareAtPrice > variant.price && (
           <p className="text-lg text-muted-foreground line-through">{formatMoney(variant.compareAtPrice)}</p>
         )}
       </div>
@@ -118,6 +129,15 @@ export function AddToBasket({ product }: { product: ShopProduct }) {
         </fieldset>
       ))}
 
+      {customisable && priceBook && finish && (
+        <PartFinishPicker allowed={product.customFinishes} priceBook={priceBook} value={finish} onChange={setFinish} />
+      )}
+      {customisable && variant && finishPrice && (
+        <p className="text-sm text-muted-foreground">
+          Part {formatMoney(variant.price)} + customisation {formatMoney(finishPrice.extra)}
+        </p>
+      )}
+
       <div className="flex flex-wrap items-center gap-3">
         {status && <StockBadge status={status} />}
         {variant?.sku && <span className="font-mono text-xs text-muted-foreground">Part no. {variant.sku}</span>}
@@ -128,10 +148,10 @@ export function AddToBasket({ product }: { product: ShopProduct }) {
         <QuantityStepper value={Math.min(quantity, Math.max(1, max))} max={Math.max(1, max)} onChange={setQuantity} label="Quantity" />
         <Button size="lg" className="sm:flex-1" onClick={add} disabled={!buyable}>
           <ShoppingBag aria-hidden />
-          {!variant ? "Choose an option" : buyable ? "Add to basket" : "Out of stock"}
+          {!variant ? "Choose an option" : buyable ? "Add to basket" : max > 0 ? "Choose a finish" : "Out of stock"}
         </Button>
       </div>
-      {!buyable && variant && (
+      {max === 0 && variant && (
         <p className="text-sm text-muted-foreground">
           Out of stock right now.{" "}
           <Link

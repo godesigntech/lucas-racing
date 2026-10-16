@@ -9,11 +9,23 @@ import { AssistantConversation } from "./assistant-conversation"
 
 const PANEL_ID = "design-assistant-panel"
 
+/** Dispatch this on window to open the assistant from anywhere, e.g. a button on a page. */
+export const OPEN_ASSISTANT_EVENT = "lucas:open-design-assistant"
+
 /** Floating design assistant, bottom right, for guests and customers alike. Reads no session, so it renders in the static shell. */
 export function DesignAssistant() {
   const [open, setOpen] = useState(false)
   const [hasOpened, setHasOpened] = useState(false)
   const launcher = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    const openFromPage = () => {
+      setOpen(true)
+      setHasOpened(true)
+    }
+    window.addEventListener(OPEN_ASSISTANT_EVENT, openFromPage)
+    return () => window.removeEventListener(OPEN_ASSISTANT_EVENT, openFromPage)
+  }, [])
 
   useEffect(() => {
     if (!open) return

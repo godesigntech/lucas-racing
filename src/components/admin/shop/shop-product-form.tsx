@@ -4,9 +4,11 @@ import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2, Plus, X } from "lucide-react"
 
+import { MoneyInput } from "@/components/admin/money-input"
 import { fieldA11y, FormField } from "@/components/forms/form-field"
 import { runAction } from "@/components/forms/use-action-form"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -14,7 +16,8 @@ import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { updateShopProduct } from "@/lib/actions/admin/shop"
 import { shopProductSchema, type ShopProductValues } from "@/lib/validations/shop"
-import type { ShopCategory, ShopProduct } from "@/types/shop"
+import { finishLabels } from "@/lib/shop/part-finish"
+import { finishTypes, type ShopCategory, type ShopProduct } from "@/types/shop"
 
 import { storeLabels, storeOptions } from "./store-labels"
 
@@ -52,6 +55,8 @@ export function ShopProductForm({ product, categories }: ShopProductFormProps) {
     isActive: product.isActive,
     featured: product.featured,
     customisable: product.customisable,
+    customFinishes: product.customFinishes,
+    customFee: product.customFee,
     sortOrder: product.sortOrder,
   }
   const {
@@ -64,7 +69,7 @@ export function ShopProductForm({ product, categories }: ShopProductFormProps) {
     formState: { errors, isSubmitting, isDirty },
   } = useForm<ShopProductValues>({ resolver: zodResolver(shopProductSchema), defaultValues: defaults })
   const specs = useFieldArray({ control, name: "specs" })
-  const [storeId, optionNames] = useWatch({ control, name: ["storeId", "optionNames"] })
+  const [storeId, optionNames, customisable] = useWatch({ control, name: ["storeId", "optionNames", "customisable"] })
   const storeCategories = categories.filter((category) => category.storeId === storeId)
 
   async function onSubmit(values: ShopProductValues) {
@@ -210,6 +215,46 @@ export function ShopProductForm({ product, categories }: ShopProductFormProps) {
           )}
         />
       </div>
+
+      {customisable && (
+        <fieldset className="space-y-4 rounded-xl border border-carbon/10 p-4">
+          <legend className="px-1 font-semibold">Custom finish</legend>
+          <p className="text-sm text-muted-foreground">
+            Customers pick one of these finishes. Colours, films, chrome and lacquers are priced from the helmet price list; the
+            fee below is added for the work on this part.
+            {storeId !== "hydrokarts-parts" && " Customisable parts are sold under Customisation in the HydroKarts parts shop."}
+          </p>
+          <Controller
+            control={control}
+            name="customFinishes"
+            render={({ field }) => (
+              <div className="flex flex-wrap gap-4">
+                {finishTypes.map((type) => (
+                  <label key={type} className="flex items-center gap-2 text-sm font-medium">
+                    <Checkbox
+                      checked={field.value.includes(type)}
+                      onCheckedChange={(checked) =>
+                        field.onChange(checked ? finishTypes.filter((item) => item === type || field.value.includes(item)) : field.value.filter((item) => item !== type))
+                      }
+                    />
+                    {finishLabels[type]}
+                  </label>
+                ))}
+              </div>
+            )}
+          />
+          {errors.customFinishes?.message && <p className="text-sm text-destructive">{errors.customFinishes.message}</p>}
+          <Controller
+            control={control}
+            name="customFee"
+            render={({ field }) => (
+              <FormField id="product-custom-fee" label="Customisation fee" hint="Added to the part price for any finish." error={errors.customFee?.message}>
+                <MoneyInput id="product-custom-fee" value={field.value} onChange={field.onChange} className="max-w-40" />
+              </FormField>
+            )}
+          />
+        </fieldset>
+      )}
 
       <div className="flex flex-wrap items-end justify-between gap-4">
         <FormField id="product-sort" label="Order" hint="Lower numbers come first." error={errors.sortOrder?.message}>

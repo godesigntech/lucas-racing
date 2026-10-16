@@ -30,7 +30,7 @@ function lineDetail(line: AvailableLine): string {
   const parts =
     line.kind === "helmet"
       ? [line.summary.find((row) => row.key === "model")?.value, `Size ${line.item.config.size}`]
-      : [line.variantLabel]
+      : [line.variantLabel, ...line.finishSummary.map((row) => row.value)]
   if (line.quantity > 1) parts.push(`×${line.quantity}`)
   return parts.filter(Boolean).join(" · ")
 }

@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react"
 
+import { sameFinish, type PartFinish } from "@/lib/shop/part-finish"
 import type { HelmetConfiguration } from "@/types/configurator"
 import type { StoreId } from "@/types/shop"
 
@@ -26,6 +27,8 @@ export interface ProductBasketItem {
   name: string
   variantLabel: string
   imageUrl: string | null
+  /** The custom finish for a customisable part (MS Kart parts by HydroKarts). */
+  finish?: PartFinish
   quantity: number
 }
 
@@ -103,12 +106,13 @@ export const basket = {
     }
     write([...current, { ...item, kind: "helmet", id: crypto.randomUUID(), quantity: Math.min(quantity, MAX_QUANTITY) }])
   },
-  /** Adds a product variant, or adds to its quantity. `max` caps it at what's in stock. */
+  /** Adds a product variant (in a finish, if chosen), or adds to its quantity. `max` caps it at what's in stock. */
   addProduct(item: Omit<ProductBasketItem, "id" | "quantity" | "kind">, quantity = 1, max = MAX_PRODUCT_QUANTITY) {
     const current = getSnapshot()
     const limit = Math.min(max, MAX_PRODUCT_QUANTITY)
     const existing = current.find(
-      (line): line is ProductBasketItem => isProductItem(line) && line.variantId === item.variantId,
+      (line): line is ProductBasketItem =>
+        isProductItem(line) && line.variantId === item.variantId && sameFinish(line.finish, item.finish),
     )
     if (existing) {
       write(current.map((line) => (line.id === existing.id ? { ...existing, ...item, quantity: Math.min(limit, existing.quantity + quantity) } : line)))

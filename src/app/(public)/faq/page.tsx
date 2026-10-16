@@ -19,7 +19,7 @@ const faqs: { group: string; items: { question: string; answer: React.ReactNode 
         question: "How do I design my helmet?",
         answer: (
           <>
-            Pick a design on the <Link href="/customisation">products page</Link> and the builder opens right there. Choose your
+            Pick a design on the <Link href="/customisation/helmets">helmet designs page</Link> and the builder opens right there. Choose your
             helmet, finish, colours, hydro-dip film, rubber trim, and add your name, race number or logo. The preview and
             price update as you go.
           </>

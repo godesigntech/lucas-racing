@@ -52,7 +52,7 @@ export function HomeCustomisation() {
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <Link href="/customisation">Browse designs</Link>
+              <Link href="/customisation/helmets">Browse designs</Link>
             </Button>
           </div>
           <Link
