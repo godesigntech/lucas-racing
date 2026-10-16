@@ -86,7 +86,7 @@ export function CustomerChat({ customerId, firstName }: CustomerChatProps) {
         aria-controls={hasOpened ? PANEL_ID : undefined}
         aria-label={open ? "Close chat" : unread ? `Chat with the workshop, ${unread} unread` : "Chat with the workshop"}
         className={cn(
-          "fixed bottom-5 left-5 z-40 grid size-14 place-items-center rounded-full bg-carbon text-lime shadow-[0_12px_32px_-8px_rgb(17_20_18/0.6)] ring-1 ring-lime/30 transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-lime/60 active:scale-95",
+          "fixed bottom-5 left-5 z-40 grid size-14 place-items-center rounded-full bg-carbon text-brand shadow-[0_12px_32px_-8px_rgb(17_20_18/0.6)] ring-1 ring-brand/30 transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/60 active:scale-95",
           open && "max-sm:hidden",
         )}
       >
@@ -94,7 +94,7 @@ export function CustomerChat({ customerId, firstName }: CustomerChatProps) {
         {!open && unread > 0 && (
           <span
             aria-hidden
-            className="absolute -right-0.5 -top-0.5 grid min-w-5 place-items-center rounded-full bg-lime px-1 text-[0.7rem] font-bold leading-5 text-carbon ring-2 ring-paper"
+            className="absolute -right-0.5 -top-0.5 grid min-w-5 place-items-center rounded-full bg-brand px-1 text-[0.7rem] font-bold leading-5 text-carbon ring-2 ring-paper"
           >
             {unread > 9 ? "9+" : unread}
           </span>
@@ -139,13 +139,13 @@ function CustomerChatPanel({ open, onClose, customerId, conversationId, firstNam
       className="fixed z-50 flex flex-col overflow-hidden bg-card shadow-[0_24px_64px_-16px_rgb(17_20_18/0.45)] ring-1 ring-carbon/10 max-sm:inset-0 sm:bottom-24 sm:left-5 sm:h-[min(36rem,calc(100dvh-8rem))] sm:w-[23rem] sm:rounded-3xl"
     >
       <header className="grid-texture flex items-center gap-3 bg-carbon px-4 py-3.5 text-paper">
-        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-lime font-display text-lg font-bold text-carbon" aria-hidden>
+        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-brand font-display text-lg font-bold text-carbon" aria-hidden>
           LR
         </span>
         <div className="min-w-0 flex-1">
           <h2 className="font-display text-xl font-bold uppercase leading-none">Lucas Racing workshop</h2>
           <p className="mt-1 flex items-center gap-1.5 text-xs text-paper/65">
-            <span className="size-1.5 rounded-full bg-lime" aria-hidden /> We usually reply within a few hours
+            <span className="size-1.5 rounded-full bg-brand" aria-hidden /> We usually reply within a few hours
           </p>
         </div>
         <button

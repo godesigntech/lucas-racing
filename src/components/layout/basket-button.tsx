@@ -20,7 +20,7 @@ export function BasketButton({ className }: { className?: string }) {
     >
       <ShoppingBag className="size-[1.1rem]" aria-hidden />
       {count > 0 && (
-        <span className="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-lime px-1 text-[0.68rem] font-bold leading-5 text-carbon ring-2 ring-paper">
+        <span className="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-brand px-1 text-[0.68rem] font-bold leading-5 text-carbon ring-2 ring-paper">
           {count}
         </span>
       )}

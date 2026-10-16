@@ -25,12 +25,12 @@ export function OrderProgress({ status }: { status: OrderStatus }) {
             <span
               className={cn(
                 "h-1.5 rounded-full",
-                done || active ? "bg-lime-ink" : "bg-carbon/10",
-                active && "bg-lime ring-2 ring-lime-ink/30",
+                done || active ? "bg-brand-ink" : "bg-carbon/10",
+                active && "bg-brand ring-2 ring-brand-ink/30",
               )}
             />
             <span className={cn("flex items-center gap-1 text-[0.7rem] font-medium sm:text-xs", done || active ? "text-carbon" : "text-muted-foreground")}>
-              {done && <Check className="size-3 shrink-0 text-lime-ink" aria-hidden />}
+              {done && <Check className="size-3 shrink-0 text-brand-ink" aria-hidden />}
               <span className="truncate">{orderStatusMeta[step].label}</span>
             </span>
           </li>

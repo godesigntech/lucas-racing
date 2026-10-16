@@ -2,7 +2,7 @@ import { Suspense } from "react"
 import Link from "next/link"
 import { ExternalLink } from "lucide-react"
 
-import { Wordmark } from "@/components/layout/wordmark"
+import { Logo } from "@/components/layout/logo"
 import { getCurrentUser } from "@/lib/auth/session"
 
 import { AdminNav, AdminNavStatic } from "./admin-nav"
@@ -11,8 +11,8 @@ export function AdminSidebar() {
   return (
     <aside className="grid-texture sticky top-0 hidden h-dvh w-64 shrink-0 flex-col bg-carbon px-4 py-6 text-paper lg:flex">
       <div className="px-2">
-        <Wordmark tone="light" />
-        <p className="eyebrow mt-3 text-[0.62rem] text-lime">Admin</p>
+        <Logo tone="light" />
+        <p className="eyebrow mt-3 text-[0.62rem] text-brand">Admin</p>
       </div>
       <div className="mt-8 flex-1 overflow-y-auto">
         <Suspense fallback={<AdminNavStatic />}>

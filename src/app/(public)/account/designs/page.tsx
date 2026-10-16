@@ -37,7 +37,7 @@ async function Designs() {
         description="Use “Save design” in the helmet builder and your designs will appear here."
         action={
           <Button asChild>
-            <Link href="/products">Start designing</Link>
+            <Link href="/customisation">Start designing</Link>
           </Button>
         }
       />

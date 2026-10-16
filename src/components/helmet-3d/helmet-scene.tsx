@@ -125,7 +125,7 @@ function StudioLights() {
       <Lightformer form="rect" intensity={3} position={[0, 4, 2]} scale={[6, 2, 1]} />
       <Lightformer form="rect" intensity={1.5} position={[-4, 1, 2]} rotation-y={Math.PI / 2} scale={[4, 3, 1]} />
       <Lightformer form="rect" intensity={1.5} position={[4, 1, -1]} rotation-y={-Math.PI / 2} scale={[4, 3, 1]} />
-      <Lightformer form="ring" color="#c6f432" intensity={0.6} position={[0, 0.5, -4]} scale={2} />
+      <Lightformer form="ring" color="#f95312" intensity={0.6} position={[0, 0.5, -4]} scale={2} />
     </Environment>
   )
 }

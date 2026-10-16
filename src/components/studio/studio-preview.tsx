@@ -84,7 +84,7 @@ export const StudioPreview = forwardRef<HTMLDivElement, StudioPreviewProps>(func
 
       <div className="flex min-w-0 flex-col gap-3 px-4 pb-4 sm:flex-row sm:items-center sm:justify-between sm:px-7 sm:pb-5">
         <p className="flex items-center gap-2 text-xs text-muted-foreground max-sm:hidden">
-          <Box className="size-3.5 text-lime-ink" aria-hidden />
+          <Box className="size-3.5 text-brand-ink" aria-hidden />
           {model3d ? "3D shows your shell colour, film and finish" : `Illustrated preview · 3D for the ${modelName} is coming soon`}
         </p>
         {model3d && (

@@ -15,7 +15,7 @@ function UnreadBadge({ active }: { active: boolean }) {
     <span
       className={cn(
         "ml-auto grid min-w-5 place-items-center rounded-full px-1.5 text-[0.7rem] font-bold leading-5",
-        active ? "bg-carbon text-lime" : "bg-lime text-carbon",
+        active ? "bg-carbon text-brand" : "bg-brand text-carbon",
       )}
     >
       {count > 99 ? "99+" : count}
@@ -69,7 +69,7 @@ function AdminNavList({
                     aria-current={active ? "page" : undefined}
                     className={cn(
                       "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
-                      active ? "bg-lime text-carbon" : "text-paper/70 hover:bg-white/5 hover:text-paper",
+                      active ? "bg-brand text-carbon" : "text-paper/70 hover:bg-white/5 hover:text-paper",
                     )}
                   >
                     <Icon className="size-[1.1rem]" aria-hidden />

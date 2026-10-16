@@ -120,8 +120,8 @@ export function AssistantConversation({ onNavigate }: AssistantConversationProps
         )}
 
         {stage === "sent" && (
-          <div className="rounded-3xl border border-lime-ink/20 bg-accent p-5 text-center">
-            <CheckCircle2 className="mx-auto size-8 text-lime-ink" aria-hidden />
+          <div className="rounded-3xl border border-brand-ink/20 bg-accent p-5 text-center">
+            <CheckCircle2 className="mx-auto size-8 text-brand-ink" aria-hidden />
             <h3 className="mt-2 font-display text-2xl font-bold uppercase">Request sent</h3>
             <p className="mt-1 text-sm">
               Your reference is <strong className="font-semibold">{reference}</strong>. The workshop will email you with a

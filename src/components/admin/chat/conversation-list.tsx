@@ -119,7 +119,7 @@ function ConversationRow({ conversation, active }: { conversation: Conversation;
       aria-current={active ? "page" : undefined}
       className={cn(
         "flex items-start gap-3 px-4 py-3.5 transition-colors",
-        active ? "bg-lime/25" : "hover:bg-carbon/[0.03]",
+        active ? "bg-brand/25" : "hover:bg-carbon/[0.03]",
       )}
     >
       <UserAvatar name={name} size="md" />
@@ -137,7 +137,7 @@ function ConversationRow({ conversation, active }: { conversation: Conversation;
             {preview}
           </p>
           {unread > 0 && (
-            <span className="grid min-w-5 place-items-center rounded-full bg-carbon px-1.5 text-[0.7rem] font-bold leading-5 text-lime">
+            <span className="grid min-w-5 place-items-center rounded-full bg-carbon px-1.5 text-[0.7rem] font-bold leading-5 text-brand">
               {unread > 9 ? "9+" : unread}
               <span className="sr-only"> unread</span>
             </span>

@@ -43,7 +43,7 @@ export function DesignAssistant() {
           className="fixed z-50 flex flex-col overflow-hidden bg-card shadow-[0_24px_64px_-16px_rgb(17_20_18/0.45)] ring-1 ring-carbon/10 max-sm:inset-0 sm:bottom-24 sm:right-5 sm:h-[min(42rem,calc(100dvh-8rem))] sm:w-[25rem] sm:rounded-3xl"
         >
           <header className="grid-texture flex items-center gap-3 bg-carbon px-4 py-3.5 text-paper">
-            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-lime text-carbon" aria-hidden>
+            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-brand text-carbon" aria-hidden>
               <Sparkles className="size-5" />
             </span>
             <div className="min-w-0 flex-1">
@@ -75,7 +75,7 @@ export function DesignAssistant() {
         aria-controls={hasOpened ? PANEL_ID : undefined}
         aria-label={open ? "Close design assistant" : "Open the design assistant"}
         className={cn(
-          "fixed bottom-5 right-5 z-40 flex h-14 items-center gap-2 rounded-full bg-lime px-4 font-semibold text-carbon shadow-[0_12px_32px_-8px_rgb(17_20_18/0.55)] ring-1 ring-carbon/10 transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-carbon/30 active:scale-95 max-sm:w-14 max-sm:justify-center max-sm:px-0",
+          "fixed bottom-5 right-5 z-40 flex h-14 items-center gap-2 rounded-full bg-brand px-4 font-semibold text-carbon shadow-[0_12px_32px_-8px_rgb(17_20_18/0.55)] ring-1 ring-carbon/10 transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-carbon/30 active:scale-95 max-sm:w-14 max-sm:justify-center max-sm:px-0",
           open && "max-sm:hidden",
         )}
       >

@@ -17,7 +17,7 @@ export function UserAvatar({ name, size = "md", className }: UserAvatarProps) {
     <span
       aria-hidden
       className={cn(
-        "grid shrink-0 place-items-center rounded-full bg-carbon font-display font-bold uppercase text-lime",
+        "grid shrink-0 place-items-center rounded-full bg-carbon font-display font-bold uppercase text-brand",
         size === "sm" && "size-8 text-sm",
         size === "md" && "size-10 text-base",
         size === "lg" && "size-14 text-xl",

@@ -30,7 +30,7 @@ export function StepTemplate({ products, value, modelId, onChange }: StepTemplat
             <span
               className={cn(
                 "relative flex h-full flex-col overflow-hidden rounded-2xl border transition-colors peer-focus-visible:ring-3 peer-focus-visible:ring-ring/50",
-                checked ? "border-lime-ink ring-1 ring-lime-ink" : "border-carbon/15 hover:border-carbon/40",
+                checked ? "border-brand-ink ring-1 ring-brand-ink" : "border-carbon/15 hover:border-carbon/40",
               )}
             >
               <span className="grid aspect-[4/3] place-items-center bg-[radial-gradient(circle_at_50%_35%,#ffffff,#e8e7e0_80%)] p-3">
@@ -43,7 +43,7 @@ export function StepTemplate({ products, value, modelId, onChange }: StepTemplat
                 {!fits && <span className="text-[0.68rem] text-muted-foreground">Not available on this helmet</span>}
               </span>
               {checked && (
-                <span className="absolute right-2 top-2 grid size-6 place-items-center rounded-full bg-lime-ink text-paper">
+                <span className="absolute right-2 top-2 grid size-6 place-items-center rounded-full bg-brand-ink text-paper">
                   <Check className="size-3.5" aria-hidden />
                 </span>
               )}

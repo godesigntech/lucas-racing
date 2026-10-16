@@ -6,7 +6,7 @@ export const metadata = { title: "Messages" }
 export default function AdminMessagesPage() {
   return (
     <div className="hidden flex-col items-center justify-center gap-3 bg-paper/60 px-6 text-center lg:flex">
-      <span className="grid size-14 place-items-center rounded-2xl bg-accent text-lime-ink">
+      <span className="grid size-14 place-items-center rounded-2xl bg-accent text-brand-ink">
         <MessagesSquare className="size-6" aria-hidden />
       </span>
       <h2 className="font-display text-2xl font-bold uppercase">Pick a conversation</h2>

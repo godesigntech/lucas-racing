@@ -10,7 +10,7 @@ export function SceneLoading({ progress }: { progress?: number }) {
         </span>
         <span className="h-1 w-full overflow-hidden rounded-full bg-carbon/10">
           <span
-            className="block h-full rounded-full bg-lime-ink transition-[width]"
+            className="block h-full rounded-full bg-brand-ink transition-[width]"
             style={{ width: `${Math.max(5, Math.round(progress ?? 5))}%` }}
           />
         </span>

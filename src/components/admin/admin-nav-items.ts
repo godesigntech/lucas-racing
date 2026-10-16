@@ -9,6 +9,7 @@ import {
   ShoppingBag,
   Sparkles,
   Users,
+  UsersRound,
   type LucideIcon,
 } from "lucide-react"
 
@@ -43,8 +44,11 @@ export const adminNavSections: { title: string; items: AdminNavItem[] }[] = [
     ],
   },
   {
-    title: "Store",
-    items: [{ label: "Settings", href: "/admin/settings", icon: Settings, fullAdminOnly: true }],
+    title: "Website",
+    items: [
+      { label: "Team", href: "/admin/team", icon: UsersRound, fullAdminOnly: true },
+      { label: "Settings", href: "/admin/settings", icon: Settings, fullAdminOnly: true },
+    ],
   },
 ]
 

@@ -239,6 +239,19 @@ export type QuoteRequestRow = Timestamps & {
   admin_notes: string
 }
 
+export type TeamMemberRow = Timestamps & {
+  id: string
+  name: string
+  role: string
+  tagline: string
+  bio: string
+  photo_url: string | null
+  photo_alt: string
+  featured: boolean
+  is_active: boolean
+  sort_order: number
+}
+
 export type Database = {
   public: {
     Tables: {
@@ -293,6 +306,7 @@ export type Database = {
       quote_requests: Table<QuoteRequestRow, "name" | "email" | "helmet", keyof QuoteRequestRow>
       contact_messages: Table<ContactMessageRow, "name" | "email" | "topic" | "message", keyof ContactMessageRow>
       saved_designs: Table<SavedDesignRow, "product_slug" | "name" | "config", keyof SavedDesignRow>
+      team_members: Table<TeamMemberRow, "name", keyof TeamMemberRow>
     }
     Views: {
       customer_summaries: { Row: CustomerSummaryRow; Relationships: [] }

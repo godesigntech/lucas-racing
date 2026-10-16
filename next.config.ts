@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
+const supabaseHost = process.env.NEXT_PUBLIC_SUPABASE_URL ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname : undefined
+
 const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
@@ -9,16 +11,22 @@ const nextConfig: NextConfig = {
   logging: { serverFunctions: false },
   // Designs open in the helmet builder with that template selected. Old product and
   // studio links land there too (Next.js keeps their query string, so shared builds survive).
+  // Pages moved in the Lucas Racing restructure keep working from their old addresses.
   async redirects() {
     return [
       { source: "/products/:slug/customize", destination: "/helmet-builder?template=:slug", permanent: false },
       { source: "/products/:slug", destination: "/helmet-builder?template=:slug", permanent: false },
+      { source: "/products", destination: "/customisation", permanent: true },
+      { source: "/kart-parts", destination: "/shop", permanent: true },
+      { source: "/kart-customiser", destination: "/customisation/kart-parts", permanent: true },
     ]
   },
   images: {
+    // All photos are the client's own: files in /public, or uploads (team photos) in the project's Supabase storage.
     qualities: [75, 85],
-    // Object form so Unsplash's sizing query string (?w=…&fit=…) is allowed.
-    remotePatterns: [{ protocol: "https", hostname: "images.unsplash.com", pathname: "/**" }],
+    remotePatterns: supabaseHost
+      ? [{ protocol: "https", hostname: supabaseHost, pathname: "/storage/v1/object/public/**" }]
+      : [],
   },
   turbopack: {
     rules: {

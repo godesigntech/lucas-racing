@@ -36,7 +36,7 @@ export function BasketView({ products, priceBook }: BasketViewProps) {
         description="Pick a helmet design, make it yours in the configurator, then add it here."
         action={
           <Button asChild>
-            <Link href="/products">
+            <Link href="/customisation">
               Browse helmet designs <ArrowRight />
             </Link>
           </Button>
@@ -84,7 +84,7 @@ export function BasketView({ products, priceBook }: BasketViewProps) {
           <Lock className="mt-0.5 size-3.5 shrink-0" aria-hidden />
           You approve a digital proof before anything is painted. Nothing is charged today.
         </p>
-        <Link href="/products" className="block text-center text-sm text-paper/70 underline-offset-4 hover:underline">
+        <Link href="/customisation" className="block text-center text-sm text-paper/70 underline-offset-4 hover:underline">
           Continue shopping
         </Link>
       </aside>

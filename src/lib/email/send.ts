@@ -62,18 +62,18 @@ export async function sendEmail(message: EmailMessage): Promise<boolean> {
 /** Shared branded layout for every email. `body` must already be escaped HTML. */
 export function emailLayout({ heading, body, action }: { heading: string; body: string; action?: { label: string; href: string } }) {
   const button = action
-    ? `<p style="margin:28px 0 0"><a href="${action.href}" style="display:inline-block;background:#c6f432;color:#111412;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:999px">${escapeHtml(action.label)}</a></p>`
+    ? `<p style="margin:28px 0 0"><a href="${action.href}" style="display:inline-block;background:#f95312;color:#111412;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:999px">${escapeHtml(action.label)}</a></p>`
     : ""
   return `<!doctype html>
 <html><body style="margin:0;background:#f4f3ee;font-family:Arial,Helvetica,sans-serif;color:#111412">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:24px 12px"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden">
-<tr><td style="background:#111412;padding:20px 28px;color:#f4f3ee;font-weight:800;letter-spacing:1px">LUCAS RACING <span style="color:#c6f432">× HYDRO KARTS</span></td></tr>
+<tr><td style="background:#ffffff;padding:20px 28px;border-bottom:4px solid #f95312"><img src="${siteUrl()}/images/brand/lucas-racing-logo.png" width="140" height="57" alt="Lucas Racing" style="display:block;border:0"></td></tr>
 <tr><td style="padding:28px">
 <h1 style="margin:0 0 16px;font-size:22px">${escapeHtml(heading)}</h1>
 <div style="font-size:15px;line-height:1.6">${body}</div>
 ${button}
 </td></tr>
-<tr><td style="padding:16px 28px;background:#f4f3ee;font-size:12px;color:#5c635d">Lucas Racing × Hydro Karts · <a href="${siteUrl()}" style="color:#5c635d">${escapeHtml(siteUrl().replace(/^https?:\/\//, ""))}</a></td></tr>
+<tr><td style="padding:16px 28px;background:#f4f3ee;font-size:12px;color:#5c635d">Lucas Racing · <a href="${siteUrl()}" style="color:#5c635d">${escapeHtml(siteUrl().replace(/^https?:\/\//, ""))}</a></td></tr>
 </table></td></tr></table></body></html>`
 }

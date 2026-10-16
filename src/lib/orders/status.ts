@@ -29,7 +29,7 @@ export const toneClasses: Record<Tone, string> = {
   neutral: "bg-carbon/8 text-carbon ring-carbon/15",
   info: "bg-sky-100 text-sky-900 ring-sky-300/60",
   progress: "bg-violet-100 text-violet-900 ring-violet-300/60",
-  success: "bg-accent text-lime-ink ring-lime-ink/25",
+  success: "bg-accent text-brand-ink ring-brand-ink/25",
   danger: "bg-destructive/10 text-destructive ring-destructive/25",
   warning: "bg-amber-100 text-amber-900 ring-amber-300/60",
 }

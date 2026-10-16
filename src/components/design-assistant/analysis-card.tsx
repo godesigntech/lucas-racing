@@ -20,7 +20,7 @@ export function AnalysisCard({ analysis, showActions, onQuote, onRestart, onNavi
   return (
     <div className="overflow-hidden rounded-3xl border border-carbon/10 bg-card">
       <div className="bg-[radial-gradient(circle_at_50%_35%,#ffffff,#e8e7e0_70%)] px-6 pt-5 pb-3">
-        <p className="eyebrow text-lime-ink">Your concept</p>
+        <p className="eyebrow text-brand-ink">Your concept</p>
         <HelmetArt look={analysis.concept} title="Concept helmet in your colours" className="mx-auto mt-1 max-h-48" />
       </div>
 

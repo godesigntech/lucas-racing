@@ -32,11 +32,11 @@ function ChoiceCard({
       <span
         className={cn(
           "relative flex h-full flex-col gap-1 rounded-2xl border p-4 transition-colors peer-focus-visible:ring-3 peer-focus-visible:ring-ring/50",
-          checked ? "border-lime-ink bg-accent/60" : "border-carbon/15 bg-card hover:border-carbon/40",
+          checked ? "border-brand-ink bg-accent/60" : "border-carbon/15 bg-card hover:border-carbon/40",
         )}
       >
         {checked && (
-          <span className="absolute right-3 top-3 grid size-5 place-items-center rounded-full bg-lime-ink text-paper">
+          <span className="absolute right-3 top-3 grid size-5 place-items-center rounded-full bg-brand-ink text-paper">
             <Check className="size-3" aria-hidden />
           </span>
         )}
@@ -59,7 +59,7 @@ export function StepHelmet({ models, config, update }: { models: HelmetModel[]; 
             <span className="font-semibold">+{formatMoney(model.newHelmetPrice)}</span>
             <span className="text-muted-foreground">new helmet</span>
             {get3dModel(model.id) && (
-              <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-carbon px-2 py-0.5 text-[0.68rem] font-semibold text-lime">
+              <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-carbon px-2 py-0.5 text-[0.68rem] font-semibold text-brand">
                 <Box className="size-3" aria-hidden /> 3D preview
               </span>
             )}
@@ -130,7 +130,7 @@ export function StepFinish({ priceBook, config, update }: { priceBook: PriceBook
             />
             <span className="font-semibold">{finish.label}</span>
             <span className="text-xs text-muted-foreground">{finish.hint ?? (finish.value === "gloss" ? "Deep shine, easy to clean" : "")}</span>
-            <span className="mt-auto pt-1 text-sm font-semibold text-lime-ink">{formatSurcharge(finish.price) || "Included"}</span>
+            <span className="mt-auto pt-1 text-sm font-semibold text-brand-ink">{formatSurcharge(finish.price) || "Included"}</span>
           </ChoiceCard>
         ))}
       </fieldset>
@@ -153,7 +153,7 @@ export function StepTrims({ priceBook, config, update }: { priceBook: PriceBook;
           {spoilers.map((option) => (
             <ChoiceCard key={option.value} name="spoiler" checked={config.spoiler === option.value} onSelect={() => update({ spoiler: option.value as "yes" | "no" })}>
               <span className="font-semibold">{option.value === "yes" ? "Add a spoiler" : "No spoiler"}</span>
-              <span className="text-sm text-lime-ink">{formatSurcharge(option.price) || "Included"}</span>
+              <span className="text-sm text-brand-ink">{formatSurcharge(option.price) || "Included"}</span>
             </ChoiceCard>
           ))}
         </div>

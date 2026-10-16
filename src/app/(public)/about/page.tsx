@@ -21,7 +21,7 @@ export default function AboutPage() {
         eyebrow="About Lucas Racing"
         title="A family built around racing"
         description="A reputation built on results. At Lucas Racing, karting is more than a sport. It's a way of life."
-        image={images.orangeKart}
+        image={images.teamPhoto}
       />
       <BrandStory />
       <TeamGrid />

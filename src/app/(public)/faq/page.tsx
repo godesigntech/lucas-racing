@@ -19,7 +19,7 @@ const faqs: { group: string; items: { question: string; answer: React.ReactNode 
         question: "How do I design my helmet?",
         answer: (
           <>
-            Pick a design on the <Link href="/products">products page</Link> and the builder opens right there. Choose your
+            Pick a design on the <Link href="/customisation">products page</Link> and the builder opens right there. Choose your
             helmet, finish, colours, hydro-dip film, rubber trim, and add your name, race number or logo. The preview and
             price update as you go.
           </>
@@ -111,13 +111,13 @@ export default function FaqPage() {
         eyebrow="FAQ"
         title="Questions, answered"
         description="Everything about designing, ordering and getting your custom helmet. Can't find your answer? Ask the workshop."
-        image={images.helmetCloseUp}
+        image={images.teamAwning}
       />
       <section className="py-14 sm:py-20">
         <Container className="max-w-3xl space-y-12">
           {faqs.map((group) => (
             <div key={group.group}>
-              <h2 className="eyebrow mb-4 text-lime-ink">{group.group}</h2>
+              <h2 className="eyebrow mb-4 text-brand-ink">{group.group}</h2>
               <div className="divide-y divide-carbon/10 rounded-3xl border border-carbon/10 bg-card">
                 {group.items.map((item) => (
                   <details key={item.question} className="group px-5 py-4 sm:px-6 [&_a]:font-semibold [&_a]:underline [&_a]:underline-offset-4">

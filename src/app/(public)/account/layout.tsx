@@ -17,7 +17,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
     <section className="py-10 sm:py-14">
       <Container className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-12">
         <aside className="min-w-0 space-y-4 lg:sticky lg:top-32 lg:self-start">
-          <p className="eyebrow hidden text-lime-ink lg:block">My account</p>
+          <p className="eyebrow hidden text-brand-ink lg:block">My account</p>
           <Suspense fallback={<AccountNavFallback />}>
             <AccountNav />
           </Suspense>

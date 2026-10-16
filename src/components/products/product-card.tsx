@@ -36,7 +36,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
 
       <div className="flex flex-1 flex-col gap-3 p-5 sm:p-6">
         <div className="flex items-center justify-between gap-3">
-          <span className="eyebrow text-lime-ink">{category.label}</span>
+          <span className="eyebrow text-brand-ink">{category.label}</span>
           <span className="font-mono text-[0.7rem] text-muted-foreground">
             {product.availableModels.map((model) => model.shortName).join(" · ")}
           </span>

@@ -21,7 +21,7 @@ export function SocialLinks({ links, businessName, className }: SocialLinksProps
             target="_blank"
             rel="noreferrer"
             aria-label={`${businessName} on ${item.label}`}
-            className="grid size-10 place-items-center rounded-full border border-white/15 text-paper/80 transition-colors hover:border-lime hover:text-lime"
+            className="grid size-10 place-items-center rounded-full border border-white/15 text-paper/80 transition-colors hover:border-brand hover:text-brand"
           >
             <SocialIcon name={item.icon} className="size-4" />
           </a>

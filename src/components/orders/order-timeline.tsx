@@ -13,7 +13,7 @@ export function OrderTimeline({ events }: { events: OrderEvent[] }) {
             aria-hidden
             className={
               index === 0
-                ? "absolute -left-[1.86rem] top-1 size-3 rounded-full bg-lime ring-4 ring-card"
+                ? "absolute -left-[1.86rem] top-1 size-3 rounded-full bg-brand ring-4 ring-card"
                 : "absolute -left-[1.8rem] top-1.5 size-2 rounded-full bg-carbon/30 ring-4 ring-card"
             }
           />

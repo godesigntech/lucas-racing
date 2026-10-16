@@ -23,7 +23,7 @@ export function StatCard({ label, value, hint, icon: Icon, highlight }: StatCard
         <span
           className={cn(
             "grid size-9 place-items-center rounded-xl",
-            highlight ? "bg-lime text-carbon" : "bg-accent text-lime-ink",
+            highlight ? "bg-brand text-carbon" : "bg-accent text-brand-ink",
           )}
         >
           <Icon className="size-4" aria-hidden />

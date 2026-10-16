@@ -4,7 +4,7 @@
 
 /*
   Lucas Racing design system
-  Carbon and paper neutrals with a single lime "flag" accent.
+  Lucas Racing black and orange: carbon and paper neutrals with the logo's orange as the one accent.
   Display: Barlow Condensed. Body: Geist. Data and labels: Geist Mono.
 */
 
@@ -32,8 +32,8 @@
   --color-carbon-2: var(--carbon-2);
   --color-carbon-3: var(--carbon-3);
   --color-paper: var(--paper);
-  --color-lime: var(--lime);
-  --color-lime-ink: var(--lime-ink);
+  --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
   --color-smoke: var(--smoke);
 
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
@@ -62,8 +62,9 @@
   --carbon-3: #262d28;
   --paper: #f4f3ee;
   --smoke: #e8e7e0;
-  --lime: #c6f432;
-  --lime-ink: #4a6206;
+  /* Orange from the Lucas Racing logo. Text on it is carbon; orange text on light backgrounds uses brand-ink for contrast. */
+  --brand: #f95312;
+  --brand-ink: #b23a08;
 
   --background: var(--paper);
   --foreground: var(--carbon);
@@ -71,18 +72,18 @@
   --card-foreground: var(--carbon);
   --popover: #ffffff;
   --popover-foreground: var(--carbon);
-  --primary: var(--lime);
+  --primary: var(--brand);
   --primary-foreground: var(--carbon);
   --secondary: var(--carbon);
   --secondary-foreground: var(--paper);
   --muted: var(--smoke);
   --muted-foreground: #5c635d;
-  --accent: #eaf8bd;
-  --accent-foreground: var(--lime-ink);
+  --accent: #fde3d6;
+  --accent-foreground: var(--brand-ink);
   --destructive: #c8321f;
   --border: #d9d8d0;
   --input: #cdccc3;
-  --ring: #7d9c10;
+  --ring: #d9480f;
   --radius: 0.75rem;
 }
 
@@ -142,11 +143,11 @@
 /* React Toastify: match the brand. */
 :root {
   --toastify-font-family: var(--font-geist-sans), system-ui, sans-serif;
-  --toastify-color-success: var(--lime-ink);
+  --toastify-color-success: #2e7d32;
   --toastify-color-info: var(--carbon-3);
   --toastify-color-error: var(--destructive);
-  --toastify-color-progress-success: var(--lime);
-  --toastify-color-progress-info: var(--lime);
+  --toastify-color-progress-success: var(--brand);
+  --toastify-color-progress-info: var(--brand);
   --toastify-toast-bd-radius: 0.75rem;
 }
 

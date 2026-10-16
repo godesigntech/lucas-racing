@@ -15,7 +15,7 @@ export function ValuesGrid() {
         <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {values.map((value) => (
             <li key={value.title} className="rounded-3xl border border-white/10 bg-carbon-2 p-6">
-              <span className="block h-1 w-10 rounded-full bg-lime" aria-hidden />
+              <span className="block h-1 w-10 rounded-full bg-brand" aria-hidden />
               <h3 className="mt-5 font-display text-2xl font-bold uppercase">{value.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-paper/65">{value.body}</p>
             </li>

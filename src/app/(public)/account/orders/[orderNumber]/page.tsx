@@ -40,7 +40,7 @@ async function OrderDetail({ orderNumber, justPlaced }: { orderNumber: string; j
   return (
     <div className="space-y-6">
       {justPlaced && (
-        <div className="flex gap-4 rounded-3xl bg-lime p-5 text-carbon" role="status">
+        <div className="flex gap-4 rounded-3xl bg-brand p-5 text-carbon" role="status">
           <PartyPopper className="mt-0.5 size-6 shrink-0" aria-hidden />
           <div>
             <p className="font-display text-2xl font-bold uppercase">Order placed. Thank you!</p>

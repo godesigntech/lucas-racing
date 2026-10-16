@@ -39,7 +39,7 @@ export function DeliveryOptions({ methods, value, onChange, error }: DeliveryOpt
               aria-hidden
               className={cn(
                 "mt-0.5 grid size-5 shrink-0 place-items-center rounded-full border",
-                checked ? "border-carbon bg-carbon text-lime" : "border-carbon/30",
+                checked ? "border-carbon bg-carbon text-brand" : "border-carbon/30",
               )}
             >
               {checked && <Check className="size-3" />}

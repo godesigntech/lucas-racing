@@ -1,21 +1,83 @@
 export interface NavItem {
   label: string
   href: string
+  /** One line shown under the label in dropdown menus. */
+  description?: string
 }
 
-export const mainNav: NavItem[] = [
+export interface NavGroup extends NavItem {
+  /** Shown as a dropdown on desktop and an indented list on mobile. */
+  children?: NavItem[]
+}
+
+/** The client's top-level menu: eight items, details in dropdowns. */
+export const mainNav: NavGroup[] = [
   { label: "Home", href: "/" },
-  { label: "Products", href: "/products" },
-  { label: "About Us", href: "/about" },
-  { label: "FAQ", href: "/faq" },
+  {
+    label: "About Us",
+    href: "/about",
+    children: [
+      { label: "About Lucas Racing", href: "/about", description: "A family-run racing team since day one" },
+      { label: "Racing support", href: "/about/racing-support", description: "Coaching, race weekends and driver development" },
+      { label: "News and results", href: "/news", description: "What's happening at Lucas Racing" },
+      { label: "Gallery", href: "/gallery", description: "Race weekends, the team and the paddock" },
+    ],
+  },
+  { label: "Meet the Team", href: "/team" },
+  {
+    label: "MS Kart Shop",
+    href: "/shop",
+    children: [
+      { label: "Shop all", href: "/shop", description: "Karts, parts and accessories from the UK home of MS Kart" },
+      { label: "Complete karts", href: "/shop/complete-karts", description: "Race-ready MS Kart chassis and packages" },
+      { label: "Parts and spares", href: "/shop/parts", description: "Chassis parts, components and race-day spares" },
+    ],
+  },
+  {
+    label: "Customisation",
+    href: "/customisation",
+    children: [
+      { label: "Custom helmets", href: "/customisation", description: "Arai SK-6 and Bell KC7 designs by HydroKarts" },
+      { label: "Helmet builder", href: "/helmet-builder", description: "Design yours step by step, in 3D" },
+      { label: "MS Kart parts by HydroKarts", href: "/customisation/kart-parts", description: "Kart parts in your own finish" },
+    ],
+  },
+  { label: "Racewear", href: "/racewear" },
+  { label: "Teamwear", href: "/teamwear" },
   { label: "Contact", href: "/contact" },
 ]
 
-/** Sections launching after the helmet builder; each has a holding page. */
-export const comingSoonNav: NavItem[] = [
-  { label: "Kart parts", href: "/kart-parts" },
-  { label: "Kart customiser", href: "/kart-customiser" },
-  { label: "Racewear", href: "/racewear" },
+/** Footer columns. */
+export const footerNav: { title: string; items: NavItem[] }[] = [
+  {
+    title: "Lucas Racing",
+    items: [
+      { label: "About us", href: "/about" },
+      { label: "Meet the team", href: "/team" },
+      { label: "Racing support", href: "/about/racing-support" },
+      { label: "News and results", href: "/news" },
+      { label: "Gallery", href: "/gallery" },
+    ],
+  },
+  {
+    title: "Shop",
+    items: [
+      { label: "MS Kart shop", href: "/shop" },
+      { label: "Custom helmets", href: "/customisation" },
+      { label: "MS Kart parts by HydroKarts", href: "/customisation/kart-parts" },
+      { label: "Delta Racewear", href: "/racewear" },
+      { label: "Wendy's Teamwear", href: "/teamwear" },
+    ],
+  },
+  {
+    title: "Help",
+    items: [
+      { label: "Contact us", href: "/contact" },
+      { label: "FAQ", href: "/faq" },
+      { label: "My account", href: "/account" },
+      { label: "Basket", href: "/basket" },
+    ],
+  },
 ]
 
 export const authNav = {

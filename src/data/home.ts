@@ -49,31 +49,6 @@ export const processSteps: ProcessStep[] = [
   },
   {
     title: "Dip, lacquer, race",
-    body: "Hydro Karts dips, details and lacquers it, then it's back on the grid.",
-  },
-]
-
-export interface Testimonial {
-  quote: string
-  name: string
-  detail: string
-}
-
-// Sample testimonials for layout only. Replace with real customer reviews before launch.
-export const sampleTestimonials: Testimonial[] = [
-  {
-    quote: "Sent my old SK-6 in looking tired and got it back looking better than new. The carbon stripes are spot on.",
-    name: "Sample customer",
-    detail: "Junior X30 driver",
-  },
-  {
-    quote: "Being able to see the proof and change the trim colour before they started made it easy to say yes.",
-    name: "Sample customer",
-    detail: "Parent of a Cadet racer",
-  },
-  {
-    quote: "Picked it up at the track on a Thursday night. The chrome under the black sweep is unreal in the sun.",
-    name: "Sample customer",
-    detail: "Club Rotax Senior",
+    body: "HydroKarts dips, details and lacquers it, then it's back on the grid.",
   },
 ]

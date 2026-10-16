@@ -6,12 +6,12 @@ import { ArrowRight, LayoutDashboard, LogOut, Menu, Package, UserRound } from "l
 
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
-import { authNav, comingSoonNav, mainNav } from "@/constants/navigation"
+import { authNav, mainNav } from "@/constants/navigation"
 import { signOut } from "@/lib/actions/auth"
 
 import type { MenuUser } from "./account-menu"
-import { NavLinks } from "./nav-links"
-import { Wordmark } from "./wordmark"
+import { MobileNavList } from "./nav-links"
+import { Logo } from "./logo"
 
 interface MobileNavProps {
   user: MenuUser | null
@@ -28,24 +28,18 @@ export function MobileNav({ user, eventText }: MobileNavProps) {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" size="icon" className="size-9 sm:size-10 lg:hidden" aria-label="Open menu">
+        <Button variant="outline" size="icon" className="size-9 sm:size-10 xl:hidden" aria-label="Open menu">
           <Menu />
         </Button>
       </SheetTrigger>
       <SheetContent side="right" className="w-full max-w-sm gap-0 bg-paper p-0">
         <div className="border-b px-5 py-4">
-          <Wordmark />
+          <Logo />
           <SheetTitle className="sr-only">Menu</SheetTitle>
           <SheetDescription className="sr-only">Site navigation</SheetDescription>
         </div>
         <nav aria-label="Mobile" className="flex-1 overflow-y-auto px-3 py-4">
-          <NavLinks
-            items={[...mainNav, ...comingSoonNav, { label: "Basket", href: "/basket" }]}
-            onNavigate={close}
-            className="flex flex-col gap-1"
-            linkClassName="flex items-center justify-between rounded-xl px-3 py-3 font-display text-2xl font-bold uppercase tracking-tight text-carbon transition-colors hover:bg-foreground/5"
-            activeClassName="bg-carbon text-paper hover:bg-carbon"
-          />
+          <MobileNavList items={[...mainNav, { label: "Basket", href: "/basket" }]} onNavigate={close} />
         </nav>
 
         <div className="grid gap-3 border-t p-5">

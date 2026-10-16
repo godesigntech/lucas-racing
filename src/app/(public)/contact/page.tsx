@@ -12,7 +12,7 @@ import { getSiteSettings } from "@/lib/data/settings"
 
 export const metadata: Metadata = {
   title: "Contact",
-  description: "Talk to the Lucas Racing and Hydro Karts workshop about a custom helmet, an order or sending in your own helmet.",
+  description: "Talk to Lucas Racing about MS Kart karts and parts, racing support, custom helmets, teamwear or an existing order.",
 }
 
 export default async function ContactPage() {
@@ -25,7 +25,7 @@ export default async function ContactPage() {
         eyebrow="Contact"
         title="Talk to the workshop"
         description="Questions about a design, sending in your own helmet or an existing order? Send us a message and the team will get back to you."
-        image={images.workshop}
+        image={images.teamAwning}
       />
       <section className="py-14 sm:py-20">
         <Container className="grid gap-10 lg:grid-cols-[1fr_1.5fr] lg:gap-14">

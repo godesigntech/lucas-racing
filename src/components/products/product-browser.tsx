@@ -48,12 +48,12 @@ export function ProductBrowser({ products, categories, models }: ProductBrowserP
     else params.set(key, value)
     const search = params.toString()
     // Native history update: syncs with useSearchParams without a server round trip.
-    window.history.replaceState(null, "", search ? `/products?${search}` : "/products")
+    window.history.replaceState(null, "", search ? `/customisation?${search}` : "/customisation")
   }
 
   function resetFilters() {
     setQuery(defaultProductFilters.query)
-    window.history.replaceState(null, "", "/products")
+    window.history.replaceState(null, "", "/customisation")
   }
 
   return (

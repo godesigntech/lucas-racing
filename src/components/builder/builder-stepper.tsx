@@ -42,7 +42,7 @@ export function BuilderStepper({ current, visited, onSelect }: BuilderStepperPro
                 <span
                   className={cn(
                     "grid size-5 place-items-center rounded-full text-[0.68rem] font-bold",
-                    active ? "bg-lime text-carbon" : done ? "bg-lime-ink text-paper" : "bg-carbon/10 text-carbon",
+                    active ? "bg-brand text-carbon" : done ? "bg-brand-ink text-paper" : "bg-carbon/10 text-carbon",
                   )}
                 >
                   {done ? <Check className="size-3" aria-hidden /> : index + 1}

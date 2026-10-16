@@ -53,7 +53,7 @@ export function SignupForm() {
   if (confirmEmail) {
     return (
       <div className="space-y-4 rounded-3xl border border-carbon/10 bg-card p-6 text-center" role="status">
-        <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-accent text-lime-ink">
+        <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-accent text-brand-ink">
           <MailCheck className="size-6" aria-hidden />
         </span>
         <h2 className="font-display text-3xl font-bold uppercase">Check your inbox</h2>
@@ -101,7 +101,7 @@ export function SignupForm() {
         {passwordRules.map((rule) => {
           const met = rule.test(password ?? "")
           return (
-            <li key={rule.label} className={cn("flex items-center gap-1.5", met ? "text-lime-ink" : "text-muted-foreground")}>
+            <li key={rule.label} className={cn("flex items-center gap-1.5", met ? "text-brand-ink" : "text-muted-foreground")}>
               <Check className={cn("size-3.5", !met && "opacity-30")} aria-hidden />
               {rule.label}
               <span className="sr-only">{met ? "(met)" : "(not met)"}</span>

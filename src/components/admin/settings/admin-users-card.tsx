@@ -76,7 +76,7 @@ function TeamMember({ admin, isYou }: { admin: AdminUser; isYou: boolean }) {
         <p className="text-xs text-muted-foreground">Added {formatDate(admin.createdAt)}</p>
       </div>
       {isYou ? (
-        <span className="flex items-center gap-1.5 text-xs font-medium text-lime-ink">
+        <span className="flex items-center gap-1.5 text-xs font-medium text-brand-ink">
           <ShieldCheck className="size-4" aria-hidden /> {roleLabels[admin.role].label}
         </span>
       ) : (

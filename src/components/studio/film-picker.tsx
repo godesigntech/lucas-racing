@@ -183,7 +183,7 @@ export function FilmPicker({ films, value, onChange }: FilmPickerProps) {
                         className="aspect-[2.2/1] w-full rounded-md object-cover"
                       />
                       {checked && (
-                        <span className="absolute right-3 top-3 grid size-5 place-items-center rounded-full bg-lime text-carbon shadow-sm">
+                        <span className="absolute right-3 top-3 grid size-5 place-items-center rounded-full bg-brand text-carbon shadow-sm">
                           <Check className="size-3" aria-hidden />
                         </span>
                       )}

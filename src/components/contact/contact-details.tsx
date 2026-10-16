@@ -24,7 +24,7 @@ export function ContactDetails({ settings }: { settings: SiteSettings }) {
       <ul className="grid gap-3">
         {items.map(({ icon: Icon, label, value, note, href }) => (
           <li key={label} className="flex gap-4 rounded-2xl border border-carbon/10 bg-card p-4">
-            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-carbon text-lime">
+            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-carbon text-brand">
               <Icon className="size-5" aria-hidden />
             </span>
             <div className="min-w-0">

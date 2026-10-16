@@ -106,7 +106,7 @@ export function CheckoutForm({ profile, deliveryMethods, products, priceBook }: 
   if (placedOrder) {
     return (
       <div role="status" className="flex min-h-80 flex-col items-center justify-center gap-3 rounded-3xl border border-carbon/10 bg-card p-8 text-center">
-        <Loader2 className="size-8 animate-spin text-lime-ink" aria-hidden />
+        <Loader2 className="size-8 animate-spin text-brand-ink" aria-hidden />
         <p className="font-display text-2xl font-bold uppercase">Order placed</p>
         <p className="text-sm text-muted-foreground">Taking you to your order…</p>
       </div>
@@ -121,7 +121,7 @@ export function CheckoutForm({ profile, deliveryMethods, products, priceBook }: 
         description="Your basket is empty. Configure a helmet and add it to your basket first."
         action={
           <Button asChild>
-            <Link href="/products">
+            <Link href="/customisation">
               Browse helmet designs <ArrowRight />
             </Link>
           </Button>
@@ -230,7 +230,7 @@ export function CheckoutForm({ profile, deliveryMethods, products, priceBook }: 
           />
         </CheckoutSection>
 
-        <div className="flex gap-4 rounded-3xl border border-lime-ink/20 bg-accent p-5 text-accent-foreground">
+        <div className="flex gap-4 rounded-3xl border border-brand-ink/20 bg-accent p-5 text-accent-foreground">
           <CreditCard className="mt-0.5 size-5 shrink-0" aria-hidden />
           <div className="space-y-1 text-sm">
             <p className="font-semibold">No payment needed today</p>

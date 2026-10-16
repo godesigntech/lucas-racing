@@ -9,9 +9,9 @@ export function DemoBanner() {
     <div
       role="status"
       title="Sample data, Supabase disconnected, nothing is saved."
-      className="pointer-events-none fixed bottom-4 right-4 z-40 flex items-center gap-1.5 rounded-full bg-carbon/90 px-3 py-1.5 text-[0.7rem] text-paper shadow-lg ring-1 ring-lime/40 backdrop-blur"
+      className="pointer-events-none fixed bottom-4 right-4 z-40 flex items-center gap-1.5 rounded-full bg-carbon/90 px-3 py-1.5 text-[0.7rem] text-paper shadow-lg ring-1 ring-brand/40 backdrop-blur"
     >
-      <FlaskConical className="size-3 shrink-0 text-lime" aria-hidden />
+      <FlaskConical className="size-3 shrink-0 text-brand" aria-hidden />
       <span>
         <strong className="font-semibold">Demo mode</strong> · sample data, nothing is saved
       </span>

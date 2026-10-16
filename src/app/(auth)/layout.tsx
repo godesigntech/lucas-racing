@@ -1,28 +1,14 @@
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowLeft, PackageCheck, Sparkles, Zap } from "lucide-react"
+import { ArrowLeft, MessagesSquare, PackageCheck, Palette } from "lucide-react"
 
-import { HelmetArt } from "@/components/helmet/helmet-art"
-import { Wordmark } from "@/components/layout/wordmark"
+import { Logo } from "@/components/layout/logo"
 import { images } from "@/constants/images"
-import type { HelmetLook } from "@/types/helmet"
-
-const panelLook: HelmetLook = {
-  layout: "shard",
-  finish: "gloss",
-  base: "#1f5bd8",
-  graphic: "#c6f432",
-  accent: "#f4f3ee",
-  film: "carbon",
-  trim: "#c6f432",
-  spoiler: true,
-  number: "29",
-}
 
 const perks = [
-  { icon: PackageCheck, text: "Track every order from proof to handover" },
-  { icon: Zap, text: "Check out faster with saved details" },
-  { icon: Sparkles, text: "First access to the 3D helmet builder" },
+  { icon: PackageCheck, text: "Order MS Kart parts, teamwear and custom helmets in one basket" },
+  { icon: MessagesSquare, text: "Chat with the team and track every order" },
+  { icon: Palette, text: "Save your helmet designs and come back to them" },
 ]
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -30,7 +16,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     <div className="grid min-h-dvh lg:grid-cols-2">
       <div className="flex flex-col px-4 py-6 sm:px-10 lg:px-16">
         <div className="flex items-center justify-between gap-4">
-          <Wordmark />
+          <Logo preload />
           <Link
             href="/"
             className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-carbon"
@@ -44,17 +30,19 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       </div>
 
       <aside className="relative isolate hidden overflow-hidden bg-carbon p-12 text-paper lg:flex lg:flex-col lg:justify-between">
-        <Image src={images.cornerKart.src} alt="" fill sizes="50vw" className="-z-20 object-cover opacity-35" />
-        <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-b from-carbon/70 via-carbon/80 to-carbon" />
-        <div aria-hidden className="absolute -right-32 top-20 -z-10 size-[28rem] rounded-full bg-lime/15 blur-3xl" />
-        <p className="eyebrow relative text-lime">Your Lucas Racing account</p>
-        <div className="relative mx-auto w-full max-w-lg">
-          <HelmetArt look={panelLook} className="drop-shadow-[0_30px_40px_rgb(0_0_0/0.5)]" />
+        <Image src={images.teamPhoto.src} alt="" fill sizes="50vw" className="-z-20 object-cover opacity-45" />
+        <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-b from-carbon/60 via-carbon/70 to-carbon" />
+        <p className="eyebrow relative text-brand">Your Lucas Racing account</p>
+        <div className="relative max-w-md space-y-3">
+          <p className="display text-5xl">Join the Lucas Racing family</p>
+          <p className="text-paper/75">
+            A family-run kart racing team and the UK home of MS Kart, from Oldham, Greater Manchester.
+          </p>
         </div>
         <ul className="relative space-y-4">
           {perks.map(({ icon: Icon, text }) => (
             <li key={text} className="flex items-center gap-3 text-paper/80">
-              <span className="grid size-9 place-items-center rounded-full bg-white/10 text-lime">
+              <span className="grid size-9 shrink-0 place-items-center rounded-full bg-white/10 text-brand">
                 <Icon className="size-4" aria-hidden />
               </span>
               {text}

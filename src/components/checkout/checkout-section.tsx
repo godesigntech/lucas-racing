@@ -10,7 +10,7 @@ export function CheckoutSection({ step, title, description, children }: Checkout
   return (
     <section className="rounded-3xl border border-carbon/10 bg-card p-5 sm:p-7" aria-labelledby={`checkout-step-${step}`}>
       <div className="mb-6 flex items-start gap-4">
-        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-carbon font-display text-lg font-bold text-lime">
+        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-carbon font-display text-lg font-bold text-brand">
           {step}
         </span>
         <div>

@@ -24,7 +24,7 @@ export function SwatchGrid({ label, options, value, onChange, size = "md" }: Swa
         <span className="truncate text-muted-foreground">
           {selected?.label ?? "Choose a colour"}
           {selected && formatSurcharge(selected.price) && (
-            <span className="ml-1.5 font-medium text-lime-ink">{formatSurcharge(selected.price)}</span>
+            <span className="ml-1.5 font-medium text-brand-ink">{formatSurcharge(selected.price)}</span>
           )}
         </span>
       </legend>

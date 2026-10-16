@@ -32,7 +32,7 @@ export async function downloadPreviewImage(svg: SVGSVGElement, fileName: string,
     context.fillText(caption.toUpperCase(), 80, height - 130)
     context.fillStyle = "#5c635d"
     context.font = "500 28px system-ui, sans-serif"
-    context.fillText("Designed with Lucas Racing × Hydro Karts", 80, height - 80)
+    context.fillText("Designed with Lucas Racing by HydroKarts", 80, height - 80)
 
     // Unpaid previews are watermarked.
     context.save()

@@ -4,24 +4,25 @@ import { ComingSoon } from "@/components/shared/coming-soon"
 import { images } from "@/constants/images"
 
 export const metadata: Metadata = {
-  title: "Racewear",
-  description: "Delta Racewear suits, gloves and team kit, chosen to go with your custom helmet. Coming soon.",
+  title: "Delta Racewear",
+  description: "Custom Delta Racewear race suits, available through Lucas Racing.",
 }
 
+// Delta's logo and suit feed are on the way; the page stays a holding page until they arrive.
 export default function RacewearPage() {
   return (
     <ComingSoon
-      eyebrow="Racewear"
-      title="Delta Racewear collection"
-      description="Race suits, gloves and team kit from Delta Racewear, chosen to go with your custom helmet."
-      image={images.driverHelmet}
+      eyebrow="Delta Racewear"
+      title="Delta Racewear, available through Lucas Racing"
+      description="Custom race suits from our partners at Delta Racewear. Browse the range here, then design and order your suit with Delta."
+      image={images.fatherAndSonPaddock}
       points={[
-        "Delta Racewear suits, gloves and boots",
-        "Team kit in the same colours as your helmet",
-        "Sizing help from the team",
-        "Order with your helmet in one basket",
+        "The full Delta Racewear suit range to browse",
+        "Custom colours and designs, made by Delta",
+        "Order and customise directly with Delta Racewear",
+        "Sizing and suit advice from the Lucas Racing team",
       ]}
-      enquiryMessage="Hi, I'm interested in Delta Racewear. I'm looking for: "
+      enquiryMessage="Hi, I'm interested in a Delta Racewear suit. I'm looking for: "
     />
   )
 }

@@ -4,7 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { ExternalLink, Menu } from "lucide-react"
 
-import { Wordmark } from "@/components/layout/wordmark"
+import { Logo } from "@/components/layout/logo"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 
@@ -27,7 +27,7 @@ export function AdminMobileNav({ isFullAdmin }: { isFullAdmin: boolean }) {
         >
           <Menu />
           {unread > 0 && (
-            <span aria-hidden className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-lime ring-2 ring-paper" />
+            <span aria-hidden className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-brand ring-2 ring-paper" />
           )}
         </Button>
       </SheetTrigger>
@@ -35,7 +35,7 @@ export function AdminMobileNav({ isFullAdmin }: { isFullAdmin: boolean }) {
         <SheetTitle className="sr-only">Admin menu</SheetTitle>
         <SheetDescription className="sr-only">Admin navigation</SheetDescription>
         <div className="px-2 py-2">
-          <Wordmark tone="light" />
+          <Logo tone="light" />
         </div>
         <div className="mt-6 flex-1 overflow-y-auto">
           <AdminNav onNavigate={close} isFullAdmin={isFullAdmin} />

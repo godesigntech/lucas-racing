@@ -108,9 +108,9 @@ function AttentionLink({ count, icon: Icon, href, label, hint }: { count: number
   return (
     <Link
       href={href}
-      className="group flex items-center gap-3 rounded-2xl border border-lime-ink/20 bg-accent px-5 py-4 transition-colors hover:border-lime-ink/40"
+      className="group flex items-center gap-3 rounded-2xl border border-brand-ink/20 bg-accent px-5 py-4 transition-colors hover:border-brand-ink/40"
     >
-      <span className="grid size-10 shrink-0 place-items-center rounded-full bg-carbon text-lime">
+      <span className="grid size-10 shrink-0 place-items-center rounded-full bg-carbon text-brand">
         <Icon className="size-5" aria-hidden />
       </span>
       <span className="min-w-0 flex-1">

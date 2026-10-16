@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 export function AssistantBubble({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <div className="flex items-end gap-2">
-      <span className="grid size-7 shrink-0 place-items-center rounded-full bg-carbon text-lime" aria-hidden>
+      <span className="grid size-7 shrink-0 place-items-center rounded-full bg-carbon text-brand" aria-hidden>
         <Sparkles className="size-3.5" />
       </span>
       <div className={cn("min-w-0 max-w-[88%] rounded-3xl rounded-bl-lg bg-carbon/[0.06] px-4 py-3 text-sm leading-relaxed", className)}>

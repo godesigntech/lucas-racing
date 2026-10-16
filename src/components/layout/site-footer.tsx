@@ -3,92 +3,67 @@ import { Clock, Mail, MapPin, Phone } from "lucide-react"
 
 import { SocialLinks } from "@/components/shared/social-links"
 import { siteConfig } from "@/config/site"
-import { comingSoonNav, legalNav, mainNav } from "@/constants/navigation"
-import { getProducts } from "@/lib/data/products"
+import { footerNav, legalNav } from "@/constants/navigation"
 import { getSiteSettings } from "@/lib/data/settings"
 
 import { Container } from "./container"
-import { Wordmark } from "./wordmark"
+import { Logo } from "./logo"
 
-const linkClass = "text-sm text-paper/70 transition-colors hover:text-lime"
+const linkClass = "text-sm text-paper/70 transition-colors hover:text-brand"
 
 function FooterHeading({ children }: { children: React.ReactNode }) {
   return <h2 className="eyebrow mb-4 text-paper/45">{children}</h2>
 }
 
 export async function SiteFooter() {
-  const [products, settings] = await Promise.all([getProducts(), getSiteSettings()])
+  const settings = await getSiteSettings()
 
   return (
     <footer className="grid-texture mt-auto bg-carbon text-paper">
-      <Container className="grid gap-12 py-16 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
+      <Container className="grid gap-12 py-16 md:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_0.8fr_1.2fr]">
         <div className="space-y-5">
-          <Wordmark tone="light" />
+          <Logo tone="light" />
           <p className="max-w-xs text-sm leading-relaxed text-paper/65">
-            Custom race helmets from the {settings.businessName} team. Designed with you and hydro-dipped by{" "}
-            {settings.partnerName} in our UK workshop.
+            A family-run kart racing team and the UK home of MS Kart. Karts, parts, racing support, custom helmets by
+            HydroKarts, racewear and teamwear.
           </p>
           <SocialLinks links={settings.socialLinks} businessName={settings.businessName} />
         </div>
 
-        <nav aria-label="Footer">
-          <FooterHeading>Explore</FooterHeading>
-          <ul className="space-y-3">
-            {mainNav.map((item) => (
-              <li key={item.href}>
-                <Link href={item.href} className={linkClass}>
-                  {item.label}
-                </Link>
-              </li>
-            ))}
-            <li>
-              <Link href="/account" className={linkClass}>
-                My account
-              </Link>
-            </li>
-            {comingSoonNav.map((item) => (
-              <li key={item.href}>
-                <Link href={item.href} className={linkClass}>
-                  {item.label} <span className="ml-1 rounded-full bg-white/10 px-1.5 py-0.5 text-[0.6rem] uppercase tracking-wide text-paper/60">Soon</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-
-        <div>
-          <FooterHeading>Helmet designs</FooterHeading>
-          <ul className="space-y-3">
-            {products.slice(0, 5).map((product) => (
-              <li key={product.slug}>
-                <Link href={`/helmet-builder?template=${product.slug}`} className={linkClass}>
-                  {product.name}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-
+        {footerNav.map((column) => (
+          <nav key={column.title} aria-label={column.title}>
+            <FooterHeading>{column.title}</FooterHeading>
+            <ul className="space-y-3">
+              {column.items.map((item) => (
+                <li key={item.href}>
+                  <Link href={item.href} className={linkClass}>
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        ))}
         <div>
           <FooterHeading>Get in touch</FooterHeading>
           <ul className="space-y-3 text-sm text-paper/70">
             {settings.contactEmail && (
               <li className="flex items-start gap-3">
-                <Mail className="mt-0.5 size-4 shrink-0 text-lime" aria-hidden />
-                <a href={`mailto:${settings.contactEmail}`} className="break-all transition-colors hover:text-lime">
+                <Mail className="mt-0.5 size-4 shrink-0 text-brand" aria-hidden />
+                <a href={`mailto:${settings.contactEmail}`} className="break-all transition-colors hover:text-brand">
                   {settings.contactEmail}
                 </a>
               </li>
             )}
             {settings.contactPhone && (
               <li className="flex items-start gap-3">
-                <Phone className="mt-0.5 size-4 shrink-0 text-lime" aria-hidden />
+                <Phone className="mt-0.5 size-4 shrink-0 text-brand" aria-hidden />
                 <span>{settings.contactPhone}</span>
               </li>
             )}
             {settings.location && (
               <li className="flex items-start gap-3">
-                <MapPin className="mt-0.5 size-4 shrink-0 text-lime" aria-hidden />
+                <MapPin className="mt-0.5 size-4 shrink-0 text-brand" aria-hidden />
                 <span>
                   {settings.location}
                   {settings.addressNote && <span className="block text-paper/45">{settings.addressNote}</span>}
@@ -97,7 +72,7 @@ export async function SiteFooter() {
             )}
             {settings.openingHours && (
               <li className="flex items-start gap-3">
-                <Clock className="mt-0.5 size-4 shrink-0 text-lime" aria-hidden />
+                <Clock className="mt-0.5 size-4 shrink-0 text-brand" aria-hidden />
                 <span>{settings.openingHours}</span>
               </li>
             )}
@@ -113,7 +88,7 @@ export async function SiteFooter() {
           <ul className="flex gap-5">
             {legalNav.map((item) => (
               <li key={item.href}>
-                <Link href={item.href} className="transition-colors hover:text-lime">
+                <Link href={item.href} className="transition-colors hover:text-brand">
                   {item.label}
                 </Link>
               </li>

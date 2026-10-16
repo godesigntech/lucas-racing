@@ -56,7 +56,7 @@ export function HelmetArt({ look, view = "full", title, className, highlight }: 
   const baseFill = look.finish === "chrome" ? `url(#${ids.chrome})` : look.baseTexture ? `url(#${ids.baseFilm})` : look.base
   const accentStroke = look.accentTexture ? `url(#${ids.accentFilm})` : look.accent
   const glossOpacity = { matte: 0.12, satin: 0.28, gloss: 0.5, chrome: 0.7 }[look.finish]
-  const outline = { stroke: "#c6f432", strokeWidth: 4, strokeDasharray: "10 7", fill: "none" } as const
+  const outline = { stroke: "#f95312", strokeWidth: 4, strokeDasharray: "10 7", fill: "none" } as const
 
   return (
     <svg

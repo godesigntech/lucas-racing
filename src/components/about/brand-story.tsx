@@ -40,13 +40,13 @@ export function BrandStory() {
 
         <div className="grid grid-cols-5 gap-4">
           <div className="relative col-span-3 aspect-[3/4] overflow-hidden rounded-[2rem] bg-carbon">
-            <Image src={images.kartGrid.src} alt={images.kartGrid.alt} fill sizes="(min-width: 1024px) 30vw, 60vw" className="object-cover" />
+            <Image src={images.teamAwning.src} alt={images.teamAwning.alt} fill sizes="(min-width: 1024px) 30vw, 60vw" className="object-cover" />
           </div>
           <div className="col-span-2 flex flex-col gap-4">
             <div className="relative flex-1 overflow-hidden rounded-[2rem] bg-carbon">
-              <Image src={images.raceCorner.src} alt={images.raceCorner.alt} fill sizes="(min-width: 1024px) 20vw, 40vw" className="object-cover" />
+              <Image src={images.fatherAndSon.src} alt={images.fatherAndSon.alt} fill sizes="(min-width: 1024px) 20vw, 40vw" className="object-cover" />
             </div>
-            <div className="rounded-[2rem] bg-lime p-5 text-carbon">
+            <div className="rounded-[2rem] bg-brand p-5 text-carbon">
               <p className="font-display text-3xl font-extrabold leading-none">Family</p>
               <p className="mt-1 text-sm font-medium">When you join Lucas Racing, that&apos;s exactly how we want you to feel.</p>
             </div>
