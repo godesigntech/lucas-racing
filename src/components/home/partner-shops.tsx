@@ -33,7 +33,7 @@ export function PartnerShops() {
           <Link
             key={shop.href}
             href={shop.href}
-            className="group relative isolate flex min-h-80 flex-col justify-end overflow-hidden rounded-[2rem] bg-carbon p-8 text-paper outline-none focus-visible:ring-3 focus-visible:ring-ring/50 sm:p-10"
+            className="reveal group relative isolate flex min-h-80 flex-col justify-end overflow-hidden rounded-[2rem] bg-carbon p-8 text-paper outline-none focus-visible:ring-3 focus-visible:ring-ring/50 sm:p-10"
           >
             <Image
               src={shop.image.src}

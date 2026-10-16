@@ -25,7 +25,7 @@ export async function TeamGrid({
   return (
     <section className="py-20 sm:py-24">
       <Container className="space-y-12">
-        <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+        <div className="reveal flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
           <SectionHeading eyebrow={eyebrow} title={title} description={description} />
           <Button asChild variant="outline" className="self-start lg:self-auto">
             <Link href="/team">
@@ -35,7 +35,7 @@ export async function TeamGrid({
         </div>
         <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {members.map((member) => (
-            <li key={member.id}>
+            <li key={member.id} className="reveal">
               <TeamCard member={member} />
             </li>
           ))}

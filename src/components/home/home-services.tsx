@@ -14,15 +14,16 @@ export function HomeServices() {
     <section className="grid-texture bg-carbon py-20 text-paper sm:py-24">
       <Container className="space-y-12">
         <SectionHeading
+          className="reveal"
           tone="light"
           eyebrow="What we do"
           title="MS Kart sales and racing support"
           description="We don't simply supply products from a catalogue. We race the same equipment we sell, and we support the drivers who use it."
         />
         <div className="grid gap-6 lg:grid-cols-2">
-          <article className="flex flex-col overflow-hidden rounded-[2rem] bg-paper text-carbon">
-            <div className="relative aspect-[16/9] bg-carbon">
-              <Image src={images.connor.src} alt={images.connor.alt} fill sizes="(min-width: 1024px) 45vw, 100vw" className="object-cover" />
+          <article className="reveal group flex flex-col overflow-hidden rounded-[2rem] bg-paper text-carbon transition-[translate,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-[0_30px_60px_-30px_rgb(249_83_18/0.55)]">
+            <div className="relative aspect-[16/9] overflow-hidden bg-carbon">
+              <Image src={images.connor.src} alt={images.connor.alt} fill sizes="(min-width: 1024px) 45vw, 100vw" className="object-cover transition-transform duration-700 group-hover:scale-105" />
             </div>
             <div className="flex flex-1 flex-col gap-4 p-6 sm:p-8">
               <Image
@@ -51,14 +52,14 @@ export function HomeServices() {
             </div>
           </article>
 
-          <article className="flex flex-col overflow-hidden rounded-[2rem] bg-paper text-carbon">
-            <div className="relative aspect-[16/9] bg-carbon">
+          <article className="reveal group flex flex-col overflow-hidden rounded-[2rem] bg-paper text-carbon transition-[translate,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-[0_30px_60px_-30px_rgb(249_83_18/0.55)]">
+            <div className="relative aspect-[16/9] overflow-hidden bg-carbon">
               <Image
                 src={images.connorCoaching.src}
                 alt={images.connorCoaching.alt}
                 fill
                 sizes="(min-width: 1024px) 45vw, 100vw"
-                className="object-cover"
+                className="object-cover transition-transform duration-700 group-hover:scale-105"
               />
             </div>
             <div className="flex flex-1 flex-col gap-4 p-6 sm:p-8">

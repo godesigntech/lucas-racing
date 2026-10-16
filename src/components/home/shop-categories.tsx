@@ -50,13 +50,14 @@ export function ShopCategories() {
     <section className="py-20 sm:py-24">
       <Container className="space-y-12">
         <SectionHeading
+          className="reveal"
           eyebrow="Shop online"
           title="Everything for race day"
           description="Karts, parts, custom helmets and team kit, all in one basket and one checkout."
         />
         <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {categories.map((category) => (
-            <li key={category.title}>
+            <li key={category.title} className="reveal">
               <Link
                 href={category.href}
                 className="group relative flex aspect-[4/5] flex-col justify-end overflow-hidden rounded-3xl bg-carbon text-paper outline-none focus-visible:ring-3 focus-visible:ring-ring/50"

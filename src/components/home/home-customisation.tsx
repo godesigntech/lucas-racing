@@ -18,7 +18,7 @@ export function HomeCustomisation() {
   return (
     <section className="relative isolate overflow-hidden bg-[radial-gradient(circle_at_75%_40%,#ffffff,#e8e7e0_70%)] py-20 sm:py-24">
       <Container className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-        <div className="space-y-6">
+        <div className="reveal space-y-6">
           <Image
             src={brandLogos.lucasRacingByHydroKarts.src}
             alt={brandLogos.lucasRacingByHydroKarts.alt}
@@ -63,7 +63,7 @@ export function HomeCustomisation() {
           </Link>
         </div>
 
-        <div className="relative mx-auto grid w-full max-w-lg grid-cols-[1.1fr_1fr] items-end">
+        <div className="reveal relative mx-auto grid w-full max-w-lg grid-cols-[1.1fr_1fr] items-end">
           <Image
             src={helmetPhotos.araiSk6.src}
             alt={helmetPhotos.araiSk6.alt}
