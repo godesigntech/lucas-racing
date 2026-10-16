@@ -5,12 +5,15 @@ import { notFound } from "next/navigation"
 import { ExternalLink } from "lucide-react"
 
 import { Container } from "@/components/layout/container"
+import { SectionHeading } from "@/components/shared/section-heading"
 import { AddToBasket } from "@/components/shop/add-to-basket"
 import { ShopProductGallery } from "@/components/shop/product-gallery"
+import { ShopProductCard } from "@/components/shop/shop-product-card"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getShopProductBySlug } from "@/lib/data/shop"
-import type { StoreId } from "@/types/shop"
+import { getRelatedShopProducts } from "@/lib/data/shop-listing"
+import type { ShopProduct, StoreId } from "@/types/shop"
 
 const storePages: Record<StoreId, { label: string; href: string }> = {
   "ms-kart": { label: "MS Kart shop", href: "/shop" },
@@ -103,7 +106,30 @@ async function ProductView({ slug }: { slug: string }) {
           )}
         </div>
       </div>
+
+      {product.storeId !== "delta" && (
+        <Suspense fallback={null}>
+          <RelatedProducts product={product} />
+        </Suspense>
+      )}
     </div>
+  )
+}
+
+async function RelatedProducts({ product }: { product: ShopProduct }) {
+  const related = await getRelatedShopProducts(product, 4)
+  if (related.length === 0) return null
+  return (
+    <section className="space-y-6 border-t border-carbon/10 pt-10">
+      <SectionHeading eyebrow="From the same range" title="You might also need" />
+      <ul className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-4">
+        {related.map((item) => (
+          <li key={item.id}>
+            <ShopProductCard item={item} />
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }
 

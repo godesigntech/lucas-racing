@@ -6,7 +6,7 @@ import { ArrowRight, LayoutDashboard, LogOut, Menu, Package, UserRound } from "l
 
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
-import { authNav, mainNav } from "@/constants/navigation"
+import { authNav, mainNav, type NavGroup } from "@/constants/navigation"
 import { signOut } from "@/lib/actions/auth"
 
 import type { MenuUser } from "./account-menu"
@@ -16,12 +16,14 @@ import { Logo } from "./logo"
 interface MobileNavProps {
   user: MenuUser | null
   eventText?: string
+  /** The main menu (with live shop categories); defaults to the static menu. */
+  items?: NavGroup[]
 }
 
 const accountLink =
   "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-carbon transition-colors hover:bg-foreground/5"
 
-export function MobileNav({ user, eventText }: MobileNavProps) {
+export function MobileNav({ user, eventText, items = mainNav }: MobileNavProps) {
   const [open, setOpen] = useState(false)
   const close = () => setOpen(false)
 
@@ -39,7 +41,7 @@ export function MobileNav({ user, eventText }: MobileNavProps) {
           <SheetDescription className="sr-only">Site navigation</SheetDescription>
         </div>
         <nav aria-label="Mobile" className="flex-1 overflow-y-auto px-3 py-4">
-          <MobileNavList items={[...mainNav, { label: "Basket", href: "/basket" }]} onNavigate={close} />
+          <MobileNavList items={[...items, { label: "Basket", href: "/basket" }]} onNavigate={close} />
         </nav>
 
         <div className="grid gap-3 border-t p-5">

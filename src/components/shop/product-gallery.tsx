@@ -4,6 +4,7 @@ import { useState } from "react"
 import Image from "next/image"
 import { Package } from "lucide-react"
 
+import { isExternalImage } from "@/lib/shop/images"
 import { cn } from "@/lib/utils"
 
 /** Main product photo with thumbnails to switch between them. */
@@ -22,7 +23,7 @@ export function ShopProductGallery({ images, title }: { images: string[]; title:
   return (
     <div className="space-y-3">
       <div className="relative aspect-square overflow-hidden rounded-[2rem] border border-carbon/10 bg-white">
-        <Image src={images[active]} alt={`${title}, photo ${active + 1}`} fill preload sizes="(min-width: 1024px) 45vw, 100vw" className="object-contain p-4" />
+        <Image src={images[active]} alt={`${title}, photo ${active + 1}`} fill preload sizes="(min-width: 1024px) 45vw, 100vw" unoptimized={isExternalImage(images[active])} className="object-contain p-4" />
       </div>
       {images.length > 1 && (
         <ul className="grid grid-cols-5 gap-2" aria-label="Choose a photo">
@@ -38,7 +39,7 @@ export function ShopProductGallery({ images, title }: { images: string[]; title:
                   index === active ? "border-carbon ring-2 ring-carbon" : "border-carbon/10 hover:border-carbon/40",
                 )}
               >
-                <Image src={url} alt="" fill sizes="96px" className="object-contain p-1" />
+                <Image src={url} alt="" fill sizes="96px" unoptimized={isExternalImage(url)} className="object-contain p-1" />
               </button>
             </li>
           ))}

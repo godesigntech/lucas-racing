@@ -293,6 +293,7 @@ export type ShopProductRow = Timestamps & {
   featured: boolean
   customisable: boolean
   sort_order: number
+  manual_fields: string[]
 }
 
 export type ShopVariantRow = Timestamps & {
@@ -308,6 +309,8 @@ export type ShopVariantRow = Timestamps & {
   weight_grams: number | null
   is_active: boolean
   sort_order: number
+  rrp: number | null
+  price_is_manual: boolean
 }
 
 export type InventoryMovementRow = {
@@ -320,6 +323,41 @@ export type InventoryMovementRow = {
   note: string
   created_by: string | null
   created_at: string
+}
+
+export type ImportRunRow = {
+  id: string
+  store_id: string
+  file_name: string
+  full_catalogue: boolean
+  counts: Json
+  errors: Json
+  created_by: string | null
+  created_at: string
+}
+
+export type ShopProductListingRow = {
+  id: string
+  store_id: string
+  category_id: string | null
+  slug: string
+  title: string
+  brand: string
+  image_url: string | null
+  featured: boolean
+  customisable: boolean
+  sort_order: number
+  created_at: string
+  is_active: boolean
+  min_price: number
+  max_price: number
+  compare_at_price: number | null
+  variant_count: number
+  single_variant_id: string | null
+  in_stock: boolean
+  stock_total: number
+  low_stock: boolean
+  skus: string
 }
 
 export type Database = {
@@ -378,6 +416,7 @@ export type Database = {
       saved_designs: Table<SavedDesignRow, "product_slug" | "name" | "config", keyof SavedDesignRow>
       team_members: Table<TeamMemberRow, "name", keyof TeamMemberRow>
       stores: Table<StoreRow, "id" | "name", keyof StoreRow>
+      import_runs: Table<ImportRunRow, "store_id", keyof ImportRunRow>
       shop_categories: Table<
         ShopCategoryRow,
         "store_id" | "name" | "slug",
@@ -444,6 +483,7 @@ export type Database = {
     }
     Views: {
       customer_summaries: { Row: CustomerSummaryRow; Relationships: [] }
+      shop_product_listing: { Row: ShopProductListingRow; Relationships: [] }
     }
     Functions: {
       is_admin: { Args: Record<string, never>; Returns: boolean }

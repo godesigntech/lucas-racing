@@ -69,6 +69,23 @@ export async function getShopProductBySlug(slug: string): Promise<ShopProduct | 
   return { ...product, variants: product.variants.filter((variant) => variant.isActive) }
 }
 
+/** Shop pages for sitemap.xml: active products and MS Kart categories. */
+export async function getShopSitemapEntries(): Promise<{ path: string; lastModified?: string }[]> {
+  "use cache"
+  cacheTag(cacheTags.shop)
+  cacheLife("hours")
+  if (isDemoMode()) return []
+  const supabase = createPublicClient()
+  const [products, categories] = await Promise.all([
+    supabase.from("shop_products").select("slug, updated_at, store_id").eq("is_active", true).neq("store_id", "delta").limit(5000),
+    supabase.from("shop_categories").select("slug").eq("store_id", "ms-kart").eq("is_active", true),
+  ])
+  return [
+    ...(categories.data ?? []).map((category) => ({ path: `/shop/${category.slug}` })),
+    ...(products.data ?? []).map((product) => ({ path: `/shop/p/${product.slug}`, lastModified: product.updated_at })),
+  ]
+}
+
 // ---------------------------------------------------------------------------
 // Admin
 // ---------------------------------------------------------------------------
@@ -181,4 +198,41 @@ export async function listAdminStores(): Promise<Store[]> {
   const { data, error } = await supabase.from("stores").select("*").order("sort_order")
   if (error) throw new Error(error.message)
   return data.map(toStore)
+}
+
+export interface ImportRun {
+  id: string
+  storeId: StoreId
+  fileName: string
+  fullCatalogue: boolean
+  counts: { created: number; updated: number; unchanged: number; failed: number; hidden: number }
+  errors: { row: number; message: string }[]
+  createdAt: string
+}
+
+/** The latest CSV imports, newest first. */
+export async function listImportRuns(limit = 15): Promise<ImportRun[]> {
+  await requireFullAdmin()
+  if (isDemoMode()) return []
+  const supabase = await createClient()
+  const { data, error } = await supabase.from("import_runs").select("*").order("created_at", { ascending: false }).limit(limit)
+  if (error) throw new Error(error.message)
+  return data.map((row) => {
+    const counts = (row.counts ?? {}) as Partial<ImportRun["counts"]>
+    return {
+      id: row.id,
+      storeId: row.store_id as StoreId,
+      fileName: row.file_name,
+      fullCatalogue: row.full_catalogue,
+      counts: {
+        created: counts.created ?? 0,
+        updated: counts.updated ?? 0,
+        unchanged: counts.unchanged ?? 0,
+        failed: counts.failed ?? 0,
+        hidden: counts.hidden ?? 0,
+      },
+      errors: Array.isArray(row.errors) ? (row.errors as unknown as ImportRun["errors"]) : [],
+      createdAt: row.created_at,
+    }
+  })
 }

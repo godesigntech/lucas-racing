@@ -4,6 +4,7 @@ import { Package } from "lucide-react"
 import { HelmetArt } from "@/components/helmet/helmet-art"
 import type { AvailableLine } from "@/lib/basket/resolve-basket"
 import { formatMoney } from "@/lib/format"
+import { isExternalImage } from "@/lib/shop/images"
 
 interface OrderSummaryCardProps {
   lines: AvailableLine[]
@@ -18,7 +19,7 @@ function LineThumb({ line }: { line: AvailableLine }) {
   const image = line.product.images[0]
   return image ? (
     <span className="relative block size-full">
-      <Image src={image} alt="" fill sizes="64px" className="object-contain" />
+      <Image src={image} alt="" fill sizes="64px" unoptimized={isExternalImage(image)} className="object-contain" />
     </span>
   ) : (
     <Package className="size-6 text-carbon/50" aria-hidden />

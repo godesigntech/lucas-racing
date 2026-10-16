@@ -1,7 +1,8 @@
 import { Suspense } from "react"
 
-import { mainNav } from "@/constants/navigation"
+import { getShopCategories } from "@/lib/data/shop"
 import { getSiteSettings } from "@/lib/data/settings"
+import { navWithShopCategories } from "@/lib/navigation"
 
 import { BasketButton } from "./basket-button"
 import { Container } from "./container"
@@ -10,7 +11,8 @@ import { DesktopNav, DesktopNavStatic } from "./nav-links"
 import { Logo } from "./logo"
 
 export async function SiteHeader() {
-  const settings = await getSiteSettings()
+  const [settings, shopCategories] = await Promise.all([getSiteSettings(), getShopCategories("ms-kart")])
+  const nav = navWithShopCategories(shopCategories)
   const hasEvent = settings.showEventBanner && settings.eventName
   const eventText = hasEvent ? `See us at ${settings.eventName} · ${settings.eventDates}` : undefined
 
@@ -33,15 +35,15 @@ export async function SiteHeader() {
 
           {/* Eight sections need the room: below xl the menu lives in the slide-out sheet. */}
           <div className="hidden xl:block">
-            <Suspense fallback={<DesktopNavStatic items={mainNav} />}>
-              <DesktopNav items={mainNav} />
+            <Suspense fallback={<DesktopNavStatic items={nav} />}>
+              <DesktopNav items={nav} />
             </Suspense>
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2">
             <BasketButton className="size-9 sm:size-10" />
-            <Suspense fallback={<GuestActions eventText={eventText} />}>
-              <HeaderAccount eventText={eventText} />
+            <Suspense fallback={<GuestActions eventText={eventText} navItems={nav} />}>
+              <HeaderAccount eventText={eventText} navItems={nav} />
             </Suspense>
           </div>
         </Container>

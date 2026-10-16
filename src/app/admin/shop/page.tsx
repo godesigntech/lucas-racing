@@ -1,6 +1,6 @@
 import { Suspense } from "react"
 import Link from "next/link"
-import { FolderTree } from "lucide-react"
+import { FolderTree, Upload } from "lucide-react"
 
 import { AdminCard } from "@/components/admin/admin-card"
 import { AdminPageHeader } from "@/components/admin/admin-page-header"
@@ -53,6 +53,11 @@ async function ShopList({ query }: { query: Query }) {
             <Button asChild variant="outline">
               <Link href="/admin/shop/categories">
                 <FolderTree /> Categories
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/admin/shop/import">
+                <Upload /> Import CSV
               </Link>
             </Button>
             <NewShopProductDialog defaultStore={store} />

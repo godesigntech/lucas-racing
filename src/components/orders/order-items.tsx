@@ -4,6 +4,7 @@ import { Package } from "lucide-react"
 
 import { HelmetArt } from "@/components/helmet/helmet-art"
 import { formatMoney } from "@/lib/format"
+import { isExternalImage } from "@/lib/shop/images"
 import type { OrderItem } from "@/types/order"
 
 interface OrderItemsProps {
@@ -25,7 +26,7 @@ export function OrderItems({ items, linkProducts = true }: OrderItemsProps) {
           <div className="relative grid aspect-[4/3] place-items-center overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_50%_35%,#ffffff,#e8e7e0_75%)] p-2">
             {item.kind === "product" ? (
               item.imageUrl ? (
-                <Image src={item.imageUrl} alt="" fill sizes="112px" className="object-contain p-2" />
+                <Image src={item.imageUrl} alt="" fill sizes="112px" unoptimized={isExternalImage(item.imageUrl)} className="object-contain p-2" />
               ) : (
                 <Package className="size-7 text-muted-foreground" aria-hidden />
               )

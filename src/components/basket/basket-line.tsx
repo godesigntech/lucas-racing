@@ -9,6 +9,7 @@ import { StockBadge } from "@/components/shop/stock-badge"
 import { basket } from "@/lib/basket/basket-store"
 import type { ResolvedBasketLine, ResolvedHelmetLine, ResolvedProductLine } from "@/lib/basket/resolve-basket"
 import { formatMoney } from "@/lib/format"
+import { isExternalImage } from "@/lib/shop/images"
 
 import { QuantityStepper } from "./quantity-stepper"
 
@@ -103,7 +104,7 @@ function ProductLine({ line }: { line: ResolvedProductLine }) {
     <li className="grid gap-5 rounded-3xl border border-carbon/10 bg-card p-5 sm:grid-cols-[10rem_minmax(0,1fr)] sm:p-6">
       <Link href={href} className="relative grid aspect-[4/3] place-items-center overflow-hidden rounded-2xl bg-carbon/5" aria-label={`View ${product.title}`}>
         {image ? (
-          <Image src={image} alt="" fill sizes="160px" className="object-contain p-2" />
+          <Image src={image} alt="" fill sizes="160px" unoptimized={isExternalImage(image)} className="object-contain p-2" />
         ) : (
           <Package className="size-8 text-muted-foreground" aria-hidden />
         )}

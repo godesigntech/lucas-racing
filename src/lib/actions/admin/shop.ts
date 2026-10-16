@@ -65,9 +65,21 @@ export async function updateShopProduct(id: string, values: ShopProductValues): 
   const data = parsed.data
 
   const supabase = await createClient()
+  // Fields edited here are kept by future imports (see the CSV importer).
+  const { data: before } = await supabase.from("shop_products").select("title, brand, description, category_id, specs, manual_fields").eq("id", id).maybeSingle()
+  const manualFields = new Set(before?.manual_fields ?? [])
+  if (before) {
+    if (before.title !== data.title) manualFields.add("title")
+    if (before.brand !== data.brand) manualFields.add("brand")
+    if (before.description !== data.description) manualFields.add("description")
+    if (before.category_id !== data.categoryId) manualFields.add("category")
+    if (JSON.stringify(before.specs) !== JSON.stringify(data.specs)) manualFields.add("specs")
+  }
+
   const { error } = await supabase
     .from("shop_products")
     .update({
+      manual_fields: [...manualFields],
       store_id: data.storeId,
       category_id: data.categoryId,
       title: data.title,
@@ -98,7 +110,9 @@ export async function setShopProductImages(id: string, images: string[]): Promis
   if (!parsed.success) return failure(parsed.error.issues[0]?.message ?? "Those photos aren't valid.")
 
   const supabase = await createClient()
-  const { error } = await supabase.from("shop_products").update({ images: parsed.data }).eq("id", id)
+  const { data: before } = await supabase.from("shop_products").select("manual_fields").eq("id", id).maybeSingle()
+  const manualFields = [...new Set([...(before?.manual_fields ?? []), "images"])]
+  const { error } = await supabase.from("shop_products").update({ images: parsed.data, manual_fields: manualFields }).eq("id", id)
   if (error) return databaseError(error, "We couldn't save the photos.")
 
   refreshShop(`/admin/shop/${id}`)
@@ -157,11 +171,22 @@ export async function saveShopVariant(
 
   const supabase = await createClient()
   if (variantId) {
-    const { error } = await supabase.from("shop_variants").update(row).eq("id", variantId).eq("product_id", productId)
+    // A price set here is Lucas Racing's own: imports leave it alone from now on.
+    const { data: before } = await supabase.from("shop_variants").select("price, price_is_manual").eq("id", variantId).maybeSingle()
+    const priceIsManual = Boolean(before?.price_is_manual) || Number(before?.price) !== data.price
+    const { error } = await supabase
+      .from("shop_variants")
+      .update({ ...row, price_is_manual: priceIsManual })
+      .eq("id", variantId)
+      .eq("product_id", productId)
     if (error?.code === SLUG_TAKEN) return { ok: false, message: "Please check the highlighted fields.", fieldErrors: { sku: "Another product already uses this part number." } }
     if (error) return databaseError(error, "We couldn't save that option.")
   } else {
-    const { data: created, error } = await supabase.from("shop_variants").insert({ ...row, product_id: productId }).select("id").single()
+    const { data: created, error } = await supabase
+      .from("shop_variants")
+      .insert({ ...row, product_id: productId, price_is_manual: true })
+      .select("id")
+      .single()
     if (error?.code === SLUG_TAKEN) return { ok: false, message: "Please check the highlighted fields.", fieldErrors: { sku: "Another product already uses this part number." } }
     if (error) return databaseError(error, "We couldn't add that option.")
     if (initialStock !== 0) {

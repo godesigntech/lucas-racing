@@ -41,7 +41,8 @@ export const shopProductSchema = z.object({
 })
 export type ShopProductValues = z.infer<typeof shopProductSchema>
 
-const imageUrl = z.string().regex(/^https:\/\/[^/]+\/storage\/v1\/object\/public\/product-images\//, "Upload images through the admin")
+// Uploaded photos (our storage) or imported ones (the supplier's site).
+const imageUrl = z.string().regex(/^https:\/\/\S+$/, "Photos must be https links")
 export const productImagesSchema = z.array(imageUrl).max(12, "Up to 12 photos")
 
 export const shopVariantSchema = z.object({

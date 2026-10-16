@@ -2,7 +2,7 @@ import Link from "next/link"
 import { ArrowRight, LayoutDashboard } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { authNav } from "@/constants/navigation"
+import { authNav, type NavGroup } from "@/constants/navigation"
 import { getCurrentUser } from "@/lib/auth/session"
 
 import { AccountMenu } from "./account-menu"
@@ -10,10 +10,11 @@ import { MobileNav } from "./mobile-nav"
 
 interface HeaderAccountProps {
   eventText?: string
+  navItems?: NavGroup[]
 }
 
 /** Login/Sign up for guests, the account menu for signed-in users. Reads the session: render in <Suspense>. */
-export async function HeaderAccount({ eventText }: HeaderAccountProps) {
+export async function HeaderAccount({ eventText, navItems }: HeaderAccountProps) {
   const user = await getCurrentUser()
 
   if (!user) return <GuestActions eventText={eventText} />
@@ -29,13 +30,13 @@ export async function HeaderAccount({ eventText }: HeaderAccountProps) {
         </Button>
       )}
       <AccountMenu user={menuUser} />
-      <MobileNav user={menuUser} eventText={eventText} />
+      <MobileNav user={menuUser} eventText={eventText} items={navItems} />
     </>
   )
 }
 
 /** Also used as the Suspense fallback, so the header never looks empty. */
-export function GuestActions({ eventText }: HeaderAccountProps) {
+export function GuestActions({ eventText, navItems }: HeaderAccountProps) {
   return (
     <>
       <Button asChild variant="ghost" className="hidden sm:inline-flex">
@@ -47,7 +48,7 @@ export function GuestActions({ eventText }: HeaderAccountProps) {
           <ArrowRight className="hidden transition-transform group-hover/button:translate-x-0.5 sm:block" />
         </Link>
       </Button>
-      <MobileNav user={null} eventText={eventText} />
+      <MobileNav user={null} eventText={eventText} items={navItems} />
     </>
   )
 }
