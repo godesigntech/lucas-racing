@@ -4,7 +4,7 @@ import { cacheLife, cacheTag } from "next/cache"
 import { notFound } from "next/navigation"
 import { connection } from "next/server"
 
-import { getCurrentUser, requireFullAdmin } from "@/lib/auth/session"
+import { getCurrentUser, requireFullAdmin, requireShopManager } from "@/lib/auth/session"
 import { ADMIN_PAGE_SIZE, type Paged } from "@/lib/data/admin"
 import { isDemoMode } from "@/lib/demo/mode"
 import { getSiteSettings } from "@/lib/data/settings"
@@ -103,7 +103,9 @@ export async function listAdminShopProducts(options: {
   stock?: string
   page?: number
 }): Promise<Paged<ShopProduct>> {
-  await requireFullAdmin()
+  const user = await requireShopManager()
+  // Teamwear staff only ever see the Teamwear shop.
+  if (user.role === "teamwear") options = { ...options, store: "teamwear" }
   const empty = { rows: [], total: 0, page: 1, pageCount: 1 }
   if (isDemoMode()) return empty
 
@@ -151,7 +153,7 @@ export interface AdminShopProductDetail {
 }
 
 export async function getAdminShopProduct(id: string): Promise<AdminShopProductDetail> {
-  await requireFullAdmin()
+  const user = await requireShopManager()
   if (isDemoMode() || !UUID.test(id)) notFound()
 
   const supabase = await createClient()
@@ -159,6 +161,7 @@ export async function getAdminShopProduct(id: string): Promise<AdminShopProductD
   if (error) throw new Error(error.message)
   if (!data) notFound()
   const product = toShopProduct(data as ProductWithVariants)
+  if (user.role === "teamwear" && product.storeId !== "teamwear") notFound()
 
   const variantIds = product.variants.map((variant) => variant.id)
   const { data: movements } = variantIds.length
@@ -187,19 +190,23 @@ export async function getAdminShopProduct(id: string): Promise<AdminShopProductD
 
 /** Every category, including hidden ones, for the admin. */
 export async function listAdminShopCategories(): Promise<ShopCategory[]> {
-  await requireFullAdmin()
+  const user = await requireShopManager()
   if (isDemoMode()) return []
   const supabase = await createClient()
-  const { data, error } = await supabase.from("shop_categories").select("*").order("store_id").order("sort_order").order("name")
+  let request = supabase.from("shop_categories").select("*").order("store_id").order("sort_order").order("name")
+  if (user.role === "teamwear") request = request.eq("store_id", "teamwear")
+  const { data, error } = await request
   if (error) throw new Error(error.message)
   return data.map(toShopCategory)
 }
 
 export async function listAdminStores(): Promise<Store[]> {
-  await requireFullAdmin()
+  const user = await requireShopManager()
   if (isDemoMode()) return []
   const supabase = await createClient()
-  const { data, error } = await supabase.from("stores").select("*").order("sort_order")
+  let request = supabase.from("stores").select("*").order("sort_order")
+  if (user.role === "teamwear") request = request.eq("id", "teamwear")
+  const { data, error } = await request
   if (error) throw new Error(error.message)
   return data.map(toStore)
 }

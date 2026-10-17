@@ -36,7 +36,8 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     id: claims.sub,
     email: profile?.email ?? claims.email ?? "",
     fullName: profile?.full_name || metadata.full_name || "",
-    isAdmin: role !== null,
+    isAdmin: role === "admin" || role === "sales",
+    isStaff: role !== null,
     role,
   }
 })
@@ -48,11 +49,31 @@ export async function requireUser(returnTo = "/account"): Promise<CurrentUser> {
   return user
 }
 
-/** Only staff (admin or sales) get past this; everyone else sees a 404. For pages. */
-export async function requireAdmin(): Promise<CurrentUser> {
+/** Anyone with a staff role (Teamwear included) may open the admin panel; customers see a 404. */
+export async function requireStaff(): Promise<CurrentUser> {
   const user = await requireUser("/admin")
+  if (!user.isStaff) notFound()
+  return user
+}
+
+/** Admin or Sales only. Teamwear goes to their products; everyone else sees a 404. For pages. */
+export async function requireAdmin(): Promise<CurrentUser> {
+  const user = await requireStaff()
+  if (user.role === "teamwear") redirect("/admin/shop")
   if (!user.isAdmin) notFound()
   return user
+}
+
+/** Shop products: admins (every shop) and Teamwear (Teamwear only). Sales go back to the dashboard. */
+export async function requireShopManager(): Promise<CurrentUser> {
+  const user = await requireStaff()
+  if (user.role !== "admin" && user.role !== "teamwear") redirect("/admin")
+  return user
+}
+
+/** Orders: Admin and Sales see all; Teamwear sees orders containing teamwear (row level security). */
+export async function requireOrderViewer(): Promise<CurrentUser> {
+  return requireStaff()
 }
 
 /** Catalogue, pricing, settings and team pages: full admins only. Sales go back to the dashboard. */

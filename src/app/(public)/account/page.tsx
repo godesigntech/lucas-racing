@@ -30,7 +30,7 @@ async function Overview() {
       <AccountPageHeader title={`Hi, ${firstName}`} description="Track your orders and keep your details up to date." />
 
       <div className="grid gap-6">
-        {user?.isAdmin && (
+        {user?.isStaff && (
           <section className="flex flex-col gap-4 rounded-3xl bg-carbon p-6 text-paper sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-4">
               <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand text-carbon">

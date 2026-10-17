@@ -72,6 +72,8 @@ export interface ShopProduct {
   customFee: number
   /** Clicks through to the partner's site (Delta), counted per product. */
   externalClicks: number
+  /** Size guide shown on the product page (Markdown, tables allowed). */
+  sizeGuide: string
   sortOrder: number
   variants: ShopVariant[]
 }

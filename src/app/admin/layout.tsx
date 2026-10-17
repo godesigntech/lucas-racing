@@ -5,7 +5,7 @@ import { AdminUnreadProvider } from "@/components/admin/chat/admin-unread-provid
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { AdminTopbar } from "@/components/admin/admin-topbar"
 import { Skeleton } from "@/components/ui/skeleton"
-import { requireAdmin } from "@/lib/auth/session"
+import { requireStaff } from "@/lib/auth/session"
 import { isDemoMode } from "@/lib/demo/mode"
 
 export const metadata: Metadata = {
@@ -33,9 +33,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   )
 }
 
-/** Only renders admin pages for admins; everyone else gets a 404. */
+/** Only renders admin pages for staff (each page checks its own role too); everyone else gets a 404. */
 async function AdminGate({ children }: { children: React.ReactNode }) {
-  await requireAdmin()
+  await requireStaff()
   return children
 }
 

@@ -8,6 +8,7 @@ import { CategoryRowActions } from "@/components/admin/shop/category-row-actions
 import { storeLabels, storeOptions } from "@/components/admin/shop/store-labels"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { requireShopManager } from "@/lib/auth/session"
 import { listAdminShopCategories } from "@/lib/data/shop"
 import { cn } from "@/lib/utils"
 
@@ -22,7 +23,9 @@ export default function AdminShopCategoriesPage() {
 }
 
 async function CategoryList() {
-  const categories = await listAdminShopCategories()
+  const [user, categories] = await Promise.all([requireShopManager(), listAdminShopCategories()])
+  const teamwear = user.role === "teamwear"
+  const shops = teamwear ? storeOptions.filter((store) => store.value === "teamwear") : storeOptions
 
   return (
     <>
@@ -32,6 +35,8 @@ async function CategoryList() {
         description="How products are grouped in each shop. The MS Kart categories also appear in the main menu."
         actions={
           <CategoryDialog
+            defaultStore={teamwear ? "teamwear" : undefined}
+            stores={teamwear ? ["teamwear"] : undefined}
             trigger={
               <Button>
                 <Plus /> Add a category
@@ -41,7 +46,7 @@ async function CategoryList() {
         }
       />
       <div className="space-y-6">
-        {storeOptions.map((store) => {
+        {shops.map((store) => {
           const rows = categories.filter((category) => category.storeId === store.value)
           return (
             <AdminCard key={store.value} title={storeLabels[store.value]} flush>

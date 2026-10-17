@@ -13,6 +13,7 @@ import { storeOptions } from "@/components/admin/shop/store-labels"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ADMIN_PAGE_SIZE } from "@/lib/data/admin"
+import { requireShopManager } from "@/lib/auth/session"
 import { listAdminShopProducts } from "@/lib/data/shop"
 import { storeIds } from "@/lib/validations/shop"
 import type { StoreId } from "@/types/shop"
@@ -39,15 +40,22 @@ export default function AdminShopPage({ searchParams }: PageProps<"/admin/shop">
 }
 
 async function ShopList({ query }: { query: Query }) {
-  const store = (storeIds as readonly string[]).includes(query.store ?? "") ? (query.store as StoreId) : undefined
+  const user = await requireShopManager()
+  // Teamwear staff work in the Teamwear shop only.
+  const teamwear = user.role === "teamwear"
+  const store = teamwear ? "teamwear" : (storeIds as readonly string[]).includes(query.store ?? "") ? (query.store as StoreId) : undefined
   const stock = query.stock === "low" || query.stock === "out" ? query.stock : ""
   const result = await listAdminShopProducts({ store, stock, query: query.q, page: Number(query.page) || 1 })
 
   return (
     <>
       <AdminPageHeader
-        title="Shop products"
-        description="Products for the MS Kart shop, Teamwear, HydroKarts parts and Delta Racewear, with their options, prices and stock."
+        title={teamwear ? "Teamwear products" : "Shop products"}
+        description={
+          teamwear
+            ? "Wendy's Teamwear: add products, sizes and colours, prices, stock and photos."
+            : "Products for the MS Kart shop, Teamwear, HydroKarts parts and Delta Racewear, with their options, prices and stock."
+        }
         actions={
           <>
             <Button asChild variant="outline">
@@ -55,23 +63,29 @@ async function ShopList({ query }: { query: Query }) {
                 <FolderTree /> Categories
               </Link>
             </Button>
-            <Button asChild variant="outline">
-              <Link href="/admin/shop/import">
-                <Upload /> Import CSV
-              </Link>
-            </Button>
-            <NewShopProductDialog defaultStore={store} />
+            {!teamwear && (
+              <Button asChild variant="outline">
+                <Link href="/admin/shop/import">
+                  <Upload /> Import CSV
+                </Link>
+              </Button>
+            )}
+            <NewShopProductDialog defaultStore={store} stores={teamwear ? ["teamwear"] : undefined} />
           </>
         }
       />
       <div className="space-y-4">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          <FilterTabs
-            label="Filter by shop"
-            active={store ?? ""}
-            hrefFor={(value) => buildHref(query, { store: value || undefined, page: undefined })}
-            tabs={[{ value: "", label: "All shops" }, ...storeOptions]}
-          />
+          {teamwear ? (
+            <span />
+          ) : (
+            <FilterTabs
+              label="Filter by shop"
+              active={store ?? ""}
+              hrefFor={(value) => buildHref(query, { store: value || undefined, page: undefined })}
+              tabs={[{ value: "", label: "All shops" }, ...storeOptions]}
+            />
+          )}
           <Suspense fallback={<Skeleton className="h-10 w-full rounded-full sm:max-w-xs" />}>
             <SearchInput label="Search products" placeholder="Name, brand or web address" />
           </Suspense>

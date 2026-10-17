@@ -21,7 +21,7 @@ import {
 } from "@/lib/validations/shop"
 import type { ActionResult } from "@/types/account"
 
-import { getFullAdmin, NOT_ALLOWED } from "./guard"
+import { getShopManager, NOT_ALLOWED } from "./guard"
 
 /** Shop pages read categories from a tagged cache; product pages read live. */
 function refreshShop(...paths: string[]) {
@@ -32,14 +32,27 @@ function refreshShop(...paths: string[]) {
 
 const SLUG_TAKEN = "23505"
 
+/** The shop a product belongs to, so permission can be checked (Teamwear may only change Teamwear). */
+async function productStore(id: string): Promise<string | null> {
+  const supabase = await createClient()
+  const { data } = await supabase.from("shop_products").select("store_id").eq("id", id).maybeSingle()
+  return data?.store_id ?? null
+}
+
+async function categoryStore(id: string): Promise<string | null> {
+  const supabase = await createClient()
+  const { data } = await supabase.from("shop_categories").select("store_id").eq("id", id).maybeSingle()
+  return data?.store_id ?? null
+}
+
 // Products ------------------------------------------------------------------
 
 /** Creates a product with one variant at the given price, ready to fill in. */
 export async function createShopProduct(values: NewShopProductValues): Promise<ActionResult<{ id: string }>> {
   if (isDemoMode()) return DEMO_READ_ONLY
-  if (!(await getFullAdmin())) return NOT_ALLOWED
   const parsed = newShopProductSchema.safeParse(values)
   if (!parsed.success) return validationError(parsed.error)
+  if (!(await getShopManager(parsed.data.storeId))) return NOT_ALLOWED
 
   const supabase = await createClient()
   const { data, error } = await supabase
@@ -59,10 +72,10 @@ export async function createShopProduct(values: NewShopProductValues): Promise<A
 
 export async function updateShopProduct(id: string, values: ShopProductValues): Promise<ActionResult> {
   if (isDemoMode()) return DEMO_READ_ONLY
-  if (!(await getFullAdmin())) return NOT_ALLOWED
   const parsed = shopProductSchema.safeParse(values)
   if (!parsed.success) return validationError(parsed.error)
   const data = parsed.data
+  if (!(await getShopManager(await productStore(id), data.storeId))) return NOT_ALLOWED
 
   const supabase = await createClient()
   // Fields edited here are kept by future imports (see the CSV importer).
@@ -94,6 +107,7 @@ export async function updateShopProduct(id: string, values: ShopProductValues): 
       customisable: data.customisable,
       custom_finishes: data.customisable ? data.customFinishes : [],
       custom_fee: data.customFee,
+      size_guide: data.sizeGuide,
       sort_order: data.sortOrder,
     })
     .eq("id", id)
@@ -107,7 +121,7 @@ export async function updateShopProduct(id: string, values: ShopProductValues): 
 /** Saves the photo list in display order; the first is the main photo. */
 export async function setShopProductImages(id: string, images: string[]): Promise<ActionResult> {
   if (isDemoMode()) return DEMO_READ_ONLY
-  if (!(await getFullAdmin())) return NOT_ALLOWED
+  if (!(await getShopManager(await productStore(id)))) return NOT_ALLOWED
   const parsed = productImagesSchema.safeParse(images)
   if (!parsed.success) return failure(parsed.error.issues[0]?.message ?? "Those photos aren't valid.")
 
@@ -130,7 +144,7 @@ async function hasOrders(supabase: Awaited<ReturnType<typeof createClient>>, var
 
 export async function deleteShopProduct(id: string): Promise<ActionResult> {
   if (isDemoMode()) return DEMO_READ_ONLY
-  if (!(await getFullAdmin())) return NOT_ALLOWED
+  if (!(await getShopManager(await productStore(id)))) return NOT_ALLOWED
 
   const supabase = await createClient()
   const { data: variants } = await supabase.from("shop_variants").select("id").eq("product_id", id)
@@ -154,7 +168,7 @@ export async function saveShopVariant(
   initialStock = 0,
 ): Promise<ActionResult> {
   if (isDemoMode()) return DEMO_READ_ONLY
-  if (!(await getFullAdmin())) return NOT_ALLOWED
+  if (!(await getShopManager(await productStore(productId)))) return NOT_ALLOWED
   const parsed = shopVariantSchema.safeParse(values)
   if (!parsed.success) return validationError(parsed.error)
   const data = parsed.data
@@ -203,7 +217,7 @@ export async function saveShopVariant(
 
 export async function deleteShopVariant(productId: string, variantId: string): Promise<ActionResult> {
   if (isDemoMode()) return DEMO_READ_ONLY
-  if (!(await getFullAdmin())) return NOT_ALLOWED
+  if (!(await getShopManager(await productStore(productId)))) return NOT_ALLOWED
 
   const supabase = await createClient()
   if (await hasOrders(supabase, [variantId])) {
@@ -222,7 +236,7 @@ export async function deleteShopVariant(productId: string, variantId: string): P
 /** Sets the counted stock level; the change is logged as a manual adjustment. */
 export async function setVariantStock(productId: string, variantId: string, values: StockCountValues): Promise<ActionResult> {
   if (isDemoMode()) return DEMO_READ_ONLY
-  if (!(await getFullAdmin())) return NOT_ALLOWED
+  if (!(await getShopManager(await productStore(productId)))) return NOT_ALLOWED
   const parsed = stockCountSchema.safeParse(values)
   if (!parsed.success) return validationError(parsed.error)
 
@@ -242,10 +256,10 @@ export async function setVariantStock(productId: string, variantId: string, valu
 
 export async function saveShopCategory(id: string | null, values: ShopCategoryValues): Promise<ActionResult> {
   if (isDemoMode()) return DEMO_READ_ONLY
-  if (!(await getFullAdmin())) return NOT_ALLOWED
   const parsed = shopCategorySchema.safeParse(values)
   if (!parsed.success) return validationError(parsed.error)
   const data = parsed.data
+  if (!(await getShopManager(data.storeId, id ? await categoryStore(id) : data.storeId))) return NOT_ALLOWED
 
   const row = {
     store_id: data.storeId,
@@ -268,7 +282,7 @@ export async function saveShopCategory(id: string | null, values: ShopCategoryVa
 
 export async function deleteShopCategory(id: string): Promise<ActionResult> {
   if (isDemoMode()) return DEMO_READ_ONLY
-  if (!(await getFullAdmin())) return NOT_ALLOWED
+  if (!(await getShopManager(await categoryStore(id)))) return NOT_ALLOWED
 
   const supabase = await createClient()
   const { error } = await supabase.from("shop_categories").delete().eq("id", id)

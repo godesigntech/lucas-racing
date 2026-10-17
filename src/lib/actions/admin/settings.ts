@@ -30,6 +30,8 @@ const socialLabels: Record<SocialIconName, string> = {
   tiktok: "TikTok",
 }
 
+const roleNames: Record<StaffRole, string> = { admin: "an admin", sales: "sales", teamwear: "Teamwear" }
+
 function refreshSettings() {
   updateTag(cacheTags.settings)
   revalidatePath("/admin/settings")
@@ -134,10 +136,10 @@ export async function addAdmin(values: AdminEmailValues): Promise<ActionResult> 
     return databaseError(error, "We couldn't add that person.")
   }
   revalidatePath("/admin/settings")
-  return { ok: true, message: `${email} can now use the admin panel as ${role === "admin" ? "an admin" : "sales"}.` }
+  return { ok: true, message: `${email} can now use the admin panel as ${roleNames[role]}.` }
 }
 
-/** Switch a team member between Admin and Sales. */
+/** Change a team member's role (Admin, Sales or Teamwear). */
 export async function setAdminRole(email: string, role: StaffRole): Promise<ActionResult> {
   if (isDemoMode()) return DEMO_READ_ONLY
   const admin = await getFullAdmin()
@@ -149,7 +151,7 @@ export async function setAdminRole(email: string, role: StaffRole): Promise<Acti
   const { error } = await supabase.from("admin_users").update({ role }).eq("email", email.toLowerCase())
   if (error) return databaseError(error, "We couldn't change that role.")
   revalidatePath("/admin/settings")
-  return { ok: true, message: `${email} is now ${role === "admin" ? "an admin" : "sales"}.` }
+  return { ok: true, message: `${email} is now ${roleNames[role]}.` }
 }
 
 export async function removeAdmin(email: string): Promise<ActionResult> {

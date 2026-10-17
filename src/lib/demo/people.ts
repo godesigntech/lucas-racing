@@ -10,6 +10,7 @@ export const demoUser: CurrentUser = {
   email: "demo@lucasracing.co.uk",
   fullName: "Demo Admin",
   isAdmin: true,
+  isStaff: true,
   role: "admin",
 }
 

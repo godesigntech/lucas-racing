@@ -40,6 +40,7 @@ export const shopProductSchema = z.object({
   /** Finishes a customisable part can be ordered in (priced from the helmet price list). */
   customFinishes: z.array(z.enum(["paint", "film", "chrome"])).max(3),
   customFee: money,
+  sizeGuide: z.string().trim().max(8000, "Keep the size guide under 8,000 characters"),
   sortOrder: z.number({ error: "Enter a number" }).int().min(0).max(100000),
 }).refine((values) => !values.customisable || values.customFinishes.length > 0, {
   error: "Choose at least one finish",
@@ -48,7 +49,7 @@ export const shopProductSchema = z.object({
 export type ShopProductValues = z.infer<typeof shopProductSchema>
 
 // Uploaded photos (our storage) or imported ones (the supplier's site).
-const imageUrl = z.string().regex(/^https:\/\/\S+$/, "Photos must be https links")
+const imageUrl = z.string().regex(/^(https:\/\/\S+|\/images\/[\w./-]+)$/, "Photos must be https links")
 export const productImagesSchema = z.array(imageUrl).max(12, "Up to 12 photos")
 
 export const shopVariantSchema = z.object({

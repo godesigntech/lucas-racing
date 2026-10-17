@@ -1,12 +1,17 @@
-/** Staff roles: admins run everything; sales handle orders, customers, messages, quotes and enquiries. */
-export type StaffRole = "admin" | "sales"
+/**
+ * Staff roles: admins run everything; sales handle orders, customers, messages, quotes and
+ * enquiries; teamwear (Wendy) manages Teamwear products and sees Teamwear orders, nothing else.
+ */
+export type StaffRole = "admin" | "sales" | "teamwear"
 
 export interface CurrentUser {
   id: string
   email: string
   fullName: string
-  /** True for all staff (admin or sales): they can open the admin panel. */
+  /** Admin or Sales: the full staff side (orders, customers, messages...). */
   isAdmin: boolean
+  /** Any staff role, Teamwear included: can open the admin panel. */
+  isStaff: boolean
   /** Staff role, or null for customers. */
   role: StaffRole | null
 }

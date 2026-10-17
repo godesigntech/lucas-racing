@@ -7,7 +7,7 @@ import { CustomerChat } from "./customer-chat"
 export async function CustomerChatLauncher() {
   if (isDemoMode()) return null
   const user = await getCurrentUser()
-  if (!user || user.isAdmin) return null
+  if (!user || user.isStaff) return null
 
   const firstName = user.fullName.trim().split(/\s+/)[0] ?? ""
   return <CustomerChat customerId={user.id} firstName={firstName} />

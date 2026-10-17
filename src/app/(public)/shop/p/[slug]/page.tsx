@@ -2,8 +2,10 @@ import { Suspense } from "react"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
+import { Ruler } from "lucide-react"
 
 import { Container } from "@/components/layout/container"
+import { NewsMarkdown } from "@/components/news/news-markdown"
 import { SectionHeading } from "@/components/shared/section-heading"
 import { AddToBasket } from "@/components/shop/add-to-basket"
 import { ShopProductGallery } from "@/components/shop/product-gallery"
@@ -76,6 +78,18 @@ async function ProductView({ slug }: { slug: string }) {
             <h1 className="display text-5xl sm:text-6xl">{product.title}</h1>
           </div>
           <AddToBasket product={product} />
+          {product.sizeGuide && (
+            <details className="group rounded-2xl border border-carbon/10 bg-card p-4 [&_summary::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-semibold">
+                <span className="inline-flex items-center gap-2">
+                  <Ruler className="size-4 text-brand-ink" aria-hidden /> Size guide
+                </span>
+                <span className="text-sm font-normal text-muted-foreground group-open:hidden">Show</span>
+                <span className="hidden text-sm font-normal text-muted-foreground group-open:inline">Hide</span>
+              </summary>
+              <NewsMarkdown className="mt-2 text-sm">{product.sizeGuide}</NewsMarkdown>
+            </details>
+          )}
           {product.description && (
             <div className="space-y-3 border-t border-carbon/10 pt-6">
               <h2 className="font-display text-2xl font-bold uppercase">Description</h2>

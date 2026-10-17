@@ -22,6 +22,7 @@ import { ConfirmDialog } from "../confirm-dialog"
 const roleLabels: Record<StaffRole, { label: string; hint: string }> = {
   admin: { label: "Admin", hint: "Everything, including prices, products, films, settings and the team" },
   sales: { label: "Sales", hint: "Orders, customers, messages, quotes and enquiries" },
+  teamwear: { label: "Teamwear", hint: "Teamwear products, stock and photos, and orders containing teamwear" },
 }
 
 function RoleSelect({

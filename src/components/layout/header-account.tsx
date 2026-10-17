@@ -19,10 +19,10 @@ export async function HeaderAccount({ eventText, navItems }: HeaderAccountProps)
 
   if (!user) return <GuestActions eventText={eventText} />
 
-  const menuUser = { fullName: user.fullName, email: user.email, isAdmin: user.isAdmin }
+  const menuUser = { fullName: user.fullName, email: user.email, isAdmin: user.isStaff }
   return (
     <>
-      {user.isAdmin && (
+      {user.isStaff && (
         <Button asChild variant="secondary" className="hidden h-10 px-4 sm:inline-flex">
           <Link href="/admin">
             <LayoutDashboard /> Admin

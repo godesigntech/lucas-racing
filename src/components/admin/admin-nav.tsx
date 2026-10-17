@@ -4,8 +4,9 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 
 import { cn } from "@/lib/utils"
+import type { StaffRole } from "@/types/account"
 
-import { adminNavSections, isAdminNavActive } from "./admin-nav-items"
+import { adminNavSections, isAdminNavActive, visibleNavItems } from "./admin-nav-items"
 import { useAdminUnreadCount } from "./chat/admin-unread-provider"
 
 function UnreadBadge({ active }: { active: boolean }) {
@@ -26,32 +27,32 @@ function UnreadBadge({ active }: { active: boolean }) {
 
 interface AdminNavProps {
   onNavigate?: () => void
-  /** Sales staff don't see catalogue, pricing or settings. */
-  isFullAdmin: boolean
+  /** Decides which items show: Sales see no catalogue or settings, Teamwear only their pages. */
+  role: StaffRole | null
 }
 
 /** Sidebar navigation. Reads the URL: render inside <Suspense> with <AdminNavStatic> as fallback. */
-export function AdminNav({ onNavigate, isFullAdmin }: AdminNavProps) {
+export function AdminNav({ onNavigate, role }: AdminNavProps) {
   const pathname = usePathname()
-  return <AdminNavList isActive={(href) => isAdminNavActive(pathname, href)} onNavigate={onNavigate} isFullAdmin={isFullAdmin} />
+  return <AdminNavList isActive={(href) => isAdminNavActive(pathname, href)} onNavigate={onNavigate} role={role} />
 }
 
 /** Shown while the session loads: only the pages every staff member can open. */
 export function AdminNavStatic() {
-  return <AdminNavList isActive={() => false} isFullAdmin={false} />
+  return <AdminNavList isActive={() => false} role="sales" />
 }
 
 function AdminNavList({
   isActive,
   onNavigate,
-  isFullAdmin,
+  role,
 }: {
   isActive: (href: string) => boolean
   onNavigate?: () => void
-  isFullAdmin: boolean
+  role: StaffRole | null
 }) {
   const sections = adminNavSections
-    .map((section) => ({ ...section, items: section.items.filter((item) => isFullAdmin || !item.fullAdminOnly) }))
+    .map((section) => ({ ...section, items: section.items.filter((item) => visibleNavItems(item, role)) }))
     .filter((section) => section.items.length > 0)
   return (
     <nav aria-label="Admin" className="space-y-6">

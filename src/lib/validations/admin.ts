@@ -160,7 +160,7 @@ export const deliveryMethodsSchema = z.object({
 })
 export type DeliveryMethodsValues = z.infer<typeof deliveryMethodsSchema>
 
-export const staffRoles = ["admin", "sales"] as const
+export const staffRoles = ["admin", "sales", "teamwear"] as const
 
 export const adminEmailSchema = z.object({
   email: z.email("Enter a valid email address").trim().toLowerCase(),

@@ -32,5 +32,5 @@ export function AdminSidebar() {
 /** The nav for the signed-in staff member's role. Reads the session: render in <Suspense>. */
 async function SessionAdminNav() {
   const user = await getCurrentUser()
-  return <AdminNav isFullAdmin={user?.role === "admin"} />
+  return <AdminNav role={user?.role ?? null} />
 }

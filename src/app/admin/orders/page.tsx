@@ -7,6 +7,7 @@ import { OrdersTable } from "@/components/admin/orders-table"
 import { Pagination } from "@/components/admin/pagination"
 import { SearchInput } from "@/components/admin/search-input"
 import { Skeleton } from "@/components/ui/skeleton"
+import { requireOrderViewer } from "@/lib/auth/session"
 import { ADMIN_PAGE_SIZE, listOrders } from "@/lib/data/admin"
 import { orderStatusMeta } from "@/lib/orders/status"
 import { orderStatuses } from "@/types/order"
@@ -45,18 +46,24 @@ export default function AdminOrdersPage({ searchParams }: PageProps<"/admin/orde
 }
 
 async function OrdersList({ query }: { query: Query }) {
+  const user = await requireOrderViewer()
+  const teamwear = user.role === "teamwear"
   const status = typeof query.status === "string" ? query.status : ""
-  const shop = shopTabs.some((tab) => tab.value === query.shop) ? (query.shop ?? "") : ""
+  const shop = teamwear ? "teamwear" : shopTabs.some((tab) => tab.value === query.shop) ? (query.shop ?? "") : ""
   const result = await listOrders({ query: query.q, status, shop, page: Number(query.page) || 1 })
 
   return (
     <div className="space-y-4">
-      <FilterTabs
-        label="Filter by what was bought"
-        active={shop}
-        hrefFor={(value) => buildHref(query, { shop: value || undefined, page: undefined })}
-        tabs={shopTabs}
-      />
+      {teamwear ? (
+        <p className="text-sm text-muted-foreground">Orders that include Teamwear. Admins update their status and payment.</p>
+      ) : (
+        <FilterTabs
+          label="Filter by what was bought"
+          active={shop}
+          hrefFor={(value) => buildHref(query, { shop: value || undefined, page: undefined })}
+          tabs={shopTabs}
+        />
+      )}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <FilterTabs
           label="Filter by status"

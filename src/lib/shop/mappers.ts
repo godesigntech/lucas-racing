@@ -91,6 +91,7 @@ export function toShopProduct(row: ShopProductRow & { shop_variants?: ShopVarian
     customFinishes: (row.custom_finishes ?? []).filter((type): type is FinishType => (finishTypes as string[]).includes(type)),
     customFee: Number(row.custom_fee ?? 0),
     externalClicks: row.external_clicks ?? 0,
+    sizeGuide: row.size_guide ?? "",
     sortOrder: row.sort_order,
     variants: (row.shop_variants ?? []).map(toShopVariant).sort((a, b) => a.sortOrder - b.sortOrder),
   }

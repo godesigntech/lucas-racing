@@ -28,7 +28,8 @@ import type { StoreId } from "@/types/shop"
 import { slugify, storeLabels, storeOptions } from "./store-labels"
 
 /** Starts a product with a name, shop and price, then opens it to fill in the rest. */
-export function NewShopProductDialog({ defaultStore = "ms-kart" }: { defaultStore?: StoreId }) {
+export function NewShopProductDialog({ defaultStore = "ms-kart", stores }: { defaultStore?: StoreId; stores?: StoreId[] }) {
+  const options = stores ? storeOptions.filter((option) => stores.includes(option.value)) : storeOptions
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const defaults: NewShopProductValues = { storeId: defaultStore, title: "", slug: "", price: 0 }
@@ -80,7 +81,7 @@ export function NewShopProductDialog({ defaultStore = "ms-kart" }: { defaultStor
                     <SelectValue>{storeLabels[field.value]}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {storeOptions.map((option) => (
+                    {options.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
                       </SelectItem>

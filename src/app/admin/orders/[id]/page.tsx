@@ -12,6 +12,7 @@ import { OrderTimeline } from "@/components/orders/order-timeline"
 import { OrderTotals } from "@/components/orders/order-totals"
 import { OrderStatusBadge, PaymentStatusBadge } from "@/components/orders/status-badge"
 import { Skeleton } from "@/components/ui/skeleton"
+import { requireOrderViewer } from "@/lib/auth/session"
 import { getAdminOrder, getOrderLogos } from "@/lib/data/admin"
 import { formatDateTime } from "@/lib/format"
 
@@ -28,8 +29,10 @@ export default function AdminOrderPage({ params }: PageProps<"/admin/orders/[id]
 }
 
 async function OrderDetail({ id }: { id: string }) {
-  const order = await getAdminOrder(id)
-  const logos = await getOrderLogos(order)
+  const [user, order] = await Promise.all([requireOrderViewer(), getAdminOrder(id)])
+  // Teamwear staff can look, not change: no logos, notes or status updates.
+  const canManage = user.isAdmin
+  const logos = canManage ? await getOrderLogos(order) : []
 
   return (
     <>
@@ -78,20 +81,24 @@ async function OrderDetail({ id }: { id: string }) {
             </AdminCard>
           )}
 
-          <AdminCard title="Internal notes" description="Private to admins.">
-            <AdminNotesForm orderId={order.id} adminNotes={order.adminNotes} />
-          </AdminCard>
+          {canManage && (
+            <AdminCard title="Internal notes" description="Private to admins.">
+              <AdminNotesForm orderId={order.id} adminNotes={order.adminNotes} />
+            </AdminCard>
+          )}
         </div>
 
         <div className="space-y-6">
-          <AdminCard title="Update order">
-            <OrderStatusForm orderId={order.id} status={order.status} paymentStatus={order.paymentStatus} />
-          </AdminCard>
+          {canManage && (
+            <AdminCard title="Update order">
+              <OrderStatusForm orderId={order.id} status={order.status} paymentStatus={order.paymentStatus} />
+            </AdminCard>
+          )}
 
           <AdminCard
             title="Customer"
             action={
-              order.userId ? (
+              order.userId && canManage ? (
                 <Link href={`/admin/customers/${order.userId}`} className="text-sm font-medium underline-offset-4 hover:underline">
                   View profile
                 </Link>

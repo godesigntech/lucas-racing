@@ -7,11 +7,12 @@ import { ExternalLink, Menu } from "lucide-react"
 import { Logo } from "@/components/layout/logo"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import type { StaffRole } from "@/types/account"
 
 import { AdminNav } from "./admin-nav"
 import { useAdminUnreadCount } from "./chat/admin-unread-provider"
 
-export function AdminMobileNav({ isFullAdmin }: { isFullAdmin: boolean }) {
+export function AdminMobileNav({ role }: { role: StaffRole | null }) {
   const [open, setOpen] = useState(false)
   const close = () => setOpen(false)
   const unread = useAdminUnreadCount()
@@ -38,7 +39,7 @@ export function AdminMobileNav({ isFullAdmin }: { isFullAdmin: boolean }) {
           <Logo tone="light" />
         </div>
         <div className="mt-6 flex-1 overflow-y-auto">
-          <AdminNav onNavigate={close} isFullAdmin={isFullAdmin} />
+          <AdminNav onNavigate={close} role={role} />
         </div>
         <Link
           href="/"

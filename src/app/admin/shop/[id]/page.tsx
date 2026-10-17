@@ -12,6 +12,7 @@ import { storeLabels } from "@/components/admin/shop/store-labels"
 import { VariantsManager } from "@/components/admin/shop/variants-manager"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { requireShopManager } from "@/lib/auth/session"
 import { getAdminShopProduct, listAdminShopCategories } from "@/lib/data/shop"
 
 export const metadata = { title: "Shop product" }
@@ -27,7 +28,7 @@ export default function AdminShopProductPage({ params }: PageProps<"/admin/shop/
 }
 
 async function ProductEditor({ id }: { id: string }) {
-  const [{ product, movements }, categories] = await Promise.all([getAdminShopProduct(id), listAdminShopCategories()])
+  const [user, { product, movements }, categories] = await Promise.all([requireShopManager(), getAdminShopProduct(id), listAdminShopCategories()])
 
   return (
     <>
@@ -55,7 +56,7 @@ async function ProductEditor({ id }: { id: string }) {
             <VariantsManager product={product} />
           </AdminCard>
           <AdminCard title="Details">
-            <ShopProductForm product={product} categories={categories} />
+            <ShopProductForm product={product} categories={categories} stores={user.role === "teamwear" ? ["teamwear"] : undefined} />
           </AdminCard>
         </div>
         <div className="space-y-6">

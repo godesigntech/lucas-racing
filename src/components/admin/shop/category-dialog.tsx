@@ -31,10 +31,13 @@ import { slugify, storeLabels, storeOptions } from "./store-labels"
 interface CategoryDialogProps {
   category?: ShopCategory
   defaultStore?: StoreId
+  /** Shops the user may choose (Teamwear staff: Teamwear only). */
+  stores?: StoreId[]
   trigger: React.ReactNode
 }
 
-export function CategoryDialog({ category, defaultStore = "ms-kart", trigger }: CategoryDialogProps) {
+export function CategoryDialog({ category, defaultStore = "ms-kart", stores, trigger }: CategoryDialogProps) {
+  const options = stores ? storeOptions.filter((option) => stores.includes(option.value)) : storeOptions
   const [open, setOpen] = useState(false)
   const defaults: ShopCategoryValues = category
     ? {
@@ -89,7 +92,7 @@ export function CategoryDialog({ category, defaultStore = "ms-kart", trigger }: 
                     <SelectValue>{storeLabels[field.value]}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {storeOptions.map((option) => (
+                    {options.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
                       </SelectItem>

@@ -2,7 +2,7 @@ import "server-only"
 
 import { notFound } from "next/navigation"
 
-import { requireAdmin, requireFullAdmin } from "@/lib/auth/session"
+import { requireAdmin, requireFullAdmin, requireOrderViewer } from "@/lib/auth/session"
 import { demoAdmin } from "@/lib/demo/admin"
 import { isDemoMode } from "@/lib/demo/mode"
 import { createClient } from "@/lib/supabase/server"
@@ -110,7 +110,9 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 export const orderShopFilters = ["helmets", "ms-kart", "teamwear", "hydrokarts-parts"] as const
 
 export async function listOrders(options: { query?: string; status?: string; shop?: string; page?: number }): Promise<Paged<OrderListItem>> {
-  await requireAdmin()
+  const user = await requireOrderViewer()
+  // Teamwear staff see orders containing teamwear (row level security enforces it too).
+  if (user.role === "teamwear") options = { ...options, shop: "teamwear" }
   if (isDemoMode()) return demoAdmin.listOrders(options)
   const supabase = await createClient()
   const { current, from, to } = pageRange(options.page ?? 1)
@@ -147,7 +149,7 @@ export async function listOrders(options: { query?: string; status?: string; sho
 }
 
 export async function getAdminOrder(id: string): Promise<Order> {
-  await requireAdmin()
+  await requireOrderViewer()
   if (isDemoMode()) return demoAdmin.order(id)
   const supabase = await createClient()
   const { data, error } = await supabase

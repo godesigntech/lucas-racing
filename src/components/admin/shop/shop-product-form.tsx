@@ -17,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { updateShopProduct } from "@/lib/actions/admin/shop"
 import { shopProductSchema, type ShopProductValues } from "@/lib/validations/shop"
 import { finishLabels } from "@/lib/shop/part-finish"
-import { finishTypes, type ShopCategory, type ShopProduct } from "@/types/shop"
+import { finishTypes, type ShopCategory, type ShopProduct, type StoreId } from "@/types/shop"
 
 import { storeLabels, storeOptions } from "./store-labels"
 
@@ -26,6 +26,8 @@ const NO_CATEGORY = "none"
 interface ShopProductFormProps {
   product: ShopProduct
   categories: ShopCategory[]
+  /** Shops the user may move the product to (Teamwear staff: Teamwear only). */
+  stores?: StoreId[]
 }
 
 function SwitchRow({ id, title, hint, checked, onChange }: { id: string; title: string; hint: string; checked: boolean; onChange: (value: boolean) => void }) {
@@ -41,7 +43,8 @@ function SwitchRow({ id, title, hint, checked, onChange }: { id: string; title: 
 }
 
 /** Name, shop, category, description, specifications and visibility. */
-export function ShopProductForm({ product, categories }: ShopProductFormProps) {
+export function ShopProductForm({ product, categories, stores }: ShopProductFormProps) {
+  const storeChoices = stores ? storeOptions.filter((option) => stores.includes(option.value)) : storeOptions
   const defaults: ShopProductValues = {
     storeId: product.storeId,
     categoryId: product.categoryId,
@@ -57,6 +60,7 @@ export function ShopProductForm({ product, categories }: ShopProductFormProps) {
     customisable: product.customisable,
     customFinishes: product.customFinishes,
     customFee: product.customFee,
+    sizeGuide: product.sizeGuide,
     sortOrder: product.sortOrder,
   }
   const {
@@ -99,7 +103,7 @@ export function ShopProductForm({ product, categories }: ShopProductFormProps) {
                   <SelectValue>{storeLabels[field.value]}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {storeOptions.map((option) => (
+                  {storeChoices.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
@@ -255,6 +259,16 @@ export function ShopProductForm({ product, categories }: ShopProductFormProps) {
           />
         </fieldset>
       )}
+
+      <FormField
+        id="product-size-guide"
+        label="Size guide"
+        optional
+        hint="Shown on the product page. A table works well: | Size | Chest | Length | on the first line, then | --- | --- | --- |, then one line per size."
+        error={errors.sizeGuide?.message}
+      >
+        <Textarea {...register("sizeGuide")} {...fieldA11y("product-size-guide", errors.sizeGuide?.message, true)} rows={5} className="min-h-28 font-mono text-sm" />
+      </FormField>
 
       <div className="flex flex-wrap items-end justify-between gap-4">
         <FormField id="product-sort" label="Order" hint="Lower numbers come first." error={errors.sortOrder?.message}>
