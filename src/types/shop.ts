@@ -70,6 +70,8 @@ export interface ShopProduct {
   customFinishes: FinishType[]
   /** Added to the variant price when a finish is chosen. */
   customFee: number
+  /** Clicks through to the partner's site (Delta), counted per product. */
+  externalClicks: number
   sortOrder: number
   variants: ShopVariant[]
 }

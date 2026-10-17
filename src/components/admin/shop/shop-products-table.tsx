@@ -103,7 +103,10 @@ export function ShopProductsTable({ products, emptyMessage }: { products: ShopPr
                     </div>
                   </div>
                 </TableCell>
-                <TableCell className="text-sm">{storeLabels[product.storeId]}</TableCell>
+                <TableCell className="text-sm">
+                  {storeLabels[product.storeId]}
+                  {product.storeId === "delta" && <span className="block text-xs text-muted-foreground">{product.externalClicks} clicks to Delta</span>}
+                </TableCell>
                 <TableCell className="text-right tabular-nums">{priceRange(product)}</TableCell>
                 <TableCell className="text-right tabular-nums">{product.variants.length}</TableCell>
                 <TableCell className="text-right tabular-nums">{stock.total ?? "—"}</TableCell>

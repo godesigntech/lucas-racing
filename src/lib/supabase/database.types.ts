@@ -321,6 +321,7 @@ export type ShopProductRow = Timestamps & {
   customisable: boolean
   custom_finishes: string[]
   custom_fee: number
+  external_clicks: number
   sort_order: number
   manual_fields: string[]
 }
@@ -524,6 +525,7 @@ export type Database = {
     Functions: {
       is_admin: { Args: Record<string, never>; Returns: boolean }
       is_full_admin: { Args: Record<string, never>; Returns: boolean }
+      record_external_click: { Args: { p_product_id: string }; Returns: string | null }
       release_ai_use: { Args: { p_visitor: string; p_kind: string }; Returns: undefined }
       claim_ai_use: { Args: { p_visitor: string; p_kind: string; p_limit: number; p_window_minutes: number }; Returns: boolean }
       set_variant_stock: { Args: { p_variant_id: string; p_quantity: number; p_note?: string }; Returns: number }

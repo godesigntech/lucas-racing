@@ -5,13 +5,16 @@ import { Package } from "lucide-react"
 import type { ShopListingItem } from "@/lib/data/shop-listing"
 import { formatMoney } from "@/lib/format"
 import { isExternalImage } from "@/lib/shop/images"
+import { productHref } from "@/lib/shop/part-finish"
 
 import { QuickAddButton } from "./quick-add-button"
 import { StockBadge } from "./stock-badge"
 
 /** Product tile for shop grids: photo, name, price, stock and quick add. */
 export function ShopProductCard({ item }: { item: ShopListingItem }) {
-  const price = item.minPrice === item.maxPrice ? formatMoney(item.minPrice) : `From ${formatMoney(item.minPrice)}`
+  // Delta suits are made to order on Delta's site: a starting price, and no stock or basket button.
+  const browseOnly = item.storeId === "delta"
+  const price = item.minPrice === item.maxPrice && !browseOnly ? formatMoney(item.minPrice) : `From ${formatMoney(item.minPrice)}`
   const onOffer = item.compareAtPrice !== null && item.compareAtPrice > item.minPrice
 
   return (
@@ -38,7 +41,7 @@ export function ShopProductCard({ item }: { item: ShopListingItem }) {
       <div className="flex flex-1 flex-col gap-2 p-4">
         {item.brand && <p className="eyebrow text-[0.65rem] text-brand-ink">{item.brand}</p>}
         <h3 className="line-clamp-2 font-semibold leading-snug">
-          <Link href={`/shop/p/${item.slug}`} className="outline-none after:absolute after:inset-0 after:content-['']">
+          <Link href={productHref(item)} className="outline-none after:absolute after:inset-0 after:content-['']">
             {item.title}
           </Link>
         </h3>
@@ -48,9 +51,13 @@ export function ShopProductCard({ item }: { item: ShopListingItem }) {
               {price}
               {onOffer && <span className="ml-1.5 text-sm font-normal text-muted-foreground line-through">{formatMoney(item.compareAtPrice!)}</span>}
             </p>
-            <StockBadge status={!item.inStock ? "out_of_stock" : item.lowStock ? "low_stock" : "in_stock"} />
+            {browseOnly ? (
+              <p className="text-xs font-medium text-muted-foreground">Customise and order with Delta</p>
+            ) : (
+              <StockBadge status={!item.inStock ? "out_of_stock" : item.lowStock ? "low_stock" : "in_stock"} />
+            )}
           </div>
-          <QuickAddButton item={item} />
+          {!browseOnly && <QuickAddButton item={item} />}
         </div>
       </div>
     </article>

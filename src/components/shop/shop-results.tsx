@@ -15,10 +15,19 @@ interface ShopResultsProps {
   /** Shown when the shop has no products at all yet. */
   emptyTitle?: string
   emptyDescription?: string
+  /** The contact button under an empty grid. */
+  enquiry?: { label: string; message: string }
 }
 
 /** The product grid with a count and previous/next paging. */
-export function ShopResults({ result, pageHref, filtered, emptyTitle, emptyDescription }: ShopResultsProps) {
+export function ShopResults({
+  result,
+  pageHref,
+  filtered,
+  emptyTitle,
+  emptyDescription,
+  enquiry = { label: "Ask us about a part", message: "Hi, I'm looking for a part: " },
+}: ShopResultsProps) {
   if (result.items.length === 0) {
     return (
       <div className="flex flex-col items-center rounded-3xl border border-dashed border-carbon/20 bg-card px-6 py-16 text-center">
@@ -28,11 +37,11 @@ export function ShopResults({ result, pageHref, filtered, emptyTitle, emptyDescr
         </h2>
         <p className="mt-2 max-w-md text-sm text-muted-foreground">
           {filtered
-            ? "Try a different search or clear the filters. Can't find a part? Ask us and we'll track it down."
+            ? "Try a different search or clear the filters, or ask us and we'll help you find it."
             : (emptyDescription ?? "We're adding the range now. Tell us what you need and we'll help in the meantime.")}
         </p>
         <Button asChild variant="outline" className="mt-6">
-          <Link href={`/contact?${new URLSearchParams({ message: "Hi, I'm looking for a part: " })}`}>Ask us about a part</Link>
+          <Link href={`/contact?${new URLSearchParams({ message: enquiry.message })}`}>{enquiry.label}</Link>
         </Button>
       </div>
     )

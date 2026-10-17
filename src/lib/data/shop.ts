@@ -78,12 +78,15 @@ export async function getShopSitemapEntries(): Promise<{ path: string; lastModif
   if (isDemoMode()) return []
   const supabase = createPublicClient()
   const [products, categories] = await Promise.all([
-    supabase.from("shop_products").select("slug, updated_at, store_id").eq("is_active", true).not("store_id", "in", "(delta,hydrokarts-parts)").limit(5000),
+    supabase.from("shop_products").select("slug, updated_at, store_id").eq("is_active", true).neq("store_id", "hydrokarts-parts").limit(5000),
     supabase.from("shop_categories").select("slug").eq("store_id", "ms-kart").eq("is_active", true),
   ])
   return [
     ...(categories.data ?? []).map((category) => ({ path: `/shop/${category.slug}` })),
-    ...(products.data ?? []).map((product) => ({ path: `/shop/p/${product.slug}`, lastModified: product.updated_at })),
+    ...(products.data ?? []).map((product) => ({
+      path: product.store_id === "delta" ? `/racewear/${product.slug}` : `/shop/p/${product.slug}`,
+      lastModified: product.updated_at,
+    })),
   ]
 }
 

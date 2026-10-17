@@ -21,7 +21,7 @@ const field =
   "h-10 rounded-full border border-input bg-card px-4 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
 
 /** Search, sort, in-stock and price filters. Every change updates the URL (page resets to 1). Render in <Suspense>. */
-export function ShopToolbar() {
+export function ShopToolbar({ showStock = true }: { showStock?: boolean }) {
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
@@ -86,16 +86,18 @@ export function ShopToolbar() {
       </div>
 
       <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id="shop-in-stock"
-            checked={params.get("stock") === "in"}
-            onCheckedChange={(checked) => update({ stock: checked === true ? "in" : null })}
-          />
-          <Label htmlFor="shop-in-stock" className="text-sm font-normal">
-            In stock only
-          </Label>
-        </div>
+        {showStock && (
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="shop-in-stock"
+              checked={params.get("stock") === "in"}
+              onCheckedChange={(checked) => update({ stock: checked === true ? "in" : null })}
+            />
+            <Label htmlFor="shop-in-stock" className="text-sm font-normal">
+              In stock only
+            </Label>
+          </div>
+        )}
         <form
           className="flex items-center gap-2"
           onSubmit={(event) => {

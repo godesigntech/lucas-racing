@@ -34,7 +34,7 @@ async function ProductEditor({ id }: { id: string }) {
       <AdminPageHeader
         back={{ href: "/admin/shop", label: "Shop products" }}
         title={product.title}
-        description={`${storeLabels[product.storeId]} · ${product.isActive ? "On sale" : "Hidden from the shop"}`}
+        description={`${storeLabels[product.storeId]} · ${product.isActive ? "On sale" : "Hidden from the shop"}${product.storeId === "delta" ? ` · ${product.externalClicks} ${product.externalClicks === 1 ? "click" : "clicks"} to Delta` : ""}`}
         actions={
           <>
             {product.isActive && product.storeId !== "delta" && (

@@ -99,7 +99,9 @@ export function lowestFinishExtra(product: Pick<ShopProduct, "customFinishes" | 
   return product.customFee + (Number.isFinite(lowest) ? lowest : 0)
 }
 
-/** Customisable HydroKarts parts live under Customisation; everything else in the shop. */
+/** Where a product's page lives: HydroKarts parts under Customisation, Delta under Racewear, the rest in the shop. */
 export function productHref(product: Pick<ShopProduct, "storeId" | "slug">): string {
-  return product.storeId === "hydrokarts-parts" ? `/customisation/kart-parts/${product.slug}` : `/shop/p/${product.slug}`
+  if (product.storeId === "hydrokarts-parts") return `/customisation/kart-parts/${product.slug}`
+  if (product.storeId === "delta") return `/racewear/${product.slug}`
+  return `/shop/p/${product.slug}`
 }

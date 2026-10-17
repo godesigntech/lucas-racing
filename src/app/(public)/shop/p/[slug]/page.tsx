@@ -2,14 +2,12 @@ import { Suspense } from "react"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
-import { ExternalLink } from "lucide-react"
 
 import { Container } from "@/components/layout/container"
 import { SectionHeading } from "@/components/shared/section-heading"
 import { AddToBasket } from "@/components/shop/add-to-basket"
 import { ShopProductGallery } from "@/components/shop/product-gallery"
 import { ShopProductCard } from "@/components/shop/shop-product-card"
-import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getShopProductBySlug } from "@/lib/data/shop"
 import { getRelatedShopProducts } from "@/lib/data/shop-listing"
@@ -51,6 +49,7 @@ async function ProductView({ slug }: { slug: string }) {
   if (!product) notFound()
   // Customisable HydroKarts parts have their own page with the finish picker.
   if (product.storeId === "hydrokarts-parts") redirect(`/customisation/kart-parts/${product.slug}`)
+  if (product.storeId === "delta") redirect(`/racewear/${product.slug}`)
   const store = storePages[product.storeId]
 
   return (
@@ -76,17 +75,7 @@ async function ProductView({ slug }: { slug: string }) {
             {product.brand && <p className="eyebrow text-brand-ink">{product.brand}</p>}
             <h1 className="display text-5xl sm:text-6xl">{product.title}</h1>
           </div>
-          {product.storeId === "delta" ? (
-            product.externalUrl && (
-              <Button asChild size="lg">
-                <a href={product.externalUrl} target="_blank" rel="noreferrer">
-                  Customise and order at Delta <ExternalLink />
-                </a>
-              </Button>
-            )
-          ) : (
-            <AddToBasket product={product} />
-          )}
+          <AddToBasket product={product} />
           {product.description && (
             <div className="space-y-3 border-t border-carbon/10 pt-6">
               <h2 className="font-display text-2xl font-bold uppercase">Description</h2>
@@ -109,11 +98,9 @@ async function ProductView({ slug }: { slug: string }) {
         </div>
       </div>
 
-      {product.storeId !== "delta" && (
-        <Suspense fallback={null}>
-          <RelatedProducts product={product} />
-        </Suspense>
-      )}
+      <Suspense fallback={null}>
+        <RelatedProducts product={product} />
+      </Suspense>
     </div>
   )
 }
