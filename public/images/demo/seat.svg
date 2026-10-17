@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="45%" r="60%"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#f4f3ee"/></radialGradient>
+  </defs>
+  <rect width="800" height="800" fill="url(#glow)"/>
+  
+    <g transform="translate(400 420)">
+      <path d="M-170 -220 C-170 -280 170 -280 170 -220 L150 140 C140 220 -140 220 -150 140 Z" fill="#111412"/>
+      <path d="M-120 -170 C-120 -210 120 -210 120 -170 L105 110 C95 160 -95 160 -105 110 Z" fill="#2a2e2b"/>
+      <rect x="-150" y="-40" width="300" height="24" fill="#f95312"/>
+    </g>
+  <g transform="translate(36 36)"><rect width="128" height="44" rx="22" fill="#111412"/><text x="64" y="29" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#ffffff" letter-spacing="3">DEMO</text></g>
+</svg>
