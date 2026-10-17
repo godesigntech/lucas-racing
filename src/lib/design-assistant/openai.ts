@@ -215,9 +215,10 @@ function imagePrompt({ photo, note, summary, number }: ImageRequest): string {
     subject,
     note ? `The customer asked for: ${note}` : "",
     summary ? `Concept: ${summary}` : "",
-    number ? `Show the race number ${number} on the side.` : "Do not add any numbers.",
+    number ? `Show the race number ${number} on the side.` : "",
+    "If the customer asked for text on the helmet (a name, a word or a country), paint exactly that text, spelled exactly as they wrote it, as part of the design.",
     "Present it as a clean studio product photo: three-quarter front view, helmet centred, plain dark charcoal background, soft reflections, realistic hydro-dip film, paint and lacquer.",
-    "No brand logos, sponsor names or other text. One helmet only.",
+    "Add no brand logos, sponsor names or any other text the customer didn't ask for. One helmet only.",
   ]
     .filter(Boolean)
     .join("\n")

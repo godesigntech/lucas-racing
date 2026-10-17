@@ -74,8 +74,9 @@ export async function requestConceptImage(values: ConceptImageValues): Promise<A
   if (!parsed.success) return validationError(parsed.error)
 
   const supabase = await createClient()
+  const visitor = await visitorKey()
   const { data: allowed, error } = await supabase.rpc("claim_ai_use", {
-    p_visitor: await visitorKey(),
+    p_visitor: visitor,
     p_kind: "image",
     p_limit: IMAGES_PER_HOUR,
     p_window_minutes: 60,
@@ -89,6 +90,8 @@ export async function requestConceptImage(values: ConceptImageValues): Promise<A
     return { ok: true, data: { jobId: await startConceptImage(parsed.data) } }
   } catch (error) {
     console.error("Starting the AI concept image failed:", error instanceof Error ? error.message : error)
+    // Nothing was generated, so give the attempt back.
+    await supabase.rpc("release_ai_use", { p_visitor: visitor, p_kind: "image" })
     return failure("The AI couldn't start your concept just now. Your suggestions below still work.")
   }
 }

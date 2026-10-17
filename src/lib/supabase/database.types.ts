@@ -524,6 +524,7 @@ export type Database = {
     Functions: {
       is_admin: { Args: Record<string, never>; Returns: boolean }
       is_full_admin: { Args: Record<string, never>; Returns: boolean }
+      release_ai_use: { Args: { p_visitor: string; p_kind: string }; Returns: undefined }
       claim_ai_use: { Args: { p_visitor: string; p_kind: string; p_limit: number; p_window_minutes: number }; Returns: boolean }
       set_variant_stock: { Args: { p_variant_id: string; p_quantity: number; p_note?: string }; Returns: number }
       submit_contact_message: {
