@@ -29,6 +29,10 @@ export interface SiteSettings {
   showEventBanner: boolean
   /** MS Kart parts by HydroKarts is public (off: admins only, until the branding is approved). */
   kartPartsLive: boolean
+  /** News and results pages are on (off: a coming-soon page and no homepage section). */
+  showNews: boolean
+  /** The gallery is on. */
+  showGallery: boolean
   socialLinks: SocialLink[]
   deliveryMethods: DeliveryMethod[]
 }

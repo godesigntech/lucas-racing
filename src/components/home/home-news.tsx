@@ -6,6 +6,7 @@ import { NewsCard } from "@/components/news/news-card"
 import { SectionHeading } from "@/components/shared/section-heading"
 import { Button } from "@/components/ui/button"
 import { getLatestNews } from "@/lib/data/news"
+import { getSiteSettings } from "@/lib/data/settings"
 
 const comingUp = [
   { icon: Flag, title: "Race reports", text: "How every weekend went for our drivers." },
@@ -15,7 +16,8 @@ const comingUp = [
 
 /** The latest three posts, or what's coming until the first one is published. */
 export async function HomeNews() {
-  const posts = await getLatestNews(3)
+  const [posts, settings] = await Promise.all([getLatestNews(3), getSiteSettings()])
+  if (!settings.showNews) return null
 
   return (
     <section className="pb-20 sm:pb-24" aria-labelledby="home-news">

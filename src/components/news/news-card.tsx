@@ -47,6 +47,11 @@ export function NewsCard({ post, lead, tone = "light", className, preload }: New
         {post.category && (
           <span className="absolute left-4 top-4 rounded-full bg-brand px-3 py-1 text-xs font-semibold text-carbon">{post.category.name}</span>
         )}
+        {post.result?.position && (
+          <span className="absolute right-4 top-4 rounded-full bg-carbon px-3 py-1 font-display text-sm font-bold uppercase text-paper ring-1 ring-white/20">
+            {post.result.position}
+          </span>
+        )}
       </div>
       <div className={cn("flex flex-col gap-3", lead ? "p-6 sm:p-8" : "flex-1 p-5 sm:p-6")}>
         <p className={cn("font-mono text-xs uppercase tracking-[0.14em]", dark ? "text-paper/55" : "text-muted-foreground")}>

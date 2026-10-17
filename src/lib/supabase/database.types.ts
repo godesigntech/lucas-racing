@@ -46,6 +46,8 @@ export type SiteSettingsRow = {
   event_dates: string
   show_event_banner: boolean
   kart_parts_live: boolean
+  show_news: boolean
+  show_gallery: boolean
   social_links: Json
   delivery_methods: Json
   updated_at: string
@@ -267,6 +269,30 @@ export type NewsPostRow = Timestamps & {
   author_name: string
   seo_title: string
   seo_description: string
+  result: Json | null
+}
+
+export type GalleryAlbumRow = Timestamps & {
+  id: string
+  slug: string
+  title: string
+  event: string
+  album_date: string | null
+  description: string
+  cover_url: string | null
+  is_published: boolean
+  sort_order: number
+}
+
+export type GalleryPhotoRow = {
+  id: string
+  album_id: string
+  image_url: string
+  caption: string
+  width: number | null
+  height: number | null
+  sort_order: number
+  created_at: string
 }
 
 export type TeamMemberRow = Timestamps & {
@@ -447,6 +473,13 @@ export type Database = {
       saved_designs: Table<SavedDesignRow, "product_slug" | "name" | "config", keyof SavedDesignRow>
       team_members: Table<TeamMemberRow, "name", keyof TeamMemberRow>
       news_categories: Table<NewsCategoryRow, "name" | "slug", keyof NewsCategoryRow>
+      gallery_albums: Table<GalleryAlbumRow, "slug" | "title", keyof GalleryAlbumRow>
+      gallery_photos: Table<
+        GalleryPhotoRow,
+        "album_id" | "image_url",
+        keyof GalleryPhotoRow,
+        [{ foreignKeyName: "gallery_photos_album_id_fkey"; columns: ["album_id"]; isOneToOne: false; referencedRelation: "gallery_albums"; referencedColumns: ["id"] }]
+      >
       news_posts: Table<
         NewsPostRow,
         "slug" | "title",

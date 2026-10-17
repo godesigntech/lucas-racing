@@ -9,7 +9,7 @@ import { isDemoMode } from "@/lib/demo/mode"
 import { readingMinutes } from "@/lib/news/text"
 import type { NewsCategoryRow, NewsPostRow } from "@/lib/supabase/database.types"
 import { createClient, createPublicClient } from "@/lib/supabase/server"
-import type { NewsCategory, NewsPost, NewsStatus } from "@/types/news"
+import type { NewsCategory, NewsPost, NewsResult, NewsStatus } from "@/types/news"
 
 import { cacheTags } from "./cache-tags"
 
@@ -39,7 +39,16 @@ function toNewsPost(row: PostRow): NewsPost {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     readingMinutes: readingMinutes(row.body),
+    result: toResult(row.result),
   }
+}
+
+function toResult(value: unknown): NewsResult | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null
+  const raw = value as Record<string, unknown>
+  const text = (key: string) => (typeof raw[key] === "string" ? (raw[key] as string) : "")
+  const result = { event: text("event"), circuit: text("circuit"), class: text("class"), driver: text("driver"), position: text("position") }
+  return Object.values(result).some(Boolean) ? result : null
 }
 
 function toNewsCategory(row: NewsCategoryRow): NewsCategory {

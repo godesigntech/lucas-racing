@@ -10,6 +10,16 @@ export interface NewsCategory {
   postCount?: number
 }
 
+/** Optional race result shown as a small results card on the post. */
+export interface NewsResult {
+  event: string
+  circuit: string
+  class: string
+  driver: string
+  /** e.g. "P1" or "2nd". */
+  position: string
+}
+
 export interface NewsPost {
   id: string
   slug: string
@@ -30,4 +40,5 @@ export interface NewsPost {
   updatedAt: string
   /** Minutes to read, from the body's word count. */
   readingMinutes: number
+  result: NewsResult | null
 }

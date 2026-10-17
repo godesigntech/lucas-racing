@@ -73,6 +73,7 @@ export async function updateNewsPost(id: string, values: NewsPostValues): Promis
       author_name: data.authorName,
       seo_title: data.seoTitle,
       seo_description: data.seoDescription,
+      result: data.result && Object.values(data.result).some(Boolean) ? data.result : null,
     })
     .eq("id", id)
   if (error?.code === SLUG_TAKEN) {

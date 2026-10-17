@@ -30,6 +30,16 @@ export const newsPostSchema = z
     authorName: z.string().trim().min(2, "Enter an author").max(80),
     seoTitle: z.string().trim().max(70, "Search engines show about 60 characters"),
     seoDescription: z.string().trim().max(170, "Search engines show about 155 characters"),
+    /** Optional race result card. */
+    result: z
+      .object({
+        event: z.string().trim().max(120),
+        circuit: z.string().trim().max(120),
+        class: z.string().trim().max(80),
+        driver: z.string().trim().max(120),
+        position: z.string().trim().max(20),
+      })
+      .nullable(),
   })
   .refine((values) => values.status === "draft" || (values.publishedAt && !Number.isNaN(Date.parse(values.publishedAt))), {
     error: "Choose when to publish",

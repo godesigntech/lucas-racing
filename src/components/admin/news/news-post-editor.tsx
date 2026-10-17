@@ -61,6 +61,7 @@ export function NewsPostEditor({ post, categories }: { post: NewsPost; categorie
     authorName: post.authorName,
     seoTitle: post.seoTitle,
     seoDescription: post.seoDescription,
+    result: post.result ?? { event: "", circuit: "", class: "", driver: "", position: "" },
   }
   const {
     register,
@@ -175,6 +176,24 @@ export function NewsPostEditor({ post, categories }: { post: NewsPost; categorie
             </p>
           )}
         </div>
+
+        <AdminCard title="Race result" description="Optional, for race reports. Shown as a results card on the post. Leave blank for other news.">
+          <div className="grid gap-4 sm:grid-cols-2">
+            {(
+              [
+                ["event", "Event", "e.g. Kartmania Cup round 3"],
+                ["circuit", "Circuit", "e.g. Whilton Mill"],
+                ["class", "Class", "e.g. Junior X30"],
+                ["driver", "Driver", "Driver's name"],
+                ["position", "Finishing position", "e.g. P1"],
+              ] as const
+            ).map(([key, label, placeholder]) => (
+              <FormField key={key} id={`news-result-${key}`} label={label} error={errors.result?.[key]?.message}>
+                <Input {...register(`result.${key}`)} id={`news-result-${key}`} placeholder={placeholder} />
+              </FormField>
+            ))}
+          </div>
+        </AdminCard>
 
         <AdminCard title="Search engines" description="Optional. Leave blank to use the title and summary.">
           <div className="grid gap-5">

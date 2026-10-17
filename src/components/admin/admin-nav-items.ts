@@ -1,6 +1,7 @@
 import {
   BookOpen,
   Droplets,
+  Images,
   Inbox,
   LayoutDashboard,
   MessagesSquare,
@@ -58,6 +59,7 @@ export const adminNavSections: { title: string; items: AdminNavItem[] }[] = [
     title: "Website",
     items: [
       { label: "News", href: "/admin/news", icon: Newspaper, fullAdminOnly: true },
+      { label: "Gallery", href: "/admin/gallery", icon: Images, fullAdminOnly: true },
       { label: "Team", href: "/admin/team", icon: UsersRound, fullAdminOnly: true },
       { label: "Settings", href: "/admin/settings", icon: Settings, fullAdminOnly: true },
     ],

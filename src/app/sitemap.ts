@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next"
 
 import { siteConfig } from "@/config/site"
+import { getGalleryAlbums } from "@/lib/data/gallery"
 import { getNewsCategories, getNewsForFeeds } from "@/lib/data/news"
 import { getShopSitemapEntries } from "@/lib/data/shop"
 
@@ -26,11 +27,12 @@ const pages: { path: string; priority: number }[] = [
 ]
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [shop, posts, newsCategories] = await Promise.all([getShopSitemapEntries(), getNewsForFeeds(), getNewsCategories()])
+  const [shop, posts, newsCategories, albums] = await Promise.all([getShopSitemapEntries(), getNewsForFeeds(), getNewsCategories(), getGalleryAlbums()])
   return [
     ...pages.map(({ path, priority }) => ({ url: new URL(path, siteConfig.url).toString(), priority })),
     ...shop.map(({ path, lastModified }) => ({ url: new URL(path, siteConfig.url).toString(), lastModified, priority: 0.7 })),
     ...newsCategories.map((category) => ({ url: new URL(`/news/category/${category.slug}`, siteConfig.url).toString(), priority: 0.5 })),
     ...posts.map((post) => ({ url: new URL(`/news/${post.slug}`, siteConfig.url).toString(), lastModified: post.updatedAt, priority: 0.6 })),
+    ...albums.map((album) => ({ url: new URL(`/gallery/${album.slug}`, siteConfig.url).toString(), priority: 0.4 })),
   ]
 }

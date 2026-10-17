@@ -4,9 +4,11 @@ import { notFound } from "next/navigation"
 
 import { NewsArchive } from "@/components/news/news-archive"
 import { NewsArchiveSkeleton } from "@/components/news/news-archive-skeleton"
+import { NewsComingSoon } from "@/components/news/news-coming-soon"
 import { PageHero } from "@/components/shared/page-hero"
 import { images } from "@/constants/images"
 import { getNewsCategories, listNews } from "@/lib/data/news"
+import { getSiteSettings } from "@/lib/data/settings"
 
 const pageFrom = (value: string | string[] | undefined) => Math.max(1, Number.parseInt(String(value ?? "1"), 10) || 1)
 const hrefFor = (slug: string) => (page: number) => (page > 1 ? `/news/category/${slug}?page=${page}` : `/news/category/${slug}`)
@@ -36,6 +38,7 @@ export default function NewsCategoryPage({ params, searchParams }: PageProps<"/n
 }
 
 async function CategoryArchive({ slug, page }: { slug: string; page: number }) {
+  if (!(await getSiteSettings()).showNews) return <NewsComingSoon />
   const categories = await getNewsCategories()
   const category = categories.find((item) => item.slug === slug)
   if (!category) notFound()

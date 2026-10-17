@@ -178,3 +178,21 @@ export async function setKartPartsLive(live: boolean): Promise<ActionResult> {
   revalidatePath("/customisation/kart-parts")
   return { ok: true, message: live ? "MS Kart parts by HydroKarts is now public." : "MS Kart parts by HydroKarts is now admin-only." }
 }
+
+/** Turns the News or Gallery section on or off (off: a coming-soon page until there's content). */
+export async function setSectionVisible(section: "news" | "gallery", visible: boolean): Promise<ActionResult> {
+  if (isDemoMode()) return DEMO_READ_ONLY
+  if (!(await getFullAdmin())) return NOT_ALLOWED
+  if (section !== "news" && section !== "gallery") return failure("Unknown section.")
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from("site_settings")
+    .update(section === "news" ? { show_news: visible === true } : { show_gallery: visible === true })
+    .eq("id", 1)
+  if (error) return databaseError(error, "We couldn't change that.")
+  refreshSettings()
+  revalidatePath(section === "news" ? "/news" : "/gallery")
+  revalidatePath("/")
+  const name = section === "news" ? "News and results" : "The gallery"
+  return { ok: true, message: visible ? `${name} is now on the website.` : `${name} now shows a coming-soon page.` }
+}

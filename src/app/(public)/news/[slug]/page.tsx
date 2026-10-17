@@ -9,6 +9,7 @@ import { Container } from "@/components/layout/container"
 import { JsonLd } from "@/components/news/json-ld"
 import { NewsCard } from "@/components/news/news-card"
 import { NewsMarkdown } from "@/components/news/news-markdown"
+import { ResultsCard } from "@/components/news/results-card"
 import { ShareLinks } from "@/components/news/share-links"
 import { Breadcrumbs } from "@/components/shared/breadcrumbs"
 import { SectionHeading } from "@/components/shared/section-heading"
@@ -16,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { siteConfig } from "@/config/site"
 import { brandLogos } from "@/constants/brand"
 import { getNewsPost, getRelatedNews } from "@/lib/data/news"
+import { getSiteSettings } from "@/lib/data/settings"
 import { formatDate } from "@/lib/format"
 import { summaryOf } from "@/lib/news/text"
 import { cn } from "@/lib/utils"
@@ -56,8 +58,8 @@ export default function NewsPostPage({ params }: PageProps<"/news/[slug]">) {
 }
 
 async function Post({ slug }: { slug: string }) {
-  const post = await getNewsPost(slug)
-  if (!post) notFound()
+  const [post, settings] = await Promise.all([getNewsPost(slug), getSiteSettings()])
+  if (!post || !settings.showNews) notFound()
   const url = new URL(`/news/${post.slug}`, siteConfig.url).toString()
 
   return (
@@ -135,6 +137,11 @@ async function Post({ slug }: { slug: string }) {
             { label: post.title },
           ]}
         />
+        {post.result && (
+          <div className="mt-8">
+            <ResultsCard result={post.result} />
+          </div>
+        )}
         <NewsMarkdown className="mt-8">{post.body}</NewsMarkdown>
         <div className="mt-12 flex flex-col gap-4 border-t border-carbon/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">
