@@ -82,5 +82,7 @@ export const conceptImageSchema = z.object({
   note: z.string().trim().max(500),
   summary: z.string().trim().max(600),
   number: z.string().trim().max(3).optional(),
+  /** The concept the assistant chose, so the picture uses the same colours and layout. */
+  concept: look.optional(),
 })
 export type ConceptImageValues = z.infer<typeof conceptImageSchema>

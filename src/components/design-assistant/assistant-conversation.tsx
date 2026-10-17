@@ -51,7 +51,7 @@ export function AssistantConversation({ onNavigate }: AssistantConversationProps
       setStage("result")
       // With AI set up, paint a concept image of the redesign while they browse the suggestions.
       if (result.data.imageAvailable) {
-        void conceptImage.start({ photo: nextPhoto?.aiDataUrl, note: nextNote, summary: result.data.summary, number: result.data.concept.number })
+        void conceptImage.start({ photo: nextPhoto?.aiDataUrl, note: nextNote, summary: result.data.summary, number: result.data.concept.number, concept: result.data.concept })
       }
     } catch (error) {
       toast.error(error instanceof Error && error.message ? error.message : "Something went wrong. Please try again.")
@@ -61,7 +61,7 @@ export function AssistantConversation({ onNavigate }: AssistantConversationProps
 
   function paintAgain() {
     if (!analysis) return
-    void conceptImage.start({ photo: photo?.aiDataUrl, note, summary: analysis.summary, number: analysis.concept.number })
+    void conceptImage.start({ photo: photo?.aiDataUrl, note, summary: analysis.summary, number: analysis.concept.number, concept: analysis.concept })
   }
 
   function restart() {

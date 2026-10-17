@@ -205,20 +205,60 @@ export interface ImageRequest {
   /** The concept summary from the analysis, to keep the image and the suggestion in step. */
   summary: string
   number?: string
+  /** The concept's colours, layout, finish and film. */
+  concept?: Pick<HelmetLook, "layout" | "finish" | "base" | "graphic" | "accent" | "film" | "trim">
 }
 
-function imagePrompt({ photo, note, summary, number }: ImageRequest): string {
+// How each template layout should read as a professional livery.
+const layoutBriefs: Record<HelmetLook["layout"], string> = {
+  apex: "a bold apex sweep: a sharp chevron that starts at the chin bar and sweeps up and back over the crown",
+  twin: "twin racing stripes running from the front of the crown over the top to the back, with fine outlines",
+  split: "a split two-tone design with a dramatic angled division between two colour panels",
+  shard: "angular shards and broken geometric shapes that fragment across the sides, like shattered glass",
+  halo: "a halo band circling the helmet above the visor, with graphics radiating from it",
+  flow: "flowing, fluid racing lines and waves that wrap around the shell from front to back",
+  blank: "a clean, minimal design: a solid shell with subtle accent lines and premium detailing",
+}
+
+const filmBriefs: Record<HelmetLook["film"], string> = {
+  none: "",
+  carbon: "carbon-fibre weave hydro-dip film",
+  forged: "forged-carbon hydro-dip film",
+  hex: "hexagonal honeycomb hydro-dip film",
+  camo: "camouflage hydro-dip film",
+}
+
+const finishBriefs: Record<HelmetLook["finish"], string> = {
+  gloss: "deep high-gloss clear coat with crisp reflections",
+  satin: "smooth satin clear coat with soft sheen",
+  matte: "flat matte clear coat, no shine",
+  chrome: "polished mirror chrome base with paint over it",
+}
+
+/** A designer's brief for the image model: a real custom livery, not a recolour. */
+function imagePrompt({ photo, note, summary, number, concept }: ImageRequest): string {
+  const colour = (value: string) => `${nameColour(value)} (${value})`
   const subject = photo
-    ? "Redesign the kart racing helmet in the attached photo with a new custom paint scheme. Keep the same helmet shape, visor and proportions."
-    : "Design a custom full-face kart racing helmet (Arai SK-6 or Bell KC7 style)."
+    ? "Create a professional custom paint design for the kart racing helmet in the attached photo. Keep the same helmet model, shape, visor and proportions, but replace its paint scheme completely with the new design."
+    : "Create a professional custom paint design for a modern full-face kart racing helmet, shaped like an Arai SK-6 or Bell KC7, with a dark tinted visor."
+  const design = concept
+    ? [
+        `Design layout: ${layoutBriefs[concept.layout]}.`,
+        `Colours: ${colour(concept.base)} as the main shell colour, ${colour(concept.graphic)} for the main graphics, ${colour(concept.accent)} for pinstripes and outlines, rubber trim in ${colour(concept.trim)}.`,
+        filmBriefs[concept.film] ? `Use ${filmBriefs[concept.film]} inside the main graphic shapes.` : "",
+        `Finish: ${finishBriefs[concept.finish]}.`,
+      ]
+    : []
   return [
     subject,
-    note ? `The customer asked for: ${note}` : "",
-    summary ? `Concept: ${summary}` : "",
-    number ? `Show the race number ${number} on the side.` : "",
-    "If the customer asked for text on the helmet (a name, a word or a country), paint exactly that text, spelled exactly as they wrote it, as part of the design.",
-    "Present it as a clean studio product photo: three-quarter front view, helmet centred, plain dark charcoal background, soft reflections, realistic hydro-dip film, paint and lacquer.",
-    "Add no brand logos, sponsor names or any other text the customer didn't ask for. One helmet only.",
+    note ? `The customer's request (follow it closely): "${note}"` : "",
+    summary ? `Design concept: ${summary}` : "",
+    ...design,
+    "Make it look like the work of a top motorsport helmet painter: layered graphic shapes with sharp edges, colour fades, thin contrasting pinstripes outlining each shape, a designed crown and back, and a balanced, symmetrical layout on both sides. It must look premium and race-ready.",
+    "If the customer asked for text on the helmet (a name, a word or a country), paint exactly that text, spelled exactly as they wrote it, in bold modern motorsport lettering worked into the design along the side or the back.",
+    number ? `Paint the race number ${number} on the side in a bold racing font.` : "",
+    "Photograph it as a photorealistic studio product shot: three-quarter front view from the left, helmet centred and filling most of the frame, seamless dark charcoal background, soft key light with a rim light, sharp focus and fine detail.",
+    "Add no brand logos, sponsor names or any other text the customer didn't ask for. Show one helmet only, with no people, hands or stands.",
   ]
     .filter(Boolean)
     .join("\n")
@@ -229,7 +269,9 @@ export async function startConceptImage(request: ImageRequest): Promise<string> 
   const content: Record<string, unknown>[] = [{ type: "input_text", text: imagePrompt(request) }]
   if (request.photo) content.push({ type: "input_image", image_url: request.photo })
 
-  const tool: Record<string, unknown> = { type: "image_generation", size: "1024x1024", quality: "medium", output_format: "jpeg", output_compression: 85 }
+  // High quality gives sharper detail and cleaner lettering; OPENAI_IMAGE_QUALITY=medium costs less.
+  const quality = ["low", "medium", "high"].includes(process.env.OPENAI_IMAGE_QUALITY ?? "") ? process.env.OPENAI_IMAGE_QUALITY : "high"
+  const tool: Record<string, unknown> = { type: "image_generation", size: "1024x1024", quality, output_format: "jpeg", output_compression: 88 }
   if (process.env.OPENAI_IMAGE_MODEL) tool.model = process.env.OPENAI_IMAGE_MODEL
 
   const response = await openAi("/responses", {
