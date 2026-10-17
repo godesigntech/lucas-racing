@@ -7,6 +7,8 @@ import { colourDistance, rgbToHex } from "./colour"
 export const DESIGN_PHOTO_ACCEPT = "image/jpeg,image/png,image/webp"
 const MAX_INPUT_BYTES = 15 * 1024 * 1024
 const UPLOAD_MAX_SIDE = 1600
+/** The copy the AI looks at: big enough to read the design, small enough to send quickly. */
+const AI_MAX_SIDE = 1024
 const SAMPLE_SIDE = 96
 
 /** A message explaining why the photo can't be used, or null when it's fine. */
@@ -22,6 +24,8 @@ export interface PreparedPhoto {
   previewUrl: string
   /** Main colours, most dominant first. */
   palette: string[]
+  /** A 1024px JPEG as a data URL, sent to the AI (never stored). */
+  aiDataUrl: string
 }
 
 function canvas(width: number, height: number) {
@@ -112,7 +116,13 @@ export async function prepareDesignPhoto(file: File): Promise<PreparedPhoto> {
     const blob = await new Promise<Blob>((resolve, reject) =>
       element.toBlob((result) => (result ? resolve(result) : reject(new Error("Couldn't read that photo."))), "image/jpeg", 0.85),
     )
-    return { blob, previewUrl: URL.createObjectURL(blob), palette }
+    const aiScale = Math.min(1, AI_MAX_SIDE / Math.max(bitmap.width, bitmap.height))
+    const small = canvas(Math.round(bitmap.width * aiScale), Math.round(bitmap.height * aiScale))
+    small.context.fillStyle = "#ffffff"
+    small.context.fillRect(0, 0, small.element.width, small.element.height)
+    small.context.drawImage(bitmap, 0, 0, small.element.width, small.element.height)
+    const aiDataUrl = small.element.toDataURL("image/jpeg", 0.8)
+    return { blob, previewUrl: URL.createObjectURL(blob), palette, aiDataUrl }
   } finally {
     bitmap.close()
   }
@@ -124,4 +134,9 @@ export async function uploadDesignPhoto(blob: Blob): Promise<string> {
   const { error } = await createClient().storage.from("design-uploads").upload(path, blob, { contentType: "image/jpeg" })
   if (error) throw new Error(error.message)
   return path
+}
+
+/** Turns a data URL (such as the AI concept image) into a file for upload. */
+export async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
+  return (await fetch(dataUrl)).blob()
 }

@@ -26,7 +26,7 @@ export default function AdminQuotePage({ params }: PageProps<"/admin/quotes/[id]
 }
 
 async function QuoteDetail({ id }: { id: string }) {
-  const { quote, photoUrl, suggestions } = await getQuoteRequest(id)
+  const { quote, photoUrl, aiImageUrl, suggestions } = await getQuoteRequest(id)
   const helmet = quoteHelmetLabels[quote.helmet as QuoteHelmet] ?? quote.helmet
 
   return (
@@ -52,6 +52,16 @@ async function QuoteDetail({ id }: { id: string }) {
                 <p className="px-5 py-16 text-center text-sm text-muted-foreground">No photo. They described the design instead.</p>
               )}
             </AdminCard>
+
+            {aiImageUrl && (
+              <AdminCard title="AI concept image" flush>
+                <a href={aiImageUrl} target="_blank" rel="noreferrer" className="block bg-carbon">
+                  {/* Signed, short-lived link to the AI image the customer saw. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={aiImageUrl} alt={`AI concept made for ${quote.reference}`} className="aspect-square w-full object-cover" />
+                </a>
+              </AdminCard>
+            )}
 
             <AdminCard title="Concept" flush>
               <div className="bg-[radial-gradient(circle_at_50%_35%,#ffffff,#e8e7e0_70%)] px-6 py-4">

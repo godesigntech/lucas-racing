@@ -27,6 +27,7 @@ function toQuoteRequest(row: QuoteRequestRow): QuoteRequest {
     helmet: row.helmet,
     notes: row.notes,
     imagePath: row.image_path,
+    aiImagePath: row.ai_image_path ?? null,
     palette: row.palette ?? [],
     concept: { look: concept.look ?? null, summary: concept.summary ?? "", basedOn: concept.basedOn ?? "" },
     suggestedProducts: row.suggested_products ?? [],
@@ -81,6 +82,8 @@ export interface QuoteRequestDetail {
   quote: QuoteRequest
   /** Short-lived link to the customer's photo, if they added one. */
   photoUrl: string | null
+  /** Short-lived link to the AI concept image, if there is one. */
+  aiImageUrl: string | null
   suggestions: CatalogProduct[]
 }
 
@@ -94,9 +97,12 @@ export async function getQuoteRequest(id: string): Promise<QuoteRequestDetail> {
   if (!data) notFound()
   const quote = toQuoteRequest(data)
 
-  const [photo, products] = await Promise.all([
+  const [photo, aiImage, products] = await Promise.all([
     quote.imagePath
       ? supabase.storage.from("design-uploads").createSignedUrl(quote.imagePath, PHOTO_LINK_SECONDS)
+      : Promise.resolve(null),
+    quote.aiImagePath
+      ? supabase.storage.from("design-uploads").createSignedUrl(quote.aiImagePath, PHOTO_LINK_SECONDS)
       : Promise.resolve(null),
     getProducts(),
   ])
@@ -104,6 +110,7 @@ export async function getQuoteRequest(id: string): Promise<QuoteRequestDetail> {
   return {
     quote,
     photoUrl: photo?.data?.signedUrl ?? null,
+    aiImageUrl: aiImage?.data?.signedUrl ?? null,
     suggestions: quote.suggestedProducts
       .map((slug) => products.find((product) => product.slug === slug))
       .filter((product): product is CatalogProduct => Boolean(product)),

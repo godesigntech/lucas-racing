@@ -4,14 +4,12 @@ import type { DesignAnalysis, DesignBrief } from "@/types/design-assistant"
 import type { CatalogProduct } from "@/types/product"
 
 import { matchDesign } from "./match"
+import { analyseWithOpenAi, openAiConfigured } from "./openai"
 
 /**
- * Turns a customer's brief into a concept and matching designs.
- *
- * Only the built-in colour matcher exists today. When the client confirms an AI
- * provider, add an advisor here that sends the photo and catalogue to it (with
- * its key read from the server environment) and select it with AI_PROVIDER.
- * Keep `colourMatchAdvisor` as the fallback if the provider fails.
+ * Turns a customer's brief into a concept and matching designs: with OpenAI when
+ * OPENAI_API_KEY is set, otherwise (or if OpenAI fails or is slow) with the
+ * built-in colour matcher, so the assistant always answers.
  */
 export interface DesignAdvisor {
   analyse(brief: DesignBrief, catalog: CatalogProduct[]): Promise<DesignAnalysis | null>
@@ -19,10 +17,22 @@ export interface DesignAdvisor {
 
 const colourMatchAdvisor: DesignAdvisor = {
   async analyse(brief, catalog) {
-    return matchDesign(brief, catalog)
+    const analysis = matchDesign(brief, catalog)
+    return analysis && { ...analysis, aiPowered: false }
+  },
+}
+
+const openAiAdvisor: DesignAdvisor = {
+  async analyse(brief, catalog) {
+    try {
+      return { ...(await analyseWithOpenAi(brief, catalog)), aiPowered: true }
+    } catch (error) {
+      console.error("OpenAI design analysis failed, using the colour matcher:", error instanceof Error ? error.message : error)
+      return colourMatchAdvisor.analyse(brief, catalog)
+    }
   },
 }
 
 export function getDesignAdvisor(): DesignAdvisor {
-  return colourMatchAdvisor
+  return openAiConfigured() ? openAiAdvisor : colourMatchAdvisor
 }

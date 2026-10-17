@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { submitQuoteRequest } from "@/lib/actions/design-assistant"
-import { uploadDesignPhoto, type PreparedPhoto } from "@/lib/design-assistant/photo"
+import { dataUrlToBlob, uploadDesignPhoto, type PreparedPhoto } from "@/lib/design-assistant/photo"
 import { useSignedInContact } from "@/lib/design-assistant/use-signed-in-contact"
 import { cn } from "@/lib/utils"
 import { quoteFormSchema, type QuoteFormValues } from "@/lib/validations/design-assistant"
@@ -24,12 +24,14 @@ interface QuoteFormProps {
   photo: PreparedPhoto | null
   note: string
   analysis: DesignAnalysis
+  /** The AI concept image (a data URL), sent with the request when there is one. */
+  aiImage?: string | null
   onSent: (reference: string) => void
   onBack: () => void
 }
 
 /** Step three: contact details and helmet choice, sent with the photo and concept. */
-export function QuoteForm({ photo, note, analysis, onSent, onBack }: QuoteFormProps) {
+export function QuoteForm({ photo, note, analysis, aiImage, onSent, onBack }: QuoteFormProps) {
   const {
     register,
     control,
@@ -59,12 +61,22 @@ export function QuoteForm({ photo, note, analysis, onSent, onBack }: QuoteFormPr
         return
       }
     }
+    let aiImagePath: string | null = null
+    if (aiImage) {
+      try {
+        aiImagePath = await uploadDesignPhoto(await dataUrlToBlob(aiImage))
+      } catch {
+        toast.error("Your AI concept didn't upload. Check your connection and try again.")
+        return
+      }
+    }
 
     const result = await runAction(
       () =>
         submitQuoteRequest({
           ...values,
           imagePath,
+          aiImagePath,
           palette: analysis.palette.map((colour) => colour.hex),
           concept: { look: analysis.concept, summary: analysis.summary, basedOn: analysis.basedOn },
           suggestedProducts: analysis.suggestions.map((suggestion) => suggestion.slug),

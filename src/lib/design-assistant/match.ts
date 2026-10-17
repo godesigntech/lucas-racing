@@ -163,7 +163,7 @@ function describe(look: HelmetLook, product: CatalogProduct): string {
   return `${first} It builds on our ${product.name} design${number}.`
 }
 
-function toSuggestion(product: CatalogProduct, reason: string): DesignSuggestion {
+export function toSuggestion(product: CatalogProduct, reason: string): DesignSuggestion {
   return {
     slug: product.slug,
     name: product.name,

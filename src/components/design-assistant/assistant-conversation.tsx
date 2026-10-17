@@ -12,6 +12,7 @@ import type { DesignAnalysis } from "@/types/design-assistant"
 import { AnalysisCard } from "./analysis-card"
 import { AssistantBubble, TypingDots } from "./assistant-bubble"
 import { BriefForm } from "./brief-form"
+import { ConceptImage, useConceptImage } from "./concept-image"
 import { QuoteForm } from "./quote-form"
 
 type Stage = "brief" | "analysing" | "result" | "quote" | "sent"
@@ -28,6 +29,7 @@ export function AssistantConversation({ onNavigate }: AssistantConversationProps
   const [note, setNote] = useState("")
   const [analysis, setAnalysis] = useState<DesignAnalysis | null>(null)
   const [reference, setReference] = useState("")
+  const conceptImage = useConceptImage()
   const scroller = useRef<HTMLDivElement>(null)
 
   // Bring each new step into view.
@@ -41,19 +43,29 @@ export function AssistantConversation({ onNavigate }: AssistantConversationProps
     setNote(nextNote)
     setStage("analysing")
     try {
-      const result = await analyseDesignBrief({ palette: nextPhoto?.palette ?? [], note: nextNote })
+      const result = await analyseDesignBrief({ palette: nextPhoto?.palette ?? [], note: nextNote, photo: nextPhoto?.aiDataUrl })
       // This step has no form fields to highlight, so surface the specific reason.
       if (!result.ok) throw new Error(Object.values(result.fieldErrors ?? {})[0] ?? result.message)
       if (!result.data) throw new Error()
       setAnalysis(result.data)
       setStage("result")
+      // With AI set up, paint a concept image of the redesign while they browse the suggestions.
+      if (result.data.imageAvailable) {
+        void conceptImage.start({ photo: nextPhoto?.aiDataUrl, note: nextNote, summary: result.data.summary, number: result.data.concept.number })
+      }
     } catch (error) {
       toast.error(error instanceof Error && error.message ? error.message : "Something went wrong. Please try again.")
       setStage("brief")
     }
   }
 
+  function paintAgain() {
+    if (!analysis) return
+    void conceptImage.start({ photo: photo?.aiDataUrl, note, summary: analysis.summary, number: analysis.concept.number })
+  }
+
   function restart() {
+    conceptImage.reset()
     if (photo) URL.revokeObjectURL(photo.previewUrl)
     setPhoto(null)
     setNote("")
@@ -95,7 +107,12 @@ export function AssistantConversation({ onNavigate }: AssistantConversationProps
 
         {analysis && (stage === "result" || stage === "quote" || stage === "sent") && (
           <>
-            <AssistantBubble>Here&apos;s a concept in your colours, plus the designs closest to it.</AssistantBubble>
+            <AssistantBubble>
+              {conceptImage.state.status === "idle"
+                ? "Here's a concept in your colours, plus the designs closest to it."
+                : "Here's an AI concept of your helmet, plus our templates closest to it. Pick one to request a quote."}
+            </AssistantBubble>
+            <ConceptImage state={conceptImage.state} onRetry={paintAgain} />
             <AnalysisCard
               analysis={analysis}
               showActions={stage === "result"}
@@ -111,6 +128,7 @@ export function AssistantConversation({ onNavigate }: AssistantConversationProps
             photo={photo}
             note={note}
             analysis={analysis}
+            aiImage={conceptImage.state.status === "done" ? conceptImage.state.image : null}
             onBack={() => setStage("result")}
             onSent={(value) => {
               setReference(value)

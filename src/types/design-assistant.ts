@@ -12,6 +12,8 @@ export interface DesignBrief {
   palette: string[]
   /** Anything they typed: colours, finishes, a race number, a design they like. */
   note: string
+  /** The photo itself, resized, as a data URL: read by the AI when it is set up. */
+  photo?: string
 }
 
 export interface DesignSuggestion {
@@ -36,6 +38,10 @@ export interface DesignAnalysis {
   basedOn: string
   /** Closest existing designs, best match first. */
   suggestions: DesignSuggestion[]
+  /** True when the AI wrote this concept (false: the built-in colour matcher). */
+  aiPowered?: boolean
+  /** True when an AI concept image can be generated for it. */
+  imageAvailable?: boolean
 }
 
 export const quoteHelmets = ["arai-sk6", "bell-kc7", "own", "unsure"] as const
@@ -61,6 +67,8 @@ export interface QuoteRequest {
   helmet: string
   notes: string
   imagePath: string | null
+  /** The AI concept image the customer saw, if one was made. */
+  aiImagePath: string | null
   palette: string[]
   concept: { look: HelmetLook | null; summary: string; basedOn: string }
   suggestedProducts: string[]

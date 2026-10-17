@@ -236,6 +236,7 @@ export type QuoteRequestRow = Timestamps & {
   helmet: string
   notes: string
   image_path: string | null
+  ai_image_path: string | null
   palette: string[]
   concept: Json
   suggested_products: string[]
@@ -523,6 +524,7 @@ export type Database = {
     Functions: {
       is_admin: { Args: Record<string, never>; Returns: boolean }
       is_full_admin: { Args: Record<string, never>; Returns: boolean }
+      claim_ai_use: { Args: { p_visitor: string; p_kind: string; p_limit: number; p_window_minutes: number }; Returns: boolean }
       set_variant_stock: { Args: { p_variant_id: string; p_quantity: number; p_note?: string }; Returns: number }
       submit_contact_message: {
         Args: { p_name: string; p_email: string; p_phone: string; p_topic: string; p_design: string; p_message: string }
@@ -540,6 +542,7 @@ export type Database = {
           p_palette: string[]
           p_concept: Json
           p_suggested_products: string[]
+          p_ai_image_path?: string | null
         }
         Returns: { reference: string }[]
       }
