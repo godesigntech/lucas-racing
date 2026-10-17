@@ -304,7 +304,7 @@ export function ProductForm({ product, models }: ProductFormProps) {
                 </FormField>
               )}
             />
-            <FormField id="look-number" label="Sample race number" optional error={errors.look?.number?.message}>
+            <FormField id="look-number" label="Race number on the preview" optional error={errors.look?.number?.message}>
               <Input {...register("look.number")} {...fieldA11y("look-number", errors.look?.number?.message)} maxLength={3} />
             </FormField>
             <Controller

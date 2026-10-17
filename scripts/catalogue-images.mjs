@@ -1,9 +1,9 @@
-// Draws simple placeholder product illustrations for the demo catalogue (public/images/demo).
-// They carry a "DEMO" tag so nobody mistakes them for real product photos.
-// Usage: node scripts/demo-images.mjs
+// Draws simple product illustrations for the placeholder catalogue (public/images/catalogue),
+// used until real product photos arrive.
+// Usage: node scripts/catalogue-images.mjs
 import { mkdirSync, writeFileSync } from "node:fs"
 
-const out = "public/images/demo"
+const out = "public/images/catalogue"
 mkdirSync(out, { recursive: true })
 
 const ORANGE = "#f95312"
@@ -17,7 +17,6 @@ function frame(body, { bg = "#f4f3ee" } = {}) {
   </defs>
   <rect width="800" height="800" fill="url(#glow)"/>
   ${body}
-  <g transform="translate(36 36)"><rect width="128" height="44" rx="22" fill="${CARBON}"/><text x="64" y="29" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#ffffff" letter-spacing="3">DEMO</text></g>
 </svg>`
 }
 
@@ -143,4 +142,4 @@ const drawings = {
 }
 
 for (const [name, svg] of Object.entries(drawings)) writeFileSync(`${out}/${name}.svg`, svg)
-console.log(`Wrote ${Object.keys(drawings).length} demo images to ${out}`)
+console.log(`Wrote ${Object.keys(drawings).length} product illustrations to ${out}`)

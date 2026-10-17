@@ -14,5 +14,4 @@
       <circle cx="-190" cy="40" r="62" fill="#111412"/><circle cx="-190" cy="40" r="26" fill="#c4c7c9"/>
       <circle cx="190" cy="40" r="72" fill="#111412"/><circle cx="190" cy="40" r="30" fill="#c4c7c9"/>
     </g>
-  <g transform="translate(36 36)"><rect width="128" height="44" rx="22" fill="#111412"/><text x="64" y="29" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#ffffff" letter-spacing="3">DEMO</text></g>
 </svg>

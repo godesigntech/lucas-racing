@@ -11,5 +11,4 @@
       <circle cx="95" cy="0" r="20" fill="#f4f3ee"/><circle cx="47.50000000000001" cy="82.27241335952166" r="20" fill="#f4f3ee"/><circle cx="-47.49999999999998" cy="82.27241335952168" r="20" fill="#f4f3ee"/><circle cx="-95" cy="1.1634144591899855e-14" r="20" fill="#f4f3ee"/><circle cx="-47.50000000000004" cy="-82.27241335952165" r="20" fill="#f4f3ee"/><circle cx="47.50000000000001" cy="-82.27241335952166" r="20" fill="#f4f3ee"/>
       <circle r="40" fill="#f4f3ee"/>
     </g>
-  <g transform="translate(36 36)"><rect width="128" height="44" rx="22" fill="#111412"/><text x="64" y="29" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#ffffff" letter-spacing="3">DEMO</text></g>
 </svg>

@@ -9,5 +9,4 @@
       <ellipse cx="120" cy="20" rx="150" ry="220" fill="#2a2e2b"/><ellipse cx="120" cy="20" rx="70" ry="110" fill="#c4c7c9"/>
       <rect x="-30" y="-12" width="60" height="24" fill="#f95312"/>
     </g>
-  <g transform="translate(36 36)"><rect width="128" height="44" rx="22" fill="#111412"/><text x="64" y="29" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#ffffff" letter-spacing="3">DEMO</text></g>
 </svg>

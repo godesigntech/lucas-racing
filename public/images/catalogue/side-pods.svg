@@ -8,5 +8,4 @@
       <path d="M-320 60 C-320 -60 -200 -110 -60 -110 L-60 110 L-280 110 Z" fill="#c4c7c9" stroke="#111412" stroke-width="10"/>
       <path d="M320 60 C320 -60 200 -110 60 -110 L60 110 L280 110 Z" fill="#c4c7c9" stroke="#111412" stroke-width="10"/>
     </g>
-  <g transform="translate(36 36)"><rect width="128" height="44" rx="22" fill="#111412"/><text x="64" y="29" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#ffffff" letter-spacing="3">DEMO</text></g>
 </svg>

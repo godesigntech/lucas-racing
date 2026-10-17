@@ -9,5 +9,4 @@
       <path d="M-120 -160 L-150 160 M120 -160 L150 160 M-240 0 L240 0"/>
       <circle cx="0" cy="0" r="40" stroke="#f95312"/>
     </g>
-  <g transform="translate(36 36)"><rect width="128" height="44" rx="22" fill="#111412"/><text x="64" y="29" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#ffffff" letter-spacing="3">DEMO</text></g>
 </svg>

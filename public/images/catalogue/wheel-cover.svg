@@ -8,5 +8,4 @@
       <circle r="230" fill="none" stroke="#c4c7c9" stroke-width="70"/>
       <circle r="230" fill="none" stroke="#111412" stroke-width="6" stroke-dasharray="14 18"/>
     </g>
-  <g transform="translate(36 36)"><rect width="128" height="44" rx="22" fill="#111412"/><text x="64" y="29" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#ffffff" letter-spacing="3">DEMO</text></g>
 </svg>
