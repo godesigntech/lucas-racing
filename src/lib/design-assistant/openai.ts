@@ -1,6 +1,7 @@
 import "server-only"
 
 import { ConceptImageError, imagePrompt, photoBytes, type ImageRequest } from "./image-prompt"
+import { secret } from "./secret"
 
 // OpenAI paints the design assistant's concept image. With the customer's photo
 // it edits that photo: same helmet, shape, visor and hardware, new paint. Without
@@ -18,7 +19,7 @@ const DEFAULT_QUALITY = "medium"
 const IMAGE_TIMEOUT_MS = 50_000
 
 export function openAiImagesConfigured(): boolean {
-  return Boolean(process.env.OPENAI_API_KEY)
+  return Boolean(secret("OPENAI_API_KEY"))
 }
 
 const model = () => process.env.OPENAI_IMAGE_MODEL || DEFAULT_MODEL
@@ -42,7 +43,7 @@ export async function paintWithOpenAi(request: ImageRequest): Promise<string> {
   // With a photo it's an edit of that photo, sent as a file upload; without one,
   // a new picture, which that endpoint only takes as JSON.
   let body: FormData | string
-  const headers: Record<string, string> = { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` }
+  const headers: Record<string, string> = { Authorization: `Bearer ${secret("OPENAI_API_KEY")}` }
   if (photo) {
     const form = new FormData()
     for (const [key, value] of Object.entries(settings)) form.append(key, value)

@@ -1,6 +1,7 @@
 import "server-only"
 
 import { ConceptImageError, imagePrompt, photoBytes, type ImageRequest } from "./image-prompt"
+import { secret } from "./secret"
 
 // Cloudflare Workers AI can paint the design assistant's concept image with FLUX.2,
 // free up to Cloudflare's daily allowance (10,000 credits). It's the fallback:
@@ -27,7 +28,7 @@ const MIN_RETRY_MS = 15_000
 const IMAGE_SIDE = 768
 
 export function cloudflareImagesConfigured(): boolean {
-  return Boolean(process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_API_TOKEN)
+  return Boolean(secret("CLOUDFLARE_ACCOUNT_ID") && secret("CLOUDFLARE_API_TOKEN"))
 }
 
 /** Cloudflare's error codes for a flagged image and for a used-up allowance. */
@@ -71,9 +72,9 @@ async function runModel(prompt: string, photo: Buffer | undefined, timeoutMs: nu
   }
 
   const model = photo ? EDIT_MODEL : CREATE_MODEL
-  const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/ai/run/${model}`, {
+  const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${secret("CLOUDFLARE_ACCOUNT_ID")}/ai/run/${model}`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}` },
+    headers: { Authorization: `Bearer ${secret("CLOUDFLARE_API_TOKEN")}` },
     body: form,
     signal: AbortSignal.timeout(timeoutMs),
     cache: "no-store",

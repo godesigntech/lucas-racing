@@ -8,6 +8,7 @@ import type { CatalogProduct } from "@/types/product"
 
 import { nameColour } from "./colour"
 import { toSuggestion } from "./match"
+import { secret } from "./secret"
 
 // Google Gemini (Interactions API) for the design assistant's analysis: the concept
 // text and the closest templates. The concept image is made by OpenAI or Cloudflare (see
@@ -22,7 +23,7 @@ const DEFAULT_MODEL = "gemini-flash-lite-latest"
 const ANALYSIS_TIMEOUT_MS = 8500
 
 export function geminiConfigured(): boolean {
-  return Boolean(process.env.GEMINI_API_KEY)
+  return Boolean(secret("GEMINI_API_KEY"))
 }
 
 const model = () => process.env.GEMINI_MODEL || DEFAULT_MODEL
@@ -42,7 +43,7 @@ type ContentPart = { type: string; text?: string; data?: string; mime_type?: str
 async function interact(body: Record<string, unknown>): Promise<string> {
   const response = await fetch(`${API}/interactions`, {
     method: "POST",
-    headers: { "x-goog-api-key": process.env.GEMINI_API_KEY ?? "", "Api-Revision": API_REVISION, "Content-Type": "application/json" },
+    headers: { "x-goog-api-key": secret("GEMINI_API_KEY"), "Api-Revision": API_REVISION, "Content-Type": "application/json" },
     body: JSON.stringify({ ...body, store: false }),
     signal: AbortSignal.timeout(ANALYSIS_TIMEOUT_MS),
     cache: "no-store",
