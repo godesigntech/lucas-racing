@@ -5,7 +5,7 @@ import { quoteHelmets, quoteStatuses } from "@/types/design-assistant"
 
 const hex = z.string().regex(/^#[0-9a-f]{6}$/i)
 
-/** A resized photo sent for the AI to look at (about 1024px JPEG). Never stored. */
+/** A resized photo sent for the AI to look at (about 500px JPEG). Never stored. */
 const photoDataUrl = z
   .string()
   .max(1_500_000, "That photo is too large")

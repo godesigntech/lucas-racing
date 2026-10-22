@@ -95,7 +95,8 @@ export function BriefForm({ onSubmit }: BriefFormProps) {
             void pick(event.dataTransfer.files[0])
           }}
           className={cn(
-            "flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed px-4 py-7 text-center transition-colors focus-within:ring-3 focus-within:ring-ring/50",
+            // relative: keeps the hidden file input inside the box, so focusing it doesn't scroll the panel.
+            "relative flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed px-4 py-7 text-center transition-colors focus-within:ring-3 focus-within:ring-ring/50",
             dragging ? "border-brand-ink bg-accent" : "border-carbon/15 hover:border-carbon/35 hover:bg-carbon/[0.03]",
           )}
         >

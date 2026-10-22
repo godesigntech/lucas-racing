@@ -7,8 +7,11 @@ import { colourDistance, rgbToHex } from "./colour"
 export const DESIGN_PHOTO_ACCEPT = "image/jpeg,image/png,image/webp"
 const MAX_INPUT_BYTES = 15 * 1024 * 1024
 const UPLOAD_MAX_SIDE = 1600
-/** The copy the AI looks at: big enough to read the design, small enough to send quickly. */
-const AI_MAX_SIDE = 1024
+/**
+ * The copy the AI looks at: big enough to read the design, small enough to send
+ * quickly. Under 512px, the largest reference photo Cloudflare's image model takes.
+ */
+const AI_MAX_SIDE = 500
 const SAMPLE_SIDE = 96
 
 /** A message explaining why the photo can't be used, or null when it's fine. */

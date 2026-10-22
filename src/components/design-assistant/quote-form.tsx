@@ -125,7 +125,9 @@ export function QuoteForm({ photo, note, analysis, aiImage, onSent, onBack }: Qu
                 <label
                   key={value}
                   className={cn(
-                    "flex cursor-pointer items-center rounded-2xl border px-3 py-2.5 text-sm transition-colors has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50",
+                    // relative: keeps the hidden radio inside the option, so focusing it
+                    // doesn't scroll the assistant's panel away to find it.
+                    "relative flex cursor-pointer items-center rounded-2xl border px-3 py-2.5 text-sm transition-colors has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50",
                     field.value === value
                       ? "border-carbon bg-carbon text-paper"
                       : "border-carbon/15 hover:border-carbon/40",

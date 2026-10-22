@@ -9,7 +9,8 @@
   NODE_VERSION = "22"
   # Public Supabase values: they ship to every visitor's browser anyway, and Next.js
   # bakes NEXT_PUBLIC_ values into the build, so the site works without extra setup.
-  # Secrets (RESEND_API_KEY, EMAIL_FROM, WORKSHOP_EMAIL) belong in the Netlify UI.
+  # Secrets (RESEND_API_KEY, EMAIL_FROM, WORKSHOP_EMAIL, GEMINI_API_KEY,
+  # OPENAI_API_KEY, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN) belong in the Netlify UI.
   NEXT_PUBLIC_SUPABASE_URL = "https://hcknrshnqskckownpdkm.supabase.co"
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_JjxRzkSOK68OaHtjiKsdZw_PrOvVRT3"
   NEXT_PUBLIC_SITE_URL = "https://lucas-racing.netlify.app"

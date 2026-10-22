@@ -8,7 +8,7 @@ import { databaseError, failure, validationError } from "@/lib/actions/result"
 import { getProducts, getPriceBook } from "@/lib/data/products"
 import { getDesignAdvisor } from "@/lib/design-assistant/advisor"
 import { builderHref } from "@/lib/design-assistant/builder-link"
-import { checkConceptImage, openAiConfigured, startConceptImage, type ConceptImageStatus } from "@/lib/design-assistant/openai"
+import { ConceptImageError, conceptImagesConfigured, generateConceptImage } from "@/lib/design-assistant/concept-image"
 import { notifyNewQuote } from "@/lib/email/notifications"
 import { DEMO_READ_ONLY, isDemoMode } from "@/lib/demo/mode"
 import { createClient } from "@/lib/supabase/server"
@@ -23,8 +23,16 @@ import type { ActionResult } from "@/types/account"
 import { quoteHelmetLabels, type DesignAnalysis, type DesignBrief } from "@/types/design-assistant"
 import type { HelmetLook } from "@/types/helmet"
 
-/** AI concept images each visitor may start per hour. */
-const IMAGES_PER_HOUR = 5
+const DEFAULT_IMAGES_PER_HOUR = 5
+
+/**
+ * AI images each visitor may make per hour: AI_IMAGES_PER_HOUR (1 to 100, the most
+ * claim_ai_use() accepts), or 5. Raise it while testing.
+ */
+function imagesPerHour(): number {
+  const setting = Number(process.env.AI_IMAGES_PER_HOUR)
+  return Number.isInteger(setting) && setting >= 1 && setting <= 100 ? setting : DEFAULT_IMAGES_PER_HOUR
+}
 
 /** The parts of a look that carry the customer's colours and finish. */
 function pickColourway({ finish, base, graphic, accent, trim, film }: HelmetLook): Partial<HelmetLook> {
@@ -60,57 +68,45 @@ export async function analyseDesignBrief(brief: DesignBrief): Promise<ActionResu
       const look = { ...suggestion.look, ...pickColourway(analysis.concept) }
       return product ? { ...suggestion, builderHref: builderHref(product, look, priceBook) } : suggestion
     })
-    return { ok: true, data: { ...analysis, suggestions, imageAvailable: openAiConfigured() } }
+    return { ok: true, data: { ...analysis, suggestions, imageAvailable: conceptImagesConfigured() } }
   } catch (error) {
     console.error("Design analysis failed:", error)
     return failure("Something went wrong while looking at your design. Please try again.")
   }
 }
 
-/** Open to guests, up to five an hour each: starts an AI concept image and returns the job to check on. */
-export async function requestConceptImage(values: ConceptImageValues): Promise<ActionResult<{ jobId: string }>> {
-  if (!openAiConfigured()) return failure("AI images aren't available right now.")
+/** Open to guests, up to imagesPerHour() each: paints an AI concept image of the customer's design. */
+export async function requestConceptImage(values: ConceptImageValues): Promise<ActionResult<{ image: string }>> {
+  if (!conceptImagesConfigured()) return failure("AI images aren't available right now.")
   const parsed = conceptImageSchema.safeParse(values)
   if (!parsed.success) return validationError(parsed.error)
 
   const supabase = await createClient()
   const visitor = await visitorKey()
+  const limit = imagesPerHour()
   const { data: allowed, error } = await supabase.rpc("claim_ai_use", {
     p_visitor: visitor,
     p_kind: "image",
-    p_limit: IMAGES_PER_HOUR,
+    p_limit: limit,
     p_window_minutes: 60,
   })
   if (error) return databaseError(error, "We couldn't start your AI concept. Please try again.")
   if (!allowed) {
-    return failure(`You've made ${IMAGES_PER_HOUR} AI concepts in the last hour. Try again a little later, or send us your design for a quote.`)
+    return failure(`You've made ${limit} AI concepts in the last hour. Try again a little later, or send us your design for a quote.`)
   }
 
   try {
-    return { ok: true, data: { jobId: await startConceptImage(parsed.data) } }
+    return { ok: true, data: { image: await generateConceptImage(parsed.data) } }
   } catch (error) {
-    console.error("Starting the AI concept image failed:", error instanceof Error ? error.message : error)
-    // Nothing was generated, so give the attempt back.
+    console.error("AI concept image failed:", error instanceof Error ? error.message : error)
+    // Nothing was made, so give the attempt back.
     await supabase.rpc("release_ai_use", { p_visitor: visitor, p_kind: "image" })
-    return failure("The AI couldn't start your concept just now. Your suggestions below still work.")
-  }
-}
-
-/** Checks on an AI concept image. The browser asks every few seconds until it's ready. */
-export async function getConceptImage(jobId: string): Promise<ActionResult<ConceptImageStatus>> {
-  if (!openAiConfigured() || !/^resp_[A-Za-z0-9]{8,80}$/.test(jobId)) return failure("That concept couldn't be found.")
-  try {
-    const result = await checkConceptImage(jobId)
-    if (result.status === "failed") {
-      console.error("AI concept image failed:", result.reason)
-      const refused = /safety|moderation|policy/i.test(result.reason)
-      return failure(refused ? "The AI couldn't draw that design. Try describing it differently." : "The AI couldn't finish your concept. Please try again.")
+    const reason = error instanceof ConceptImageError ? error.reason : "failed"
+    if (reason === "quota") {
+      return failure("AI images are busy right now. Your suggestions below still work, or send us your design for a quote.")
     }
-    return { ok: true, data: result }
-  } catch (error) {
-    console.error("Checking the AI concept image failed:", error instanceof Error ? error.message : error)
-    // A brief network hiccup shouldn't end the wait: report it as still working.
-    return { ok: true, data: { status: "pending" } }
+    if (reason === "flagged") return failure("The AI couldn't draw that design. Try describing it differently.")
+    return failure("The AI couldn't finish your concept. Please try again.")
   }
 }
 

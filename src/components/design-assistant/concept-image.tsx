@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { RefreshCw, Sparkles } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { getConceptImage, requestConceptImage } from "@/lib/actions/design-assistant"
+import { requestConceptImage } from "@/lib/actions/design-assistant"
 import type { ConceptImageValues } from "@/lib/validations/design-assistant"
 
 export type ConceptImageState =
@@ -13,39 +13,27 @@ export type ConceptImageState =
   | { status: "done"; image: string }
   | { status: "error"; message: string }
 
-const POLL_MS = 3000
-/** Give up after about three minutes. */
-const MAX_POLLS = 60
-
 /**
- * Starts an AI concept image and checks on it every few seconds until it's ready.
- * Each start counts towards the visitor's hourly limit (checked on the server).
+ * Paints an AI concept image. The server answers once the picture is ready.
+ * Each request counts towards the visitor's hourly limit (checked on the server).
  */
 export function useConceptImage() {
   const [state, setState] = useState<ConceptImageState>({ status: "idle" })
   const run = useRef(0)
 
-  // Stop polling when the assistant closes.
+  // Ignore a late answer once the assistant has closed.
   useEffect(() => () => void (run.current += 1), [])
 
   const start = useCallback(async (request: ConceptImageValues) => {
     const id = ++run.current
     setState({ status: "working" })
-    const fail = (message: string) => id === run.current && setState({ status: "error", message })
     try {
-      const started = await requestConceptImage(request)
-      if (!started.ok || !started.data) return fail(started.ok ? "The AI couldn't start your concept." : started.message)
-      for (let poll = 0; poll < MAX_POLLS; poll += 1) {
-        await new Promise((resolve) => setTimeout(resolve, POLL_MS))
-        if (id !== run.current) return
-        const result = await getConceptImage(started.data.jobId)
-        if (id !== run.current) return
-        if (!result.ok || !result.data) return fail(result.ok ? "The AI couldn't finish your concept." : result.message)
-        if (result.data.status === "done") return setState({ status: "done", image: result.data.image })
-      }
-      fail("The AI is taking too long. Please try again.")
+      const result = await requestConceptImage(request)
+      if (id !== run.current) return
+      if (result.ok && result.data) return setState({ status: "done", image: result.data.image })
+      setState({ status: "error", message: result.ok ? "The AI couldn't finish your concept." : result.message })
     } catch {
-      fail("Something went wrong. Check your connection and try again.")
+      if (id === run.current) setState({ status: "error", message: "Something went wrong. Check your connection and try again." })
     }
   }, [])
 
