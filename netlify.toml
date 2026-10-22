@@ -14,3 +14,7 @@
   NEXT_PUBLIC_SUPABASE_URL = "https://hcknrshnqskckownpdkm.supabase.co"
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_JjxRzkSOK68OaHtjiKsdZw_PrOvVRT3"
   NEXT_PUBLIC_SITE_URL = "https://lucas-racing.netlify.app"
+  # Netlify's secret scan fails the deploy when it finds a dashboard variable's value
+  # in the build. These three are public by design (Next.js builds them into the
+  # browser code), so the scan skips them; every real secret is still checked.
+  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,NEXT_PUBLIC_SITE_URL"
