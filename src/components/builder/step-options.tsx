@@ -11,6 +11,7 @@ import type { FinishId, HelmetConfiguration } from "@/types/configurator"
 import type { HelmetModel } from "@/types/helmet"
 
 import { SwatchGrid } from "./swatch-grid"
+import { BellPartOptions } from "./bell-part-options"
 
 type Update = (changes: Partial<HelmetConfiguration>) => void
 
@@ -146,7 +147,8 @@ export function StepTrims({ priceBook, config, update }: { priceBook: PriceBook;
   const spoilers = priceBook.options.spoiler.filter((option) => option.isActive)
   return (
     <div className="space-y-6">
-      <SwatchGrid label="Rubber trim (eye-port and base)" options={trims} value={config.trim} onChange={(trim) => update({ trim })} size="lg" />
+      {config.model === "bell-kc7" && <BellPartOptions config={config} priceBook={priceBook} update={update} />}
+      <SwatchGrid label="Rubber trim (eye-port and base)" options={trims} value={config.trim} onChange={(trim) => update({ trim, eyeportTrim: undefined, baseTrim: undefined })} size="lg" />
       <fieldset className="space-y-3">
         <legend className="text-sm font-semibold">Rear spoiler</legend>
         <div className="grid grid-cols-2 gap-3">

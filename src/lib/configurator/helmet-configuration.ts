@@ -1,3 +1,4 @@
+import { bellParts, hasCustomBellParts } from "@/lib/helmet-3d/parts"
 import { colourDistance } from "@/lib/design-assistant/colour"
 import { first3dModel } from "@/lib/helmet-3d/models"
 import type { ConfiguratorOption, Film, PriceBook } from "@/types/catalog"
@@ -172,6 +173,13 @@ export function normaliseConfiguration(
   if (typeof input.trim === "string" && activeOptions(priceBook, "trim").some((option) => option.value === input.trim)) config.trim = input.trim
   if (input.spoiler === "yes" || input.spoiler === "no") config.spoiler = input.spoiler
 
+  if (config.model === "bell-kc7") {
+    for (const { key } of bellParts) {
+      const colour = input[key]
+      if (typeof colour === "string" && /^#[0-9a-f]{6}$/i.test(colour)) config[key] = colour.toLowerCase()
+    }
+  }
+
   const riderName = typeof input.riderName === "string" ? input.riderName.slice(0, 24) : ""
   const raceNumber = typeof input.raceNumber === "string" ? input.raceNumber.replace(/[^0-9a-z]/gi, "").slice(0, 3).toUpperCase() : ""
   if (riderName) config.riderName = riderName
@@ -220,6 +228,7 @@ export function configurationToLook(product: CatalogProduct, config: HelmetConfi
   return {
     ...product.look,
     finish: config.baseKind === "chrome" ? "chrome" : config.finish,
+    paintFinish: config.finish,
     base: base.colour,
     baseTexture: base.texture,
     graphic: graphic?.colour ?? product.look.graphic,
@@ -228,6 +237,7 @@ export function configurationToLook(product: CatalogProduct, config: HelmetConfi
     accent: accent?.colour ?? product.look.accent,
     accentTexture: accent?.texture,
     trim: config.trim,
+    accessories: config.model === "bell-kc7" ? Object.fromEntries(bellParts.map(({ key }) => [key, config[key]])) : undefined,
     spoiler: config.spoiler === "yes",
     number: config.raceNumber?.trim() || undefined,
     name: config.riderName?.trim() || undefined,
@@ -239,7 +249,7 @@ export function configurationToLook(product: CatalogProduct, config: HelmetConfi
  * Null for designs priced on request.
  */
 export function calculateHelmetPrice(product: CatalogProduct, config: HelmetConfiguration, priceBook: PriceBook): PriceBreakdown | null {
-  if (product.startingPrice === null) return null
+  if (product.startingPrice === null || hasCustomBellParts(config)) return null
   const lines: PriceLine[] = [{ label: `${product.name} design`, amount: product.startingPrice }]
 
   const model = priceBook.models.find((item) => item.id === config.model)
@@ -286,9 +296,15 @@ export function summariseConfiguration(product: CatalogProduct, config: HelmetCo
     priceBook.options[group].find((item) => item.value === config[group])?.label ?? config[group]
   lines.push(
     { key: "finish", label: "Finish", value: option("finish") },
-    { key: "trim", label: "Rubber trim", value: option("trim") },
+    { key: "trim", label: config.eyeportTrim || config.baseTrim ? "Default trim colour" : "Rubber trim", value: option("trim") },
     { key: "spoiler", label: "Rear spoiler", value: option("spoiler") },
   )
+  if (config.model === "bell-kc7") {
+    for (const { key, label } of bellParts) {
+      const colour = config[key]
+      if (colour) lines.push({ key, label, value: `${colourOption(priceBook, colour)?.label ?? colour.toUpperCase()} · quoted separately` })
+    }
+  }
   if (config.riderName?.trim()) {
     lines.push({ key: "riderName", label: "Name on helmet", value: `${config.riderName.trim()} · ${placementLabels[config.namePosition ?? "sides"]}` })
   }

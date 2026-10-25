@@ -59,13 +59,13 @@ export function HelmetViewer({ fallback, label, className, ...scene }: HelmetVie
   const supported = useSyncExternalStore<boolean | null>(subscribeNever, hasWebGL, () => null)
 
   return (
-    <div className={cn("relative size-full", className)} role="img" aria-label={label}>
+    <div className={cn("relative size-full min-w-0", className)} role="img" aria-label={label}>
       {supported === null ? (
         <SceneLoading />
       ) : supported ? (
         <SceneBoundary fallback={fallback}>
           <HelmetScene {...scene} />
-          <p className="pointer-events-none absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap rounded-full bg-card/80 px-3 py-1 text-[0.68rem] font-medium text-muted-foreground ring-1 ring-carbon/10">
+          <p className="pointer-events-none absolute bottom-3 left-1/2 flex w-max max-w-[calc(100%-1rem)] -translate-x-1/2 items-center gap-1.5 rounded-full bg-card/80 px-3 py-1 text-center text-[0.68rem] font-medium text-muted-foreground ring-1 ring-carbon/10">
             <Hand className="size-3" aria-hidden /> Drag to turn, then scroll or pinch to zoom
           </p>
         </SceneBoundary>

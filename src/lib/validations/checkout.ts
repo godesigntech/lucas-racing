@@ -57,6 +57,13 @@ export const helmetItemSchema = z.object({
     accentKind: z.enum(["colour", "film", "chrome"]).optional(),
     accent: z.string().optional(),
     trim: z.string(),
+    eyeportTrim: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),
+    baseTrim: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),
+    grille1: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),
+    grille2: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),
+    visorScrewLeft: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),
+    visorScrewRight: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),
+
     spoiler: z.enum(["yes", "no"]),
     namePosition: placement.optional(),
     numberPosition: placement.optional(),

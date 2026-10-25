@@ -2,11 +2,13 @@
 
 import { useState } from "react"
 import { Droplets, Palette, Sparkles } from "lucide-react"
+import Image from "next/image"
 
 import { HelmetArt } from "@/components/helmet/helmet-art"
 import { FilmPicker } from "@/components/studio/film-picker"
 import { describePart, partHints, partLabels, partOf, pickableFilms, templateParts } from "@/lib/configurator/helmet-configuration"
 import { formatSurcharge } from "@/lib/format"
+import { getTemplateArtwork } from "@/lib/helmet-3d/templates"
 import { cn } from "@/lib/utils"
 import type { PriceBook } from "@/types/catalog"
 import type { HelmetConfiguration, PartId, PartKind } from "@/types/configurator"
@@ -32,6 +34,7 @@ const kindMeta: Record<PartKind, { label: string; icon: typeof Palette }> = {
 /** Pick a part (on the list or highlighted on the helmet), then paint it with a colour, film or chrome. */
 export function StepParts({ product, priceBook, config, look, update }: StepPartsProps) {
   const parts = templateParts(product)
+  const artwork = getTemplateArtwork(config.model, product.slug)
   const [part, setPart] = useState<PartId>("base")
   const current = partOf(config, part) ?? { kind: "colour" as const, value: "" }
   const palette = priceBook.options.base.filter((option) => option.isActive)
@@ -60,7 +63,7 @@ export function StepParts({ product, priceBook, config, look, update }: StepPart
     <div className="space-y-5">
       <div className="grid grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] items-center gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] sm:gap-4">
         <div className="grid aspect-square place-items-center rounded-2xl sm:aspect-[4/3] bg-[radial-gradient(circle_at_50%_35%,#ffffff,#e8e7e0_80%)] p-3">
-          <HelmetArt look={look} highlight={part} title={`${product.name} with the ${partLabels[part].toLowerCase()} highlighted`} />
+          {artwork ? <div className="space-y-1 text-center"><Image src={artwork.thumbnail} alt={`${product.name} racing layout, example colours`} width={900} height={900} className="w-full rounded-lg" /><p className="text-[0.65rem] text-muted-foreground">Example layout · your colours appear in the live 3D view</p></div> : <HelmetArt look={look} highlight={part} title={`${product.name} with the ${partLabels[part].toLowerCase()} highlighted`} />}
         </div>
         <ul className="space-y-2" role="listbox" aria-label="Helmet parts">
           {parts.map((id) => {

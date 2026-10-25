@@ -14,6 +14,8 @@ import { basket } from "@/lib/basket/basket-store"
 import { getCategory } from "@/lib/catalog/categories"
 import { configToSearchParams, configurationToText } from "@/lib/configurator/helmet-configuration"
 import { formatMoney } from "@/lib/format"
+import { hasCustomBellParts } from "@/lib/helmet-3d/parts"
+import { getTemplateArtwork } from "@/lib/helmet-3d/templates"
 import { createClient } from "@/lib/supabase/browser"
 import type { PriceBook } from "@/types/catalog"
 import type { HelmetConfiguration } from "@/types/configurator"
@@ -127,9 +129,15 @@ function BuilderBody({
           ref={previewRef}
           look={look}
           modelId={config.model}
+          templateSlug={product.slug}
           modelName={model?.name ?? "Helmet"}
           designLabel={`${getCategory(product.category).label} · ${product.name}`}
         />
+        {config.model === "bell-kc7" && (
+          <Button variant="outline" className="mt-3 w-full" onClick={() => go("trims")}>
+            Customize trims, GrillZ & visor screws
+          </Button>
+        )}
       </div>
 
       {/* data-helmet-builder hides the floating chat buttons on phones (globals.css): they would cover the step buttons. */}
@@ -155,9 +163,9 @@ function BuilderBody({
               Step {index + 1} of {builderSteps.length}
             </p>
             <h2 id="builder-step-title" className="font-display text-2xl font-bold uppercase leading-tight">
-              {step.title}
+              {stepId === "trims" && config.model === "bell-kc7" ? "Accessories, trims and spoiler" : step.title}
             </h2>
-            <p className="text-sm text-muted-foreground">{step.description}</p>
+            <p className="text-sm text-muted-foreground">{stepId === "trims" && config.model === "bell-kc7" ? "Colour Eyeport TrimZ, Base TrimZ, GrillZ and visor screws independently." : stepId === "review" && !price ? "Check your choices, then send your design to the workshop for a quote." : step.description}</p>
           </div>
 
           {stepId === "helmet" && <StepHelmet models={models} config={config} update={update} />}
@@ -178,6 +186,7 @@ function BuilderBody({
                   imageName={`lucas-racing-${product.slug}.png`}
                   imageCaption={`${product.name} · ${model?.name ?? ""}`}
                   getPreviewSvg={() => previewRef.current?.querySelector("svg") ?? null}
+                  imageUnavailableReason={hasCustomBellParts(config) || getTemplateArtwork(config.model, product.slug) ? "Use Share link to include your 3D artwork and accessory colours. Illustrated image export does not show these yet." : undefined}
                 />
               </div>
             </>

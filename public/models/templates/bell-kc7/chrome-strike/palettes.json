@@ -1,0 +1,23 @@
+[
+  {
+    "name": "Ion Chrome",
+    "base": "#BCC5CE",
+    "graphic": "#141C29",
+    "accent": "#D4EE46",
+    "baseFinish": "chrome"
+  },
+  {
+    "name": "Copper Voltage",
+    "base": "#C88C69",
+    "graphic": "#202A33",
+    "accent": "#F2E6CE",
+    "baseFinish": "paint"
+  },
+  {
+    "name": "Paint Mode",
+    "base": "#ECEAE4",
+    "graphic": "#252436",
+    "accent": "#ED4A6C",
+    "baseFinish": "paint"
+  }
+]

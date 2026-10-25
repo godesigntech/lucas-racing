@@ -8,6 +8,7 @@ import type { HelmetAngle } from "@/components/helmet-3d/helmet-scene"
 import { HelmetViewer } from "@/components/helmet-3d/helmet-viewer"
 import { get3dModel } from "@/lib/helmet-3d/models"
 import { shellTint } from "@/lib/helmet-3d/tint"
+import { getTemplateArtwork } from "@/lib/helmet-3d/templates"
 import { cn } from "@/lib/utils"
 import type { HelmetLook, HelmetModelId } from "@/types/helmet"
 
@@ -24,6 +25,7 @@ interface StudioPreviewProps {
   modelId: HelmetModelId
   modelName: string
   designLabel: string
+  templateSlug: string
 }
 
 /**
@@ -31,11 +33,12 @@ interface StudioPreviewProps {
  * get the 3D viewer and preset camera angles; others show the illustration.
  */
 export const StudioPreview = forwardRef<HTMLDivElement, StudioPreviewProps>(function StudioPreview(
-  { look, modelId, modelName, designLabel },
+  { look, modelId, modelName, designLabel, templateSlug },
   ref,
 ) {
   const [view, setView] = useState<{ angle: HelmetAngle; at: number } | null>(null)
   const model3d = get3dModel(modelId)
+  const artwork = getTemplateArtwork(modelId, templateSlug)
   const art = (
     <HelmetArt look={look} title={`${modelName} preview`} className="w-[82%] max-h-[20rem] animate-in fade-in-0 zoom-in-95 duration-300" />
   )
@@ -55,7 +58,7 @@ export const StudioPreview = forwardRef<HTMLDivElement, StudioPreviewProps>(func
         </span>
       </div>
 
-      <div ref={ref} className="relative grid flex-1 place-items-center px-6 py-1 sm:px-12 sm:py-4 lg:min-h-[22rem]">
+      <div ref={ref} className="relative grid min-w-0 flex-1 grid-cols-1 place-items-center px-6 py-1 sm:px-12 sm:py-4 lg:min-h-[22rem]">
         {model3d ? (
           <>
             {/* Kept for "Social image", which saves the illustrated design. */}
@@ -64,9 +67,18 @@ export const StudioPreview = forwardRef<HTMLDivElement, StudioPreviewProps>(func
               url={model3d.url}
               tint={shellTint(look)}
               finish={look.finish}
+              paintFinish={look.paintFinish}
+              trim={look.trim}
+              accessories={look.accessories}
+              spoiler={look.spoiler}
               film={look.baseTexture ?? null}
+              artwork={artwork}
+              graphic={look.graphic}
+              accent={look.accent}
+              graphicFilm={look.filmTexture}
+              accentFilm={look.accentTexture}
               view={view}
-              label={`${modelName} in 3D with your shell colour, film and finish`}
+              label={`${modelName} in 3D with your shell colour, film, finish, accessories and spoiler`}
               fallback={art}
               className="h-[15rem] sm:h-[22rem]"
             />
@@ -85,7 +97,7 @@ export const StudioPreview = forwardRef<HTMLDivElement, StudioPreviewProps>(func
       <div className="flex min-w-0 flex-col gap-3 px-4 pb-4 sm:flex-row sm:items-center sm:justify-between sm:px-7 sm:pb-5">
         <p className="flex items-center gap-2 text-xs text-muted-foreground max-sm:hidden">
           <Box className="size-3.5 text-brand-ink" aria-hidden />
-          {model3d ? "3D shows your shell colour, film and finish" : `Illustrated preview · 3D for the ${modelName} is coming soon`}
+          {model3d ? artwork ? "3D shows your racing lines, colours, films and accessories" : "3D shows shell and accessories; this template’s racing artwork is not available in 3D yet" : `Illustrated preview · 3D for the ${modelName} is coming soon`}
         </p>
         {model3d && (
           <div

@@ -16,6 +16,13 @@ const stepFor: Record<string, BuilderStepId> = {
   accent: "parts",
   finish: "finish",
   trim: "trims",
+  eyeportTrim: "trims",
+  baseTrim: "trims",
+  grille1: "trims",
+  grille2: "trims",
+  visorScrewLeft: "trims",
+  visorScrewRight: "trims",
+
   spoiler: "trims",
   riderName: "details",
   raceNumber: "details",

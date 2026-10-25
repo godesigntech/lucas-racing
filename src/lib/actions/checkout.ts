@@ -1,6 +1,7 @@
 "use server"
 
 import { after } from "next/server"
+import { hasCustomBellParts } from "@/lib/helmet-3d/parts"
 
 import { getCurrentUser } from "@/lib/auth/session"
 import { isDemoMode } from "@/lib/demo/mode"
@@ -20,6 +21,9 @@ export async function placeOrder(input: PlaceOrderInput): Promise<ActionResult<{
   const parsed = placeOrderSchema.safeParse(input)
   if (!parsed.success) return validationError(parsed.error)
   const { items, checkout } = parsed.data
+  if (items.some((item) => item.kind === "helmet" && hasCustomBellParts(item.config))) {
+    return failure("Custom Bell KC7 accessory colours need a workshop quote. Please send your design as an enquiry.")
+  }
 
   const supabase = await createClient()
   // place_order() takes helmet builds as { slug, quantity, config } and products as { kind, variant_id, quantity }.

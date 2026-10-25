@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { bellParts } from "@/lib/helmet-3d/parts"
 
 import {
   calculateHelmetPrice,
@@ -14,7 +15,7 @@ import type { HelmetConfiguration } from "@/types/configurator"
 import type { CatalogProduct } from "@/types/product"
 
 /** Personal details that carry over when the customer switches template. */
-const carriedOver = ["model", "size", "finish", "trim", "spoiler", "riderName", "namePosition", "raceNumber", "numberPosition", "logo", "logoPosition"] as const
+const carriedOver = [...bellParts.map(({ key }) => key), "model", "size", "finish", "trim", "spoiler", "riderName", "namePosition", "raceNumber", "numberPosition", "logo", "logoPosition"] as const
 
 /**
  * Builder state: the chosen template (design) and the build on it, kept valid as

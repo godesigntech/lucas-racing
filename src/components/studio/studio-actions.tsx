@@ -14,10 +14,11 @@ interface StudioActionsProps {
   imageName: string
   imageCaption: string
   getPreviewSvg: () => SVGSVGElement | null
+  imageUnavailableReason?: string
 }
 
 /** Header actions: copy a share link, download a watermarked image, ask the workshop. */
-export function StudioActions({ shareUrl, enquiryHref, imageName, imageCaption, getPreviewSvg }: StudioActionsProps) {
+export function StudioActions({ shareUrl, enquiryHref, imageName, imageCaption, getPreviewSvg, imageUnavailableReason }: StudioActionsProps) {
   const [downloading, setDownloading] = useState(false)
 
   async function copyLink() {
@@ -31,6 +32,7 @@ export function StudioActions({ shareUrl, enquiryHref, imageName, imageCaption, 
   }
 
   async function downloadImage() {
+    if (imageUnavailableReason) return
     const svg = getPreviewSvg()
     if (!svg) return
     setDownloading(true)
@@ -49,9 +51,10 @@ export function StudioActions({ shareUrl, enquiryHref, imageName, imageCaption, 
       <Button variant="ghost" size="sm" onClick={copyLink}>
         <Link2 /> Share link
       </Button>
-      <Button variant="ghost" size="sm" onClick={downloadImage} disabled={downloading}>
+      <Button variant="ghost" size="sm" onClick={downloadImage} disabled={downloading || Boolean(imageUnavailableReason)}>
         {downloading ? <Loader2 className="animate-spin" aria-hidden /> : <Download />} Social image
       </Button>
+      {imageUnavailableReason && <p className="order-last w-full text-xs text-muted-foreground">{imageUnavailableReason}</p>}
       <Button asChild variant="ghost" size="sm">
         <Link href={enquiryHref}>
           <MessageSquare /> Ask the workshop

@@ -3,17 +3,13 @@ import type { HelmetModelId } from "@/types/helmet"
 export interface Helmet3dModel {
   /** Optimised .glb served from /public. */
   url: string
-  /**
-   * True while the model is a stand-in: an AI-generated scan with its paint baked
-   * into one texture. It can be tinted and its finish changed, but templates and
-   * films need the artist's model with separate parts and a clean shell layout.
-   */
+  /** True while using a stand-in scan rather than a model with separate parts. */
   placeholder: boolean
 }
 
 /** Helmets we can show in 3D. Add the Arai SK-6 here when its model arrives. */
 export const helmet3dModels: Partial<Record<HelmetModelId, Helmet3dModel>> = {
-  "bell-kc7": { url: "/models/bell-kc7.glb", placeholder: true },
+  "bell-kc7": { url: "/models/bell-kc7.glb?v=kc7-customizable-2", placeholder: false },
 }
 
 export function get3dModel(modelId: HelmetModelId | undefined): Helmet3dModel | undefined {

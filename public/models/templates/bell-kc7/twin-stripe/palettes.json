@@ -1,0 +1,23 @@
+[
+  {
+    "name": "Alpine Pulse",
+    "base": "#F4F1E8",
+    "graphic": "#15354C",
+    "accent": "#F04F28",
+    "baseFinish": "paint"
+  },
+  {
+    "name": "Night Circuit",
+    "base": "#101C30",
+    "graphic": "#E5EDF2",
+    "accent": "#4CE1C0",
+    "baseFinish": "paint"
+  },
+  {
+    "name": "Heritage Sprint",
+    "base": "#F3E4C5",
+    "graphic": "#8B2134",
+    "accent": "#E5B445",
+    "baseFinish": "paint"
+  }
+]

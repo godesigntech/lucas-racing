@@ -1,0 +1,23 @@
+[
+  {
+    "name": "Amethyst",
+    "base": "#EEE7F0",
+    "graphic": "#4D326F",
+    "accent": "#5EDDD0",
+    "baseFinish": "paint"
+  },
+  {
+    "name": "Petrol Flow",
+    "base": "#E8E5DC",
+    "graphic": "#204F58",
+    "accent": "#DB9A4A",
+    "baseFinish": "paint"
+  },
+  {
+    "name": "Ember Flow",
+    "base": "#121C25",
+    "graphic": "#D4C1A5",
+    "accent": "#F36C3D",
+    "baseFinish": "paint"
+  }
+]

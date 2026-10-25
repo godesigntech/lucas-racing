@@ -1,3 +1,5 @@
+import type { BellPartColours } from "@/lib/helmet-3d/parts"
+
 export type HelmetModelId = string
 
 export interface HelmetModel {
@@ -32,6 +34,8 @@ export type FilmId = FilmPattern
 export interface HelmetLook {
   layout: HelmetLayout
   finish: HelmetFinish
+  /** Lacquer on painted graphics when the base is chrome. */
+  paintFinish?: "gloss" | "satin" | "matte"
   /** Main shell colour. */
   base: string
   /** Colour of the layout's graphic. */
@@ -47,6 +51,7 @@ export interface HelmetLook {
   accentTexture?: string
   /** Rubber trim colour (eye-port and base). */
   trim: string
+  accessories?: BellPartColours
   spoiler: boolean
   number?: string
   name?: string

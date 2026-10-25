@@ -1,0 +1,23 @@
+[
+  {
+    "name": "Afterburn",
+    "base": "#E9EBE5",
+    "graphic": "#20242B",
+    "accent": "#E95224",
+    "baseFinish": "paint"
+  },
+  {
+    "name": "Ice Shard",
+    "base": "#DCE8ED",
+    "graphic": "#19293A",
+    "accent": "#14C6E2",
+    "baseFinish": "paint"
+  },
+  {
+    "name": "Crimson Carbon",
+    "base": "#151B23",
+    "graphic": "#5B2336",
+    "accent": "#F1C75B",
+    "baseFinish": "paint"
+  }
+]

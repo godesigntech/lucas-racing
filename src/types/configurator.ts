@@ -1,3 +1,5 @@
+import type { BellPartColours } from "@/lib/helmet-3d/parts"
+
 // The helmet builder's data model. A build is stored flat (plain string fields)
 // so it travels unchanged through share links, the basket, saved designs and
 // public.place_order(), which re-prices it in the database.
@@ -14,7 +16,7 @@ export type FinishId = "gloss" | "satin" | "matte"
 /** Where text and logos go on the helmet. */
 export type Placement = "sides" | "left" | "right" | "front" | "back" | "top"
 
-export interface HelmetConfiguration {
+export interface HelmetConfiguration extends BellPartColours {
   /** Helmet model id, e.g. "bell-kc7". Always supplied new. */
   model: string
   size: string

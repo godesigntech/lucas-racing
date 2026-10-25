@@ -1,0 +1,23 @@
+[
+  {
+    "name": "Signal Teal",
+    "base": "#E7E5DF",
+    "graphic": "#134B53",
+    "accent": "#F5B83E",
+    "baseFinish": "paint"
+  },
+  {
+    "name": "Urban Vector",
+    "base": "#181D2A",
+    "graphic": "#D4D9DE",
+    "accent": "#EE4560",
+    "baseFinish": "paint"
+  },
+  {
+    "name": "Arctic Cobalt",
+    "base": "#E7EDF4",
+    "graphic": "#274FB4",
+    "accent": "#83E4F0",
+    "baseFinish": "paint"
+  }
+]
