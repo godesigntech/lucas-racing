@@ -5,6 +5,10 @@ const supabaseHost = process.env.NEXT_PUBLIC_SUPABASE_URL ? new URL(process.env.
 const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
+  experimental: {
+    // Lets `next upgrade` point coding agents at security releases for this app.
+    agentUpgrade: "security",
+  },
   // Both bottom corners hold floating buttons (chat, design assistant); keep the dev-only badge clear of them.
   devIndicators: { position: "top-left" },
   // Dev logs would otherwise print Server Action arguments, including passwords from the login form.
