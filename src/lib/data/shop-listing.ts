@@ -127,16 +127,18 @@ export async function listShopProducts(query: ShopListingQuery): Promise<ShopLis
   return { items: data.map(toItem), total, page, pageCount: Math.max(1, Math.ceil(total / SHOP_PAGE_SIZE)) }
 }
 
-/** Featured products for a shop's landing page. */
-export async function getFeaturedShopProducts(store: StoreId, limit = 4): Promise<ShopListingItem[]> {
+/** Featured products for a shop's landing page, optionally only from some categories. */
+export async function getFeaturedShopProducts(store: StoreId, limit = 4, categoryIds?: string[]): Promise<ShopListingItem[]> {
   await connection()
   if (isDemoMode()) return []
-  const { data, error } = await createPublicClient()
+  let request = createPublicClient()
     .from("shop_product_listing")
     .select("*")
     .eq("store_id", store)
     .eq("is_active", true)
     .eq("featured", true)
+  if (categoryIds?.length) request = request.in("category_id", categoryIds)
+  const { data, error } = await request
     .order("sort_order")
     .limit(limit)
   if (error) throw new Error(`Could not load featured products: ${error.message}`)

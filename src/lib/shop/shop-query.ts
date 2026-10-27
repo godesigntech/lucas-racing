@@ -28,6 +28,18 @@ export function readShopQuery(params: ShopSearchParams): Omit<ShopListingQuery, 
   return { ...query, filtered: Boolean(query.q || query.inStock || query.minPrice !== undefined || query.maxPrice !== undefined) }
 }
 
+/** Link that sets (or with null, removes) one filter, keeping the others and going back to page 1. */
+export function shopFilterHref(pathname: string, params: ShopSearchParams, key: string, value: string | null): string {
+  const next = new URLSearchParams()
+  for (const [name, current] of Object.entries(params)) {
+    const single = first(current)
+    if (single && name !== "page" && name !== key) next.set(name, single)
+  }
+  if (value) next.set(key, value)
+  const search = next.toString()
+  return search ? `${pathname}?${search}` : pathname
+}
+
 /** Link to another page of results, keeping the other params. */
 export function shopPageHref(pathname: string, params: ShopSearchParams, page: number): string {
   const next = new URLSearchParams()

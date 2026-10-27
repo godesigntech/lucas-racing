@@ -41,7 +41,9 @@ export function ShopToolbar({ showStock = true }: { showStock?: boolean }) {
     startTransition(() => router.replace(search ? `${pathname}?${search}` : pathname, { scroll: false }))
   }
 
-  const filtered = ["q", "stock", "min", "max", "sort"].some((key) => params.has(key))
+  // The results' own filters; others in the URL (such as the featured row's category) are left alone.
+  const filterKeys = ["q", "stock", "min", "max", "sort", "category"]
+  const filtered = filterKeys.some((key) => params.has(key))
 
   return (
     <div className="space-y-3">
@@ -144,7 +146,7 @@ export function ShopToolbar({ showStock = true }: { showStock?: boolean }) {
               setQuery("")
               setMinPrice("")
               setMaxPrice("")
-              startTransition(() => router.replace(pathname, { scroll: false }))
+              update(Object.fromEntries(filterKeys.map((key) => [key, null])))
             }}
             className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground underline-offset-4 hover:text-carbon hover:underline"
           >
