@@ -4282,4 +4282,1675 @@ create policy "Gallery: admins replace" on storage.objects
 create policy "Gallery: admins remove" on storage.objects
   for delete to authenticated using (bucket_id = 'gallery' and (select public.is_full_admin()));
 insert into app_private.schema_migrations (name) values ('20261017002100_results_and_gallery.sql') on conflict do nothing;
+
+-- ===== 20261018002200_design_templates.sql =====
+
+-- Phase 8: the 16-step helmet journey, part 1 of 4 — design templates as data.
+--
+-- Until now a design's artwork lived in code: src/lib/helmet-3d/templates.ts listed six
+-- Bell KC7 slugs, and src/components/helmet/helmet-art.tsx held the SVG paths. Adding a
+-- design meant a deploy. These two tables move that into the database so the workshop can
+-- add templates, and so each template can declare its own editable regions instead of the
+-- three hard-coded ones (shell / graphic / pinstripe).
+--
+-- A design (public.products) is the marketing record and the price. A design_template is
+-- the artwork for one design on one helmet model, because masks are tied to that model's
+-- UVs. Regions belong to the artwork, not to the design.
+
+create table public.design_templates (
+  id uuid primary key default gen_random_uuid(),
+  product_slug text not null references public.products (slug) on update cascade on delete cascade,
+  model_id text not null references public.helmet_models (id) on update cascade on delete cascade,
+  -- Vector source. Null while a template still ships as baked masks.
+  svg_url text,
+  -- Baked greyscale masks, the pipeline we have artwork for today.
+  graphic_mask_url text,
+  accent_mask_url text,
+  thumbnail_url text,
+  -- 'ready'       — artwork exists and the 3D preview can show it.
+  -- 'pending'     — waiting on the 3D artist; the builder falls back to the illustration.
+  -- 'placeholder' — stand-in artwork, clearly labelled to customers.
+  artwork_status text not null default 'pending'
+    check (artwork_status in ('ready', 'pending', 'placeholder')),
+  is_active boolean not null default true,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (product_slug, model_id)
+);
+
+create index design_templates_model_idx on public.design_templates (model_id, sort_order);
+
+create trigger design_templates_updated_at
+  before update on public.design_templates
+  for each row execute function public.set_updated_at();
+
+-- The separately editable areas of one template. 'fill' is a shape the customer colours,
+-- 'pinstripe' is a racing line (kept distinct so step 7 can list only the lines), 'trim'
+-- is a painted edge. Each region says which treatments it accepts, so the builder can grey
+-- out what the artwork cannot carry.
+create table public.template_regions (
+  id uuid primary key default gen_random_uuid(),
+  template_id uuid not null references public.design_templates (id) on delete cascade,
+  key text not null check (key ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
+  label text not null,
+  kind text not null default 'fill' check (kind in ('fill', 'pinstripe', 'trim')),
+  -- Mask for this region, or the id of the SVG element when the template has an svg_url.
+  mask_url text,
+  svg_element_id text,
+  default_colour text not null default '#ffffff',
+  allows_film boolean not null default true,
+  allows_chrome boolean not null default false,
+  allows_metallic boolean not null default true,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (template_id, key)
+);
+
+create index template_regions_template_idx on public.template_regions (template_id, sort_order);
+
+create trigger template_regions_updated_at
+  before update on public.template_regions
+  for each row execute function public.set_updated_at();
+
+alter table public.design_templates enable row level security;
+alter table public.template_regions enable row level security;
+
+create policy "Anyone can read active templates" on public.design_templates
+  for select to anon, authenticated
+  using (is_active or (select public.is_admin()));
+
+create policy "Admins manage templates" on public.design_templates
+  for all to authenticated
+  using ((select public.is_full_admin()))
+  with check ((select public.is_full_admin()));
+
+create policy "Anyone can read regions of active templates" on public.template_regions
+  for select to anon, authenticated
+  using (
+    (select public.is_admin())
+    or exists (
+      select 1 from public.design_templates t
+      where t.id = template_id and t.is_active
+    )
+  );
+
+create policy "Admins manage regions" on public.template_regions
+  for all to authenticated
+  using ((select public.is_full_admin()))
+  with check ((select public.is_full_admin()));
+
+-- ---------------------------------------------------------------------------
+-- Seed: the artwork already on disk, so nothing regresses.
+-- /public/models/templates/bell-kc7/<slug>/{graphic-mask,accent-mask,thumbnail}.png
+-- ---------------------------------------------------------------------------
+insert into public.design_templates
+  (product_slug, model_id, graphic_mask_url, accent_mask_url, thumbnail_url, artwork_status, sort_order)
+select
+  slug,
+  'bell-kc7',
+  '/models/templates/bell-kc7/' || slug || '/graphic-mask.png',
+  '/models/templates/bell-kc7/' || slug || '/accent-mask.png',
+  '/models/templates/bell-kc7/' || slug || '/thumbnail.png',
+  'ready',
+  ordinality
+from unnest(array['apex', 'twin-stripe', 'split-tone', 'shard', 'forged-flow', 'chrome-strike'])
+  with ordinality as t(slug, ordinality)
+where exists (select 1 from public.products p where p.slug = t.slug)
+on conflict (product_slug, model_id) do nothing;
+
+-- Designs with no 3D artwork yet still get a row, so the admin panel lists every
+-- design against every helmet and shows what the 3D artist still owes us.
+insert into public.design_templates (product_slug, model_id, artwork_status, sort_order)
+select p.slug, m.id, 'pending', p.sort_order
+from public.products p
+cross join public.helmet_models m
+where m.id = any (p.model_ids)
+on conflict (product_slug, model_id) do nothing;
+
+-- The three regions the current artwork carries. 'blank-canvas' has no graphic shape.
+insert into public.template_regions (template_id, key, label, kind, mask_url, default_colour, allows_chrome, sort_order)
+select t.id, 'base', 'Shell', 'fill', null, '#101114', true, 1
+from public.design_templates t
+on conflict (template_id, key) do nothing;
+
+insert into public.template_regions (template_id, key, label, kind, mask_url, default_colour, sort_order)
+select t.id, 'graphic', 'Graphic', 'fill', t.graphic_mask_url, '#d81f2a', 2
+from public.design_templates t
+where t.product_slug <> 'blank-canvas'
+on conflict (template_id, key) do nothing;
+
+insert into public.template_regions (template_id, key, label, kind, mask_url, default_colour, sort_order)
+select t.id, 'accent', 'Pinstripe', 'pinstripe', t.accent_mask_url, '#f2f2f2', 3
+from public.design_templates t
+where t.product_slug <> 'blank-canvas'
+on conflict (template_id, key) do nothing;
+insert into app_private.schema_migrations (name) values ('20261018002200_design_templates.sql') on conflict do nothing;
+
+-- ===== 20261018002300_options_and_pricing.sql =====
+
+-- Phase 8: the 16-step helmet journey, part 2 of 4 — the things customers can choose.
+--
+-- Adds the catalogue entities the new steps need (aero kits, visors, per-size pricing)
+-- and introduces "price on request" as a first-class state.
+--
+-- Pricing rule introduced here: configurator_options.price may now be null, meaning the
+-- client has not given us a price for that option yet. The builder still shows the option
+-- and still previews it in 3D, but place_order() refuses to sell it, so an unpriced extra
+-- can never be undercharged. products.base_price has worked this way since day one.
+
+alter table public.configurator_options alter column price drop not null;
+
+comment on column public.configurator_options.price is
+  'Null means the price is still to be confirmed. The builder shows "Price on request" and checkout is blocked.';
+
+-- Two new groups: the visor strip background, and chargeable personalisation.
+alter table public.configurator_options drop constraint configurator_options_option_group_check;
+alter table public.configurator_options
+  add constraint configurator_options_option_group_check
+  check (option_group in ('route', 'finish', 'base', 'trim', 'spoiler', 'material', 'visor_strip', 'personalisation'));
+
+-- Metallic paint, alongside the chrome we already had. Price to be confirmed, so it
+-- goes in unpriced rather than guessed.
+insert into public.configurator_options (option_group, value, label, hint, swatch, price, sort_order) values
+  ('material', 'metallic', 'Metallic', 'A metallic flake through the colour', '#b8bdc4', null, 2)
+on conflict (option_group, value) do nothing;
+
+-- Personalisation is free today and stays free until the client prices it.
+insert into public.configurator_options (option_group, value, label, hint, swatch, price, sort_order) values
+  ('personalisation', 'name', 'Name', 'Your name on the helmet', null, 0, 1),
+  ('personalisation', 'number', 'Racing number', null, null, 0, 2),
+  ('personalisation', 'initials', 'Initials', null, null, 0, 3),
+  ('personalisation', 'flag', 'National flag', null, null, 0, 4),
+  ('personalisation', 'text', 'Custom text', null, null, 0, 5)
+on conflict (option_group, value) do nothing;
+
+insert into public.configurator_options (option_group, value, label, hint, swatch, price, sort_order) values
+  ('visor_strip', 'none', 'No visor strip', null, null, 0, 1),
+  ('visor_strip', 'printed', 'Printed visor strip', 'Your text or logo across the top of the visor', null, null, 2)
+on conflict (option_group, value) do nothing;
+
+-- "Send my own helmet" is back (step 1 of the client's brief). It was switched off in
+-- migration 000900 when the builder became new-helmet-only; place_order() now adds the
+-- new-helmet price only when the customer actually wants one.
+update public.configurator_options set is_active = true where option_group = 'route' and value = 'own';
+update public.configurator_options
+  set hint = 'Post it to us or drop it off. We''ll check it''s suitable before any work starts.'
+  where option_group = 'route' and value = 'own';
+
+-- ---------------------------------------------------------------------------
+-- Helmet sizes become rows, so a size can carry a price and be taken off sale.
+-- helmet_models.sizes stays as the fallback for anything not listed here.
+-- ---------------------------------------------------------------------------
+create table public.helmet_model_sizes (
+  model_id text not null references public.helmet_models (id) on update cascade on delete cascade,
+  size text not null,
+  -- Surcharge on top of the helmet price. Null means "to be confirmed".
+  price numeric(10, 2) default 0 check (price >= 0),
+  is_active boolean not null default true,
+  sort_order integer not null default 0,
+  updated_at timestamptz not null default now(),
+  primary key (model_id, size)
+);
+
+create trigger helmet_model_sizes_updated_at
+  before update on public.helmet_model_sizes
+  for each row execute function public.set_updated_at();
+
+insert into public.helmet_model_sizes (model_id, size, price, sort_order)
+select m.id, s.size, 0, s.ordinality
+from public.helmet_models m
+cross join lateral unnest(m.sizes) with ordinality as s(size, ordinality)
+on conflict (model_id, size) do nothing;
+
+-- ---------------------------------------------------------------------------
+-- Aero kits (step 2). mesh_name is the node in the model's .glb that this kit shows;
+-- null means the standard shell with nothing added.
+-- ---------------------------------------------------------------------------
+create table public.aero_kits (
+  id text primary key check (id ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
+  model_id text not null references public.helmet_models (id) on update cascade on delete cascade,
+  name text not null,
+  summary text,
+  mesh_name text,
+  price numeric(10, 2) check (price >= 0),
+  is_active boolean not null default true,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index aero_kits_model_idx on public.aero_kits (model_id, sort_order);
+
+create trigger aero_kits_updated_at
+  before update on public.aero_kits
+  for each row execute function public.set_updated_at();
+
+-- The Bell KC7 .glb already carries the standard shell and one spoiler mesh.
+insert into public.aero_kits (id, model_id, name, summary, mesh_name, price, sort_order) values
+  ('bell-kc7-standard', 'bell-kc7', 'Standard aero', 'The helmet as Bell supplies it.', null, 0, 1),
+  ('bell-kc7-hp7-small', 'bell-kc7', 'HP7 F1 small spoiler', 'Low-profile rear spoiler.', 'Spoiler_HP7_F1_Small', null, 2),
+  ('arai-sk6-standard', 'arai-sk6', 'Standard aero', 'The helmet as Arai supplies it.', null, 0, 1)
+on conflict (id) do nothing;
+
+-- ---------------------------------------------------------------------------
+-- Visors (step 12). The Bell .glb has a separate Visor mesh with its own material,
+-- which nothing has ever driven until now.
+-- ---------------------------------------------------------------------------
+create table public.visors (
+  id text primary key check (id ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
+  model_id text not null references public.helmet_models (id) on update cascade on delete cascade,
+  name text not null,
+  kind text not null check (kind in ('clear', 'smoked', 'coloured', 'iridium')),
+  -- How the preview renders it.
+  tint text not null default '#ffffff',
+  opacity numeric(3, 2) not null default 0.35 check (opacity between 0 and 1),
+  metalness numeric(3, 2) not null default 0 check (metalness between 0 and 1),
+  price numeric(10, 2) check (price >= 0),
+  is_active boolean not null default true,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index visors_model_idx on public.visors (model_id, sort_order);
+
+create trigger visors_updated_at
+  before update on public.visors
+  for each row execute function public.set_updated_at();
+
+-- Clear is the visor that comes with the helmet, so it is included. The rest are
+-- unpriced until the client confirms them.
+insert into public.visors (id, model_id, name, kind, tint, opacity, metalness, price, sort_order)
+select 'clear-' || m.id, m.id, 'Clear', 'clear', '#ffffff', 0.12, 0.0, 0, 1 from public.helmet_models m
+union all
+select 'smoked-' || m.id, m.id, 'Smoked', 'smoked', '#2b2f36', 0.72, 0.0, null, 2 from public.helmet_models m
+union all
+select 'iridium-silver-' || m.id, m.id, 'Iridium silver', 'iridium', '#c9d4e2', 0.62, 0.85, null, 3 from public.helmet_models m
+union all
+select 'iridium-blue-' || m.id, m.id, 'Iridium blue', 'iridium', '#3f6ad8', 0.62, 0.85, null, 4 from public.helmet_models m
+on conflict (id) do nothing;
+
+alter table public.helmet_model_sizes enable row level security;
+alter table public.aero_kits enable row level security;
+alter table public.visors enable row level security;
+
+create policy "Anyone can read active sizes" on public.helmet_model_sizes
+  for select to anon, authenticated using (is_active or (select public.is_admin()));
+create policy "Admins manage sizes" on public.helmet_model_sizes
+  for all to authenticated using ((select public.is_full_admin())) with check ((select public.is_full_admin()));
+
+create policy "Anyone can read active aero kits" on public.aero_kits
+  for select to anon, authenticated using (is_active or (select public.is_admin()));
+create policy "Admins manage aero kits" on public.aero_kits
+  for all to authenticated using ((select public.is_full_admin())) with check ((select public.is_full_admin()));
+
+create policy "Anyone can read active visors" on public.visors
+  for select to anon, authenticated using (is_active or (select public.is_admin()));
+create policy "Admins manage visors" on public.visors
+  for all to authenticated using ((select public.is_full_admin())) with check ((select public.is_full_admin()));
+insert into app_private.schema_migrations (name) values ('20261018002300_options_and_pricing.sql') on conflict do nothing;
+
+-- ===== 20261018002400_production_scheduling.sql =====
+
+-- Phase 8: the 16-step helmet journey, part 3 of 4 — production scheduling and rush orders.
+--
+-- The customer picks when their helmet goes into the workshop, not when they order. The
+-- workshop controls how many helmets can start in any week, so a popular week cannot be
+-- oversold. Everything here works in whole weeks starting Monday, Europe/London.
+--
+-- Rush orders: the fees below are the client's provisional suggestion and have NOT been
+-- approved. Every tier therefore ships inactive, and production_settings.rush_enabled is
+-- false, so customers only ever see standard 6-week production until the client signs the
+-- prices off in the admin panel. place_order() refuses any tier that is not active.
+
+create table public.production_settings (
+  id smallint primary key default 1 check (id = 1),
+  -- Standard turnaround, in whole weeks from the chosen start date.
+  standard_lead_weeks integer not null default 6 check (standard_lead_weeks between 1 and 52),
+  -- Helmets that can start in one week, unless production_capacity overrides it.
+  weekly_capacity integer not null default 4 check (weekly_capacity >= 0),
+  -- The soonest a customer may book, counted in days from today.
+  booking_lead_days integer not null default 7 check (booking_lead_days >= 0),
+  -- How far ahead the calendar offers dates.
+  horizon_weeks integer not null default 26 check (horizon_weeks between 1 and 104),
+  -- Master switch for rush orders. Stays off until the client approves the fees.
+  rush_enabled boolean not null default false,
+  updated_at timestamptz not null default now()
+);
+
+create trigger production_settings_updated_at
+  before update on public.production_settings
+  for each row execute function public.set_updated_at();
+
+insert into public.production_settings (id) values (1) on conflict (id) do nothing;
+
+-- Turnaround options. 'standard' always exists and is always active; the rest are the
+-- client's draft rush pricing.
+create table public.production_rush_tiers (
+  key text primary key check (key ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
+  label text not null,
+  lead_weeks integer not null check (lead_weeks between 1 and 52),
+  -- Null means the fee is still to be confirmed. place_order() will not sell it.
+  fee numeric(10, 2) check (fee >= 0),
+  -- How many helmets on this tier may start in one week.
+  max_per_week integer not null default 1 check (max_per_week >= 0),
+  -- Provisional pricing the client has not approved yet.
+  is_draft boolean not null default true,
+  is_active boolean not null default false,
+  sort_order integer not null default 0,
+  updated_at timestamptz not null default now()
+);
+
+create trigger production_rush_tiers_updated_at
+  before update on public.production_rush_tiers
+  for each row execute function public.set_updated_at();
+
+insert into public.production_rush_tiers (key, label, lead_weeks, fee, max_per_week, is_draft, is_active, sort_order) values
+  ('standard', 'Standard', 6, 0, 1000, false, true, 1),
+  ('rush-3-week', 'Rush — 3 weeks', 3, 100, 2, true, false, 2),
+  ('rush-2-week', 'Rush — 2 weeks', 2, 150, 1, true, false, 3),
+  ('priority-1-week', 'Priority — 1 week', 1, 200, 1, true, false, 4)
+on conflict (key) do nothing;
+
+comment on table public.production_rush_tiers is
+  'Rush fees are the client''s provisional figures. Tiers stay inactive until approved; place_order() only sells active tiers with a non-null fee, and only while production_settings.rush_enabled is on.';
+
+-- Per-week override of production_settings.weekly_capacity. week_start is a Monday.
+create table public.production_capacity (
+  week_start date primary key,
+  slots integer not null check (slots >= 0),
+  note text not null default '',
+  updated_at timestamptz not null default now()
+);
+
+create trigger production_capacity_updated_at
+  before update on public.production_capacity
+  for each row execute function public.set_updated_at();
+
+-- Dates the workshop is closed. Inclusive at both ends.
+create table public.production_blackouts (
+  id uuid primary key default gen_random_uuid(),
+  starts_on date not null,
+  ends_on date not null,
+  reason text not null default '',
+  created_at timestamptz not null default now(),
+  check (ends_on >= starts_on)
+);
+
+create index production_blackouts_range_idx on public.production_blackouts (starts_on, ends_on);
+
+-- One booked production run. Written only by place_order() / book_production_slot().
+create table public.production_bookings (
+  id uuid primary key default gen_random_uuid(),
+  order_id uuid not null references public.orders (id) on delete cascade,
+  start_date date not null,
+  -- Monday of the week this booking consumes a slot in.
+  week_start date not null generated always as ((date_trunc('week', start_date::timestamp))::date) stored,
+  rush_tier text not null references public.production_rush_tiers (key) on update cascade,
+  lead_weeks integer not null check (lead_weeks between 1 and 52),
+  completion_date date not null,
+  helmet_count integer not null default 1 check (helmet_count >= 1),
+  created_at timestamptz not null default now()
+);
+
+create index production_bookings_week_idx on public.production_bookings (week_start);
+create index production_bookings_order_idx on public.production_bookings (order_id);
+
+alter table public.orders
+  add column production_start_date date,
+  add column estimated_completion_date date,
+  add column rush_tier text references public.production_rush_tiers (key) on update cascade,
+  add column rush_fee numeric(10, 2) not null default 0 check (rush_fee >= 0);
+
+-- ---------------------------------------------------------------------------
+-- Reading availability
+-- ---------------------------------------------------------------------------
+
+/** Monday of the week containing a date. */
+create or replace function public.production_week_start(p_date date)
+returns date
+language sql
+immutable
+as $$ select (date_trunc('week', p_date::timestamp))::date $$;
+
+/** Slots in a week: the override if there is one, otherwise the standing capacity. */
+create or replace function public.production_week_slots(p_week_start date)
+returns integer
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce(
+    (select c.slots from public.production_capacity c where c.week_start = p_week_start),
+    (select s.weekly_capacity from public.production_settings s where s.id = 1),
+    0
+  )
+$$;
+
+/**
+ * The calendar behind step 15. One row per bookable week, with how much is left.
+ * Weeks that are fully booked, blacked out or outside the booking window are still
+ * returned, with available = 0, so the UI can grey them out rather than hide them.
+ */
+create or replace function public.production_availability(p_weeks integer default null)
+returns table (
+  week_start date,
+  slots integer,
+  booked integer,
+  available integer,
+  is_blacked_out boolean,
+  is_bookable boolean
+)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  with settings as (
+    select * from public.production_settings where id = 1
+  ),
+  weeks as (
+    select public.production_week_start((current_date + g.n)::date) as week_start
+    from settings s,
+      generate_series(
+        s.booking_lead_days,
+        s.booking_lead_days + (coalesce(p_weeks, s.horizon_weeks) * 7),
+        7
+      ) as g(n)
+  ),
+  distinct_weeks as (
+    select distinct week_start from weeks
+  )
+  select
+    w.week_start,
+    public.production_week_slots(w.week_start) as slots,
+    coalesce((
+      select sum(b.helmet_count)::integer
+      from public.production_bookings b
+      where b.week_start = w.week_start
+    ), 0) as booked,
+    greatest(
+      public.production_week_slots(w.week_start) - coalesce((
+        select sum(b.helmet_count)::integer
+        from public.production_bookings b
+        where b.week_start = w.week_start
+      ), 0),
+      0
+    ) as available,
+    exists (
+      select 1 from public.production_blackouts x
+      where x.starts_on <= (w.week_start + 4) and x.ends_on >= w.week_start
+    ) as is_blacked_out,
+    (
+      w.week_start >= public.production_week_start((current_date + (select booking_lead_days from settings))::date)
+      and not exists (
+        select 1 from public.production_blackouts x
+        where x.starts_on <= (w.week_start + 4) and x.ends_on >= w.week_start
+      )
+      and public.production_week_slots(w.week_start) - coalesce((
+        select sum(b.helmet_count)::integer
+        from public.production_bookings b
+        where b.week_start = w.week_start
+      ), 0) > 0
+    ) as is_bookable
+  from distinct_weeks w
+  order by w.week_start
+$$;
+
+revoke all on function public.production_availability(integer) from public;
+grant execute on function public.production_availability(integer) to anon, authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Booking
+-- ---------------------------------------------------------------------------
+
+/**
+ * Takes a production slot for an order, or raises.
+ *
+ * Concurrency: an advisory lock on the week is taken for the rest of the transaction
+ * before the slot is counted, so two checkouts racing for the last slot in a week are
+ * serialised and the loser is told the week filled up. Nothing else writes this table —
+ * there is no insert policy, and both callers are security definer.
+ *
+ * Returns the completion date.
+ */
+create or replace function public.book_production_slot(
+  p_order_id uuid,
+  p_start_date date,
+  p_rush_tier text,
+  p_helmet_count integer default 1
+)
+returns date
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_settings public.production_settings;
+  v_tier public.production_rush_tiers;
+  v_week date;
+  v_booked integer;
+  v_slots integer;
+  v_tier_booked integer;
+  v_completion date;
+begin
+  select * into v_settings from public.production_settings where id = 1;
+  if not found then
+    raise exception 'Production scheduling is not set up yet.' using errcode = '22023';
+  end if;
+
+  select * into v_tier from public.production_rush_tiers where key = coalesce(p_rush_tier, 'standard');
+  if not found or not v_tier.is_active then
+    raise exception 'That turnaround is not available.' using errcode = '22023';
+  end if;
+  if v_tier.key <> 'standard' and not v_settings.rush_enabled then
+    raise exception 'Rush orders are not available at the moment.' using errcode = '22023';
+  end if;
+  if v_tier.fee is null then
+    raise exception '% is priced on request. Please contact us to book it.', v_tier.label using errcode = '22023';
+  end if;
+
+  if p_start_date is null then
+    raise exception 'Please choose when you would like production to start.' using errcode = '22023';
+  end if;
+  if p_start_date < (current_date + v_settings.booking_lead_days) then
+    raise exception 'The earliest production can start is %.', to_char(current_date + v_settings.booking_lead_days, 'DD Mon YYYY') using errcode = '22023';
+  end if;
+  if p_start_date > (current_date + (v_settings.horizon_weeks * 7)) then
+    raise exception 'We are not taking production bookings that far ahead yet.' using errcode = '22023';
+  end if;
+
+  v_week := public.production_week_start(p_start_date);
+
+  if exists (
+    select 1 from public.production_blackouts x
+    where x.starts_on <= p_start_date and x.ends_on >= p_start_date
+  ) then
+    raise exception 'The workshop is closed that week. Please choose another start date.' using errcode = '22023';
+  end if;
+
+  -- Serialise everyone booking into this week.
+  perform pg_advisory_xact_lock(hashtext('lucas-production-week'), hashtext(v_week::text));
+
+  v_slots := public.production_week_slots(v_week);
+  select coalesce(sum(b.helmet_count), 0) into v_booked
+  from public.production_bookings b where b.week_start = v_week;
+
+  if v_booked + p_helmet_count > v_slots then
+    raise exception 'That week is now full. Please choose another production start date.' using errcode = '22023';
+  end if;
+
+  if v_tier.key <> 'standard' then
+    select coalesce(sum(b.helmet_count), 0) into v_tier_booked
+    from public.production_bookings b
+    where b.week_start = v_week and b.rush_tier = v_tier.key;
+    if v_tier_booked + p_helmet_count > v_tier.max_per_week then
+      raise exception 'We are already full for % that week.', v_tier.label using errcode = '22023';
+    end if;
+  end if;
+
+  v_completion := p_start_date + (v_tier.lead_weeks * 7);
+
+  insert into public.production_bookings (order_id, start_date, rush_tier, lead_weeks, completion_date, helmet_count)
+  values (p_order_id, p_start_date, v_tier.key, v_tier.lead_weeks, v_completion, p_helmet_count);
+
+  return v_completion;
+end;
+$$;
+
+revoke all on function public.book_production_slot(uuid, date, text, integer) from public, anon, authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Row level security
+-- ---------------------------------------------------------------------------
+alter table public.production_settings enable row level security;
+alter table public.production_rush_tiers enable row level security;
+alter table public.production_capacity enable row level security;
+alter table public.production_blackouts enable row level security;
+alter table public.production_bookings enable row level security;
+
+-- Customers need the standard lead time and the rush tiers that are actually on sale,
+-- so the builder can show a completion date before they order.
+create policy "Anyone can read production settings" on public.production_settings
+  for select to anon, authenticated using (true);
+create policy "Admins manage production settings" on public.production_settings
+  for all to authenticated using ((select public.is_full_admin())) with check ((select public.is_full_admin()));
+
+create policy "Anyone can read live tiers" on public.production_rush_tiers
+  for select to anon, authenticated using (is_active or (select public.is_admin()));
+create policy "Admins manage tiers" on public.production_rush_tiers
+  for all to authenticated using ((select public.is_full_admin())) with check ((select public.is_full_admin()));
+
+-- Capacity and blackouts are workshop business; availability is published through
+-- public.production_availability() instead, which only exposes how much is left.
+create policy "Staff read capacity" on public.production_capacity
+  for select to authenticated using ((select public.is_admin()));
+create policy "Admins manage capacity" on public.production_capacity
+  for all to authenticated using ((select public.is_full_admin())) with check ((select public.is_full_admin()));
+
+create policy "Staff read blackouts" on public.production_blackouts
+  for select to authenticated using ((select public.is_admin()));
+create policy "Admins manage blackouts" on public.production_blackouts
+  for all to authenticated using ((select public.is_full_admin())) with check ((select public.is_full_admin()));
+
+-- No insert policy: bookings are only ever made by book_production_slot().
+create policy "Customers read own bookings" on public.production_bookings
+  for select to authenticated
+  using (
+    (select public.is_admin())
+    or exists (select 1 from public.orders o where o.id = order_id and o.user_id = (select auth.uid()))
+  );
+create policy "Admins manage bookings" on public.production_bookings
+  for all to authenticated using ((select public.is_full_admin())) with check ((select public.is_full_admin()));
+insert into app_private.schema_migrations (name) values ('20261018002400_production_scheduling.sql') on conflict do nothing;
+
+-- ===== 20261018002500_proofs_and_production.sql =====
+
+-- Phase 8: the 16-step helmet journey, part 4 of 4 — proofs, production tracking, fixes.
+--
+-- Proof approval has always been real work done over email: ~20 places in the UI promise
+-- the customer a proof, but nothing recorded one. This gives it a data model, so the
+-- workshop can upload a proof against an order, the customer can approve it or ask for
+-- changes, and production cannot start until they have.
+
+-- ---------------------------------------------------------------------------
+-- Order statuses for the production workflow.
+-- The original seven are kept so existing orders stay valid. 'ready' now means ready
+-- for collection and 'shipped' means dispatched; both already read that way to customers.
+-- ---------------------------------------------------------------------------
+alter table public.orders drop constraint orders_status_check;
+alter table public.orders
+  add constraint orders_status_check
+  check (status in (
+    'pending',                 -- Order placed
+    'awaiting_design_review',  -- With the workshop to check the artwork
+    'awaiting_proof_approval', -- Proof sent, waiting on the customer
+    'approved_for_production', -- Customer approved the proof
+    'scheduled',               -- Slot booked, waiting for its start date
+    'confirmed',               -- Legacy: kept so existing orders remain valid
+    'in_production',
+    'quality_check',
+    'ready',                   -- Ready for collection
+    'shipped',                 -- Dispatched
+    'completed',
+    'cancelled'
+  ));
+
+-- ---------------------------------------------------------------------------
+-- Proofs and completed-helmet photographs.
+-- ---------------------------------------------------------------------------
+create table public.order_proofs (
+  id uuid primary key default gen_random_uuid(),
+  order_id uuid not null references public.orders (id) on delete cascade,
+  -- Null when the proof covers the whole order rather than one helmet.
+  order_item_id uuid references public.order_items (id) on delete cascade,
+  kind text not null default 'design_proof' check (kind in ('design_proof', 'production_photo')),
+  version integer not null default 1 check (version >= 1),
+  -- Path in the private 'order-proofs' bucket: <order id>/<uuid>.<ext>
+  image_path text not null,
+  caption text not null default '',
+  -- Only meaningful for a design_proof.
+  status text not null default 'pending' check (status in ('pending', 'approved', 'changes_requested')),
+  customer_note text not null default '',
+  responded_at timestamptz,
+  created_by uuid references auth.users (id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index order_proofs_order_idx on public.order_proofs (order_id, kind, version desc);
+
+create trigger order_proofs_updated_at
+  before update on public.order_proofs
+  for each row execute function public.set_updated_at();
+
+alter table public.order_proofs enable row level security;
+
+create policy "Customers read own proofs" on public.order_proofs
+  for select to authenticated
+  using (
+    (select public.is_admin())
+    or exists (select 1 from public.orders o where o.id = order_id and o.user_id = (select auth.uid()))
+  );
+
+-- Staff who handle orders upload and manage proofs.
+create policy "Staff manage proofs" on public.order_proofs
+  for all to authenticated
+  using ((select public.is_admin()))
+  with check ((select public.is_admin()));
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('order-proofs', 'order-proofs', false, 10485760,
+  array['image/webp', 'image/jpeg', 'image/png', 'application/pdf'])
+on conflict (id) do nothing;
+
+create policy "Order proofs: staff upload" on storage.objects
+  for insert to authenticated
+  with check (bucket_id = 'order-proofs' and (select public.is_admin()));
+
+create policy "Order proofs: staff manage" on storage.objects
+  for update to authenticated
+  using (bucket_id = 'order-proofs' and (select public.is_admin()));
+
+create policy "Order proofs: staff delete" on storage.objects
+  for delete to authenticated
+  using (bucket_id = 'order-proofs' and (select public.is_admin()));
+
+-- The first folder of the path is the order id, so a customer can read the proofs
+-- for their own orders and nobody else's.
+create policy "Order proofs: owner reads" on storage.objects
+  for select to authenticated
+  using (
+    bucket_id = 'order-proofs'
+    and (
+      (select public.is_admin())
+      or exists (
+        select 1 from public.orders o
+        where o.user_id = (select auth.uid())
+          and o.id::text = (storage.foldername(name))[1]
+      )
+    )
+  );
+
+/**
+ * The customer's answer to a proof. Approving moves the order on to
+ * 'approved_for_production'; asking for changes sends it back to the workshop.
+ * Both write an order_status_events row, so the history reads as one story.
+ */
+create or replace function public.respond_to_proof(
+  p_proof_id uuid,
+  p_approved boolean,
+  p_note text default ''
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user uuid := auth.uid();
+  v_proof public.order_proofs;
+  v_order public.orders;
+  v_status text;
+begin
+  if v_user is null then
+    raise exception 'Please sign in.' using errcode = '28000';
+  end if;
+
+  select * into v_proof from public.order_proofs where id = p_proof_id;
+  if not found or v_proof.kind <> 'design_proof' then
+    raise exception 'That proof is no longer available.' using errcode = '22023';
+  end if;
+
+  select * into v_order from public.orders where id = v_proof.order_id;
+  if not found or v_order.user_id is distinct from v_user then
+    raise exception 'That proof is no longer available.' using errcode = '22023';
+  end if;
+
+  if v_proof.status <> 'pending' then
+    raise exception 'You have already answered this proof.' using errcode = '22023';
+  end if;
+
+  v_status := case when p_approved then 'approved' else 'changes_requested' end;
+
+  update public.order_proofs
+  set status = v_status,
+      customer_note = left(coalesce(p_note, ''), 1000),
+      responded_at = now()
+  where id = p_proof_id;
+
+  update public.orders
+  set status = case when p_approved then 'approved_for_production' else 'awaiting_design_review' end
+  where id = v_proof.order_id;
+
+  insert into public.order_status_events (order_id, status, payment_status, note, created_by)
+  values (
+    v_proof.order_id,
+    case when p_approved then 'approved_for_production' else 'awaiting_design_review' end,
+    v_order.payment_status,
+    case when p_approved then 'Proof approved by the customer.' else 'Customer asked for changes to the proof.' end,
+    v_user
+  );
+end;
+$$;
+
+revoke all on function public.respond_to_proof(uuid, boolean, text) from public, anon;
+grant execute on function public.respond_to_proof(uuid, boolean, text) to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Two fixes to existing schema.
+-- ---------------------------------------------------------------------------
+
+-- order_items.quantity still carried the helmet-only limit of 10, while shop product
+-- lines have allowed up to 99 since migration 1100. Any basket with 11 or more of a
+-- shop product would abort the whole order at insert time.
+alter table public.order_items drop constraint order_items_quantity_check;
+alter table public.order_items
+  add constraint order_items_quantity_check check (quantity between 1 and 99);
+
+-- A 16-step build carries per-region treatments, personalisation and logo transforms,
+-- which no longer fit in 4 KB.
+alter table public.saved_designs drop constraint saved_designs_config_check;
+alter table public.saved_designs
+  add constraint saved_designs_config_check check (pg_column_size(config) <= 16000);
+insert into app_private.schema_migrations (name) values ('20261018002500_proofs_and_production.sql') on conflict do nothing;
+
+-- ===== 20261018002600_place_order_v6.sql =====
+
+-- Phase 8: checkout for the 16-step builder.
+--
+-- As migration 1500, plus:
+--   * route — the customer may send their own helmet, so the new-helmet price is only
+--     added when they want one (step 1);
+--   * per-size pricing from helmet_model_sizes (step 1);
+--   * aero kits (step 2);
+--   * per-region treatments driven by template_regions, so a template can have any number
+--     of editable areas and pinstripes rather than the hard-coded three (steps 3-7);
+--   * metallic as well as chrome, with the rule that either forces a gloss lacquer (step 8);
+--   * initials, flags and free text alongside name and number (step 9);
+--   * several sponsor logos instead of one (step 10);
+--   * visors and visor strips (steps 12-13);
+--   * a booked production slot and any rush fee (step 15).
+--
+-- Two rules run through all of it:
+--   * the browser never sends a price; every figure is read from the database here;
+--   * an option whose price is null has not been agreed with the client yet, so it is
+--     previewable but unsellable, and checkout stops with a message naming it.
+--
+-- The old flat config (base/graphic/accent) is still accepted, so baskets, saved designs
+-- and share links created before this migration keep working.
+
+drop function if exists public.place_order(jsonb, jsonb, jsonb, text, text);
+
+create or replace function public.place_order(
+  p_items jsonb,
+  p_customer jsonb,
+  p_shipping jsonb,
+  p_delivery_method text,
+  p_notes text default '',
+  p_production jsonb default '{}'::jsonb
+)
+returns table (order_id uuid, order_number text)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user uuid := auth.uid();
+  v_item jsonb;
+  v_cfg jsonb;
+  v_product public.products;
+  v_model public.helmet_models;
+  v_film public.films;
+  v_option public.configurator_options;
+  v_variant public.shop_variants;
+  v_shop_product public.shop_products;
+  v_store public.stores;
+  v_template public.design_templates;
+  v_region public.template_regions;
+  v_aero public.aero_kits;
+  v_visor public.visors;
+  v_tier public.production_rush_tiers;
+  v_settings public.production_settings;
+  v_size_price numeric(10, 2);
+  v_part text;
+  v_kind text;
+  v_value text;
+  v_part_label text;
+  v_qty integer;
+  v_unit numeric(10, 2);
+  v_subtotal numeric(10, 2) := 0;
+  v_summary jsonb;
+  v_lines jsonb := '[]'::jsonb;
+  v_delivery jsonb;
+  v_delivery_price numeric(10, 2);
+  v_order_id uuid;
+  v_order_number text;
+  v_text text;
+  v_position text;
+  v_logo text;
+  v_key text;
+  v_stock_after integer;
+  v_finish jsonb;
+  v_parts_live boolean;
+  v_regions jsonb;
+  v_entry jsonb;
+  v_person jsonb;
+  v_logo_item jsonb;
+  v_requires_gloss boolean;
+  v_region_count integer;
+  v_helmets integer := 0;
+  v_rush_fee numeric(10, 2) := 0;
+  v_tier_key text;
+  v_start_date date;
+  v_completion date;
+  v_route text;
+  v_part_labels constant jsonb := jsonb_build_object('base', 'Shell', 'graphic', 'Graphic', 'accent', 'Pinstripe');
+  v_person_labels constant jsonb := jsonb_build_object(
+    'name', 'Name on helmet', 'number', 'Race number', 'initials', 'Initials',
+    'flag', 'National flag', 'text', 'Custom text'
+  );
+  v_positions constant jsonb := jsonb_build_object(
+    'sides', 'Both sides', 'left', 'Left side', 'right', 'Right side',
+    'front', 'Front', 'back', 'Back', 'top', 'Top'
+  );
+begin
+  if v_user is null then
+    raise exception 'Please sign in to place an order.' using errcode = '28000';
+  end if;
+
+  if jsonb_typeof(p_items) is distinct from 'array' or jsonb_array_length(p_items) = 0 then
+    raise exception 'Your basket is empty.' using errcode = '22023';
+  end if;
+  if jsonb_array_length(p_items) > 50 then
+    raise exception 'Too many items in one order.' using errcode = '22023';
+  end if;
+
+  if coalesce(trim(p_customer ->> 'name'), '') = '' or coalesce(trim(p_customer ->> 'email'), '') = '' then
+    raise exception 'Name and email are required.' using errcode = '22023';
+  end if;
+
+  select d.value into v_delivery
+  from public.site_settings s
+  cross join lateral jsonb_array_elements(s.delivery_methods) as d(value)
+  where d.value ->> 'id' = p_delivery_method and coalesce((d.value ->> 'active')::boolean, true)
+  limit 1;
+  if v_delivery is null then
+    raise exception 'Please choose a delivery option.' using errcode = '22023';
+  end if;
+  v_delivery_price := coalesce((v_delivery ->> 'price')::numeric, 0);
+  select coalesce(s.kart_parts_live, false) into v_parts_live from public.site_settings s where s.id = 1;
+
+  if (v_delivery ->> 'requires_address')::boolean is not false
+     and (coalesce(trim(p_shipping ->> 'line1'), '') = '' or coalesce(trim(p_shipping ->> 'postcode'), '') = '') then
+    raise exception 'A delivery address is required for this delivery option.' using errcode = '22023';
+  end if;
+
+  for v_item in select item.value from jsonb_array_elements(p_items) as item(value)
+  loop
+    -- Shop products -----------------------------------------------------------
+    if v_item ->> 'kind' = 'product' then
+      v_qty := coalesce((v_item ->> 'quantity')::integer, 1);
+      if v_qty < 1 or v_qty > 99 then
+        raise exception 'Quantities must be between 1 and 99.' using errcode = '22023';
+      end if;
+
+      select * into v_variant from public.shop_variants
+      where id = (v_item ->> 'variant_id')::uuid and is_active
+      for update;
+      if not found then
+        raise exception 'An item in your basket is no longer available.' using errcode = '22023';
+      end if;
+      select * into v_shop_product from public.shop_products where id = v_variant.product_id and is_active;
+      if not found then
+        raise exception 'An item in your basket is no longer available.' using errcode = '22023';
+      end if;
+      select * into v_store from public.stores where id = v_shop_product.store_id;
+      if not v_store.purchasable then
+        raise exception '% is ordered directly with %.', v_shop_product.title, v_store.name using errcode = '22023';
+      end if;
+
+      if v_variant.track_stock and not v_variant.allow_backorder and v_variant.stock_quantity < v_qty then
+        if v_variant.stock_quantity <= 0 then
+          raise exception '% is out of stock.', v_shop_product.title using errcode = '22023';
+        end if;
+        raise exception 'Only % of % left in stock.', v_variant.stock_quantity, v_shop_product.title using errcode = '22023';
+      end if;
+
+      v_summary := '[]'::jsonb;
+      for v_key in select key from jsonb_each_text(v_variant.option_values) order by key
+      loop
+        v_summary := v_summary || jsonb_build_object('label', v_key, 'value', v_variant.option_values ->> v_key);
+      end loop;
+      if coalesce(v_variant.sku, '') <> '' then
+        v_summary := v_summary || jsonb_build_object('label', 'Part number', 'value', v_variant.sku);
+      end if;
+
+      v_unit := v_variant.price;
+      v_finish := v_item -> 'finish';
+      if v_shop_product.customisable and cardinality(v_shop_product.custom_finishes) > 0 then
+        if not coalesce(v_parts_live, false) and not public.is_admin() then
+          raise exception 'Custom parts aren''t available to order yet.' using errcode = '22023';
+        end if;
+        if v_finish is null or jsonb_typeof(v_finish) <> 'object' then
+          raise exception 'Choose a finish for %.', v_shop_product.title using errcode = '22023';
+        end if;
+        v_kind := v_finish ->> 'type';
+        if v_kind is null or not (v_kind = any (v_shop_product.custom_finishes)) then
+          raise exception '% isn''t available in that finish.', v_shop_product.title using errcode = '22023';
+        end if;
+        v_unit := v_unit + v_shop_product.custom_fee;
+
+        if v_kind = 'paint' then
+          select * into v_option from public.configurator_options
+          where option_group = 'base' and value = v_finish ->> 'value' and is_active;
+          if not found then
+            raise exception 'The colour you chose is no longer available.' using errcode = '22023';
+          end if;
+          if v_option.price is null then
+            raise exception '% is priced on request. Please ask us to confirm it before ordering.', v_option.label using errcode = '22023';
+          end if;
+          v_unit := v_unit + v_option.price;
+          v_summary := v_summary || jsonb_build_object('label', 'Finish', 'value', 'Paint · ' || v_option.label);
+        elsif v_kind = 'film' then
+          select * into v_film from public.films where id = v_finish ->> 'value' and is_active and texture_url is not null;
+          if not found then
+            raise exception 'The hydro-dip film you chose is no longer available.' using errcode = '22023';
+          end if;
+          v_unit := v_unit + v_film.price;
+          v_summary := v_summary || jsonb_build_object('label', 'Finish', 'value', 'Hydro-dip film · ' || v_film.name);
+        else
+          select * into v_option from public.configurator_options
+          where option_group = 'material' and value = 'chrome' and is_active;
+          if not found then
+            raise exception 'Chrome isn''t available at the moment.' using errcode = '22023';
+          end if;
+          if v_option.price is null then
+            raise exception 'Chrome is priced on request. Please ask us to confirm it before ordering.' using errcode = '22023';
+          end if;
+          v_unit := v_unit + v_option.price;
+          v_summary := v_summary || jsonb_build_object('label', 'Finish', 'value', v_option.label);
+        end if;
+
+        if v_kind in ('paint', 'film') then
+          select * into v_option from public.configurator_options
+          where option_group = 'finish' and value = v_finish ->> 'lacquer' and is_active;
+          if not found then
+            raise exception 'Please choose a lacquer for %.', v_shop_product.title using errcode = '22023';
+          end if;
+          if v_option.price is null then
+            raise exception '% is priced on request. Please ask us to confirm it before ordering.', v_option.label using errcode = '22023';
+          end if;
+          v_unit := v_unit + v_option.price;
+          v_summary := v_summary || jsonb_build_object('label', 'Lacquer', 'value', v_option.label);
+        end if;
+
+        v_finish := jsonb_build_object(
+          'type', v_kind,
+          'value', case when v_kind = 'chrome' then 'chrome' else v_finish ->> 'value' end,
+          'lacquer', case when v_kind = 'chrome' then '' else v_finish ->> 'lacquer' end
+        );
+      elsif v_finish is not null and jsonb_typeof(v_finish) <> 'null' then
+        raise exception '% can''t be customised.', v_shop_product.title using errcode = '22023';
+      else
+        v_finish := null;
+      end if;
+
+      v_stock_after := null;
+      if v_variant.track_stock then
+        update public.shop_variants set stock_quantity = stock_quantity - v_qty
+        where id = v_variant.id
+        returning stock_quantity into v_stock_after;
+      end if;
+
+      v_subtotal := v_subtotal + v_unit * v_qty;
+      v_lines := v_lines || jsonb_build_object(
+        'kind', 'product',
+        'store_id', v_shop_product.store_id,
+        'variant_id', v_variant.id,
+        'stock_after', v_stock_after,
+        'slug', v_shop_product.slug,
+        'name', v_shop_product.title,
+        'configuration', jsonb_build_object(
+          'summary', v_summary,
+          'image', v_shop_product.images[1],
+          'store', v_shop_product.store_id,
+          'finish', v_finish
+        ),
+        'unit_price', v_unit,
+        'quantity', v_qty
+      );
+      continue;
+    end if;
+
+    -- Helmet builds -----------------------------------------------------------
+    v_cfg := v_item -> 'config';
+    v_qty := coalesce((v_item ->> 'quantity')::integer, 1);
+    if v_qty < 1 or v_qty > 10 then
+      raise exception 'Quantities must be between 1 and 10.' using errcode = '22023';
+    end if;
+    v_helmets := v_helmets + v_qty;
+    v_requires_gloss := false;
+
+    select * into v_product from public.products where slug = v_item ->> 'slug' and is_active;
+    if not found then
+      raise exception 'A design in your basket is no longer available.' using errcode = '22023';
+    end if;
+    if v_product.base_price is null then
+      raise exception '% is priced on request. Please send us an enquiry instead.', v_product.name using errcode = '22023';
+    end if;
+
+    if not ((v_cfg ->> 'model') = any (v_product.model_ids)) then
+      raise exception '% is not available on that helmet.', v_product.name using errcode = '22023';
+    end if;
+    select * into v_model from public.helmet_models where id = v_cfg ->> 'model' and is_active;
+    if not found then
+      raise exception 'That helmet model is no longer available.' using errcode = '22023';
+    end if;
+
+    -- Size: priced from helmet_model_sizes when the model lists its sizes there.
+    select s.price into v_size_price
+    from public.helmet_model_sizes s
+    where s.model_id = v_model.id and s.size = v_cfg ->> 'size' and s.is_active;
+    if found then
+      if v_size_price is null then
+        raise exception 'Size % is priced on request. Please ask us to confirm it before ordering.', v_cfg ->> 'size' using errcode = '22023';
+      end if;
+    else
+      if not ((v_cfg ->> 'size') = any (v_model.sizes)) then
+        raise exception 'Please choose a valid helmet size.' using errcode = '22023';
+      end if;
+      v_size_price := 0;
+    end if;
+
+    -- Route: a new helmet from us, or the customer's own shell.
+    v_route := coalesce(nullif(btrim(coalesce(v_cfg ->> 'route', '')), ''), 'new');
+    select * into v_option from public.configurator_options
+    where option_group = 'route' and value = v_route and is_active;
+    if not found then
+      raise exception 'Please choose whether we supply the helmet.' using errcode = '22023';
+    end if;
+    if v_option.price is null then
+      raise exception '% is priced on request. Please ask us to confirm it before ordering.', v_option.label using errcode = '22023';
+    end if;
+
+    v_unit := v_product.base_price + v_option.price + v_size_price;
+    if v_route = 'new' then
+      v_unit := v_unit + v_model.new_helmet_price;
+    end if;
+
+    v_summary := jsonb_build_array(
+      jsonb_build_object('label', 'Helmet', 'value', v_model.name || case when v_route = 'new' then ' (new)' else ' (your own shell)' end),
+      jsonb_build_object('label', 'Helmet size', 'value', v_cfg ->> 'size'),
+      jsonb_build_object('label', 'Template', 'value', v_product.name)
+    );
+
+    -- Aero kit (step 2). Older builds carry a yes/no spoiler instead.
+    if v_cfg ? 'aero' and coalesce(btrim(v_cfg ->> 'aero'), '') <> '' then
+      select * into v_aero from public.aero_kits
+      where id = v_cfg ->> 'aero' and model_id = v_model.id and is_active;
+      if not found then
+        raise exception 'That aero kit isn''t available on this helmet.' using errcode = '22023';
+      end if;
+      if v_aero.price is null then
+        raise exception '% is priced on request. Please ask us to confirm it before ordering.', v_aero.name using errcode = '22023';
+      end if;
+      v_unit := v_unit + v_aero.price;
+      v_summary := v_summary || jsonb_build_object('label', 'Aero kit', 'value', v_aero.name);
+    else
+      select * into v_option from public.configurator_options where option_group = 'spoiler' and value = v_cfg ->> 'spoiler' and is_active;
+      if not found then
+        raise exception 'Please choose whether you''d like a spoiler.' using errcode = '22023';
+      end if;
+      if v_option.price is null then
+        raise exception '% is priced on request. Please ask us to confirm it before ordering.', v_option.label using errcode = '22023';
+      end if;
+      v_unit := v_unit + v_option.price;
+      v_summary := v_summary || jsonb_build_object('label', 'Rear spoiler', 'value', v_option.label);
+    end if;
+
+    -- Design regions (steps 4-7) ----------------------------------------------
+    v_regions := v_cfg -> 'regions';
+    v_region_count := 0;
+    if v_regions is not null and jsonb_typeof(v_regions) = 'object' then
+      select * into v_template from public.design_templates
+      where product_slug = v_product.slug and model_id = v_model.id and is_active;
+      if found then
+        for v_region in
+          select * from public.template_regions r where r.template_id = v_template.id order by r.sort_order
+        loop
+          v_region_count := v_region_count + 1;
+          v_entry := v_regions -> v_region.key;
+          if v_entry is null or jsonb_typeof(v_entry) <> 'object' then
+            if v_region.key = 'base' then
+              raise exception 'Choose a colour or film for the shell.' using errcode = '22023';
+            end if;
+            continue;
+          end if;
+
+          v_kind := v_entry ->> 'kind';
+          v_value := v_entry ->> 'value';
+
+          if v_kind = 'colour' then
+            select * into v_option from public.configurator_options
+            where option_group = 'base' and value = v_value and is_active;
+            if not found then
+              raise exception 'One of the colours you chose is no longer available.' using errcode = '22023';
+            end if;
+            if v_option.price is null then
+              raise exception '% is priced on request. Please ask us to confirm it before ordering.', v_option.label using errcode = '22023';
+            end if;
+            v_unit := v_unit + v_option.price;
+            v_summary := v_summary || jsonb_build_object('label', v_region.label, 'value', v_option.label);
+
+          elsif v_kind = 'film' then
+            if not v_region.allows_film then
+              raise exception 'A hydro-dip film can''t be applied to the %.', lower(v_region.label) using errcode = '22023';
+            end if;
+            select * into v_film from public.films where id = v_value and is_active and texture_url is not null;
+            if not found then
+              raise exception 'One of the hydro-dip films you chose is no longer available.' using errcode = '22023';
+            end if;
+            v_unit := v_unit + v_film.price;
+            v_summary := v_summary || jsonb_build_object('label', v_region.label, 'value', 'Film ' || v_film.name);
+
+          elsif v_kind in ('chrome', 'metallic') then
+            if v_kind = 'chrome' and not v_region.allows_chrome then
+              raise exception 'Chrome can''t be applied to the %.', lower(v_region.label) using errcode = '22023';
+            end if;
+            if v_kind = 'metallic' and not v_region.allows_metallic then
+              raise exception 'Metallic paint can''t be applied to the %.', lower(v_region.label) using errcode = '22023';
+            end if;
+            select * into v_option from public.configurator_options
+            where option_group = 'material' and value = v_kind and is_active;
+            if not found then
+              raise exception 'That paint finish isn''t available at the moment.' using errcode = '22023';
+            end if;
+            if v_option.price is null then
+              raise exception '% paint is priced on request. Please ask us to confirm it before ordering.', v_option.label using errcode = '22023';
+            end if;
+            v_unit := v_unit + v_option.price;
+            v_requires_gloss := true;
+            v_summary := v_summary || jsonb_build_object('label', v_region.label, 'value', v_option.label);
+
+          else
+            raise exception 'One of the helmet parts isn''t set up correctly.' using errcode = '22023';
+          end if;
+        end loop;
+      end if;
+    end if;
+
+    -- Older builds, and templates with no regions recorded yet.
+    if v_region_count = 0 then
+      foreach v_part in array array['base', 'graphic', 'accent']
+      loop
+        v_kind := v_cfg ->> (v_part || 'Kind');
+        v_value := v_cfg ->> v_part;
+        v_part_label := v_part_labels ->> v_part;
+        if v_kind is null then
+          if v_part = 'base' then
+            raise exception 'Choose a colour or film for the shell.' using errcode = '22023';
+          end if;
+          continue;
+        end if;
+
+        if v_kind = 'colour' then
+          select * into v_option from public.configurator_options
+          where option_group = 'base' and value = v_value and is_active;
+          if not found then
+            raise exception 'One of the colours you chose is no longer available.' using errcode = '22023';
+          end if;
+          if v_option.price is null then
+            raise exception '% is priced on request. Please ask us to confirm it before ordering.', v_option.label using errcode = '22023';
+          end if;
+          v_unit := v_unit + v_option.price;
+          v_summary := v_summary || jsonb_build_object('label', v_part_label, 'value', v_option.label);
+        elsif v_kind = 'film' then
+          select * into v_film from public.films where id = v_value and is_active and texture_url is not null;
+          if not found then
+            raise exception 'One of the hydro-dip films you chose is no longer available.' using errcode = '22023';
+          end if;
+          v_unit := v_unit + v_film.price;
+          v_summary := v_summary || jsonb_build_object('label', v_part_label, 'value', 'Film ' || v_film.name);
+        elsif v_kind in ('chrome', 'metallic') and v_part = 'base' then
+          select * into v_option from public.configurator_options
+          where option_group = 'material' and value = v_kind and is_active;
+          if not found then
+            raise exception 'That paint finish isn''t available at the moment.' using errcode = '22023';
+          end if;
+          if v_option.price is null then
+            raise exception '% paint is priced on request. Please ask us to confirm it before ordering.', v_option.label using errcode = '22023';
+          end if;
+          v_unit := v_unit + v_option.price;
+          v_requires_gloss := true;
+          v_summary := v_summary || jsonb_build_object('label', v_part_label, 'value', v_option.label);
+        else
+          raise exception 'One of the helmet parts isn''t set up correctly.' using errcode = '22023';
+        end if;
+      end loop;
+    end if;
+
+    -- Overall finish (step 8). Metallic and chrome are lacquered gloss.
+    select * into v_option from public.configurator_options where option_group = 'finish' and value = v_cfg ->> 'finish' and is_active;
+    if not found then
+      raise exception 'Please choose a finish.' using errcode = '22023';
+    end if;
+    if v_requires_gloss and v_option.value <> 'gloss' then
+      raise exception 'Metallic and chrome paint are finished in gloss. Please choose gloss, or change those sections.' using errcode = '22023';
+    end if;
+    if v_option.price is null then
+      raise exception '% is priced on request. Please ask us to confirm it before ordering.', v_option.label using errcode = '22023';
+    end if;
+    v_unit := v_unit + v_option.price;
+    v_summary := v_summary || jsonb_build_object('label', 'Finish', 'value', v_option.label);
+
+    select * into v_option from public.configurator_options where option_group = 'trim' and value = v_cfg ->> 'trim' and is_active;
+    if not found then
+      raise exception 'Please choose a rubber trim colour.' using errcode = '22023';
+    end if;
+    if v_option.price is null then
+      raise exception '% is priced on request. Please ask us to confirm it before ordering.', v_option.label using errcode = '22023';
+    end if;
+    v_unit := v_unit + v_option.price;
+    v_summary := v_summary || jsonb_build_object('label', 'Rubber trim', 'value', v_option.label);
+
+    -- Visor (step 12).
+    if v_cfg ? 'visor' and coalesce(btrim(v_cfg ->> 'visor'), '') <> '' then
+      select * into v_visor from public.visors
+      where id = v_cfg ->> 'visor' and model_id = v_model.id and is_active;
+      if not found then
+        raise exception 'That visor isn''t available on this helmet.' using errcode = '22023';
+      end if;
+      if v_visor.price is null then
+        raise exception 'The % visor is priced on request. Please ask us to confirm it before ordering.', lower(v_visor.name) using errcode = '22023';
+      end if;
+      v_unit := v_unit + v_visor.price;
+      v_summary := v_summary || jsonb_build_object('label', 'Visor', 'value', v_visor.name);
+    end if;
+
+    -- Visor strip (step 13).
+    v_entry := v_cfg -> 'visorStrip';
+    if v_entry is not null and jsonb_typeof(v_entry) = 'object' and coalesce((v_entry ->> 'enabled')::boolean, false) then
+      v_text := btrim(coalesce(v_entry ->> 'text', ''));
+      if char_length(v_text) > 40 then
+        raise exception 'Visor strip text can be up to 40 characters.' using errcode = '22023';
+      end if;
+      select * into v_option from public.configurator_options
+      where option_group = 'visor_strip' and value = 'printed' and is_active;
+      if not found then
+        raise exception 'Visor strips aren''t available at the moment.' using errcode = '22023';
+      end if;
+      if v_option.price is null then
+        raise exception 'The visor strip is priced on request. Please ask us to confirm it before ordering.' using errcode = '22023';
+      end if;
+      v_unit := v_unit + v_option.price;
+      v_summary := v_summary || jsonb_build_object('label', 'Visor strip', 'value', coalesce(nullif(v_text, ''), 'Plain'));
+    end if;
+
+    -- Personalisation (step 9). Older builds carry riderName / raceNumber instead.
+    v_entry := v_cfg -> 'personalisation';
+    if v_entry is not null and jsonb_typeof(v_entry) = 'array' then
+      if jsonb_array_length(v_entry) > 6 then
+        raise exception 'You can add up to 6 pieces of personalisation.' using errcode = '22023';
+      end if;
+      for v_person in select p.value from jsonb_array_elements(v_entry) as p(value)
+      loop
+        v_kind := v_person ->> 'kind';
+        v_text := btrim(coalesce(v_person ->> 'value', ''));
+        if v_text = '' then
+          continue;
+        end if;
+        if v_kind = 'number' and v_text !~ '^[0-9A-Za-z]{1,3}$' then
+          raise exception 'Race numbers can be up to 3 letters or digits.' using errcode = '22023';
+        elsif v_kind = 'initials' and v_text !~ '^[A-Za-z]{1,3}$' then
+          raise exception 'Initials can be up to 3 letters.' using errcode = '22023';
+        elsif v_kind = 'flag' and v_text !~ '^[A-Za-z]{2,3}$' then
+          raise exception 'Please choose a country for the flag.' using errcode = '22023';
+        elsif v_kind in ('name', 'text') and char_length(v_text) > 24 then
+          raise exception 'Text on the helmet can be up to 24 characters.' using errcode = '22023';
+        end if;
+
+        select * into v_option from public.configurator_options
+        where option_group = 'personalisation' and value = v_kind and is_active;
+        if not found then
+          raise exception 'That personalisation isn''t available at the moment.' using errcode = '22023';
+        end if;
+        if v_option.price is null then
+          raise exception '% is priced on request. Please ask us to confirm it before ordering.', v_option.label using errcode = '22023';
+        end if;
+        v_unit := v_unit + v_option.price;
+        v_position := coalesce(v_positions ->> (v_person ->> 'position'), 'Both sides');
+        v_summary := v_summary || jsonb_build_object(
+          'label', coalesce(v_person_labels ->> v_kind, 'Personalisation'),
+          'value', v_text || ' · ' || v_position
+        );
+      end loop;
+    else
+      v_text := btrim(coalesce(v_cfg ->> 'riderName', ''));
+      if char_length(v_text) > 24 then
+        raise exception 'The name on the helmet can be up to 24 characters.' using errcode = '22023';
+      end if;
+      if v_text <> '' then
+        v_position := coalesce(v_positions ->> (v_cfg ->> 'namePosition'), 'Both sides');
+        v_summary := v_summary || jsonb_build_object('label', 'Name on helmet', 'value', v_text || ' · ' || v_position);
+      end if;
+
+      v_text := btrim(coalesce(v_cfg ->> 'raceNumber', ''));
+      if v_text !~ '^[0-9A-Za-z]{0,3}$' then
+        raise exception 'Race numbers can be up to 3 letters or digits.' using errcode = '22023';
+      end if;
+      if v_text <> '' then
+        v_position := coalesce(v_positions ->> (v_cfg ->> 'numberPosition'), 'Both sides');
+        v_summary := v_summary || jsonb_build_object('label', 'Race number', 'value', v_text || ' · ' || v_position);
+      end if;
+    end if;
+
+    -- Sponsor and team logos (step 10). Each must really be in the customer's folder.
+    v_entry := v_cfg -> 'logos';
+    if v_entry is not null and jsonb_typeof(v_entry) = 'array' then
+      if jsonb_array_length(v_entry) > 4 then
+        raise exception 'You can add up to 4 logos.' using errcode = '22023';
+      end if;
+      for v_logo_item in select l.value from jsonb_array_elements(v_entry) as l(value)
+      loop
+        v_logo := nullif(btrim(coalesce(v_logo_item ->> 'path', '')), '');
+        if v_logo is null then
+          continue;
+        end if;
+        if v_logo !~ ('^' || v_user::text || '/[0-9a-f-]{36}\.(png|jpg|webp)$')
+           or not exists (select 1 from storage.objects o where o.bucket_id = 'design-logos' and o.name = v_logo) then
+          raise exception 'One of your logos didn''t upload. Please add it again.' using errcode = '22023';
+        end if;
+        v_position := coalesce(v_positions ->> (v_logo_item ->> 'position'), 'Back');
+        v_summary := v_summary || jsonb_build_object('label', 'Logo', 'value', 'Uploaded · ' || v_position);
+      end loop;
+    else
+      v_logo := nullif(btrim(coalesce(v_cfg ->> 'logo', '')), '');
+      if v_logo is not null then
+        if v_logo !~ ('^' || v_user::text || '/[0-9a-f-]{36}\.(png|jpg|webp)$')
+           or not exists (select 1 from storage.objects o where o.bucket_id = 'design-logos' and o.name = v_logo) then
+          raise exception 'Your logo didn''t upload. Please add it again.' using errcode = '22023';
+        end if;
+        v_position := coalesce(v_positions ->> (v_cfg ->> 'logoPosition'), 'Back');
+        v_summary := v_summary || jsonb_build_object('label', 'Logo', 'value', 'Uploaded · ' || v_position);
+      end if;
+    end if;
+
+    v_subtotal := v_subtotal + v_unit * v_qty;
+
+    v_lines := v_lines || jsonb_build_object(
+      'kind', 'helmet',
+      'product_id', v_product.id,
+      'slug', v_product.slug,
+      'name', v_product.name,
+      'configuration', jsonb_build_object('values', v_cfg, 'summary', v_summary, 'look', v_product.look),
+      'unit_price', v_unit,
+      'quantity', v_qty
+    );
+  end loop;
+
+  -- Production slot and rush fee (step 15) ------------------------------------
+  -- Only helmet builds go through the workshop; a parts-only order ships from stock.
+  if v_helmets > 0 then
+    select * into v_settings from public.production_settings where id = 1;
+    v_tier_key := coalesce(nullif(btrim(coalesce(p_production ->> 'rush_tier', '')), ''), 'standard');
+
+    select * into v_tier from public.production_rush_tiers where key = v_tier_key;
+    if not found or not v_tier.is_active then
+      raise exception 'That turnaround is not available.' using errcode = '22023';
+    end if;
+    if v_tier.key <> 'standard' and not coalesce(v_settings.rush_enabled, false) then
+      raise exception 'Rush orders are not available at the moment.' using errcode = '22023';
+    end if;
+    if v_tier.fee is null then
+      raise exception '% is priced on request. Please contact us to book it.', v_tier.label using errcode = '22023';
+    end if;
+    v_rush_fee := v_tier.fee;
+
+    begin
+      v_start_date := (p_production ->> 'start_date')::date;
+    exception when others then
+      raise exception 'Please choose when you would like production to start.' using errcode = '22023';
+    end;
+
+    -- A basket placed before the calendar existed, or a client that didn't send a date,
+    -- takes the first week the workshop can actually start. The customer sees the date
+    -- on their order and we confirm it with their proof.
+    if v_start_date is null then
+      select a.week_start into v_start_date
+      from public.production_availability(null) a
+      where a.is_bookable
+      order by a.week_start
+      limit 1;
+      if v_start_date is null then
+        raise exception 'We have no production dates free at the moment. Please contact us to book your helmet.' using errcode = '22023';
+      end if;
+    end if;
+  end if;
+
+  insert into public.orders (
+    user_id, customer_name, customer_email, customer_phone, shipping_address,
+    delivery_method, delivery_label, delivery_price, subtotal, total, customer_notes,
+    production_start_date, rush_tier, rush_fee
+  )
+  values (
+    v_user,
+    trim(p_customer ->> 'name'),
+    lower(trim(p_customer ->> 'email')),
+    coalesce(trim(p_customer ->> 'phone'), ''),
+    coalesce(p_shipping, '{}'::jsonb),
+    p_delivery_method,
+    v_delivery ->> 'label',
+    v_delivery_price,
+    v_subtotal,
+    v_subtotal + v_delivery_price + v_rush_fee,
+    left(coalesce(p_notes, ''), 2000),
+    v_start_date,
+    case when v_helmets > 0 then v_tier_key else null end,
+    v_rush_fee
+  )
+  returning id, orders.order_number into v_order_id, v_order_number;
+
+  -- Takes the slot under an advisory lock, so two checkouts can't share the last one.
+  if v_helmets > 0 then
+    v_completion := public.book_production_slot(v_order_id, v_start_date, v_tier_key, v_helmets);
+    update public.orders set estimated_completion_date = v_completion where id = v_order_id;
+  end if;
+
+  insert into public.order_items (
+    order_id, line_kind, store_id, product_id, shop_variant_id, product_slug, product_name,
+    configuration, unit_price, quantity, line_total
+  )
+  select
+    v_order_id,
+    line.value ->> 'kind',
+    line.value ->> 'store_id',
+    (line.value ->> 'product_id')::uuid,
+    (line.value ->> 'variant_id')::uuid,
+    line.value ->> 'slug',
+    line.value ->> 'name',
+    line.value -> 'configuration',
+    (line.value ->> 'unit_price')::numeric,
+    (line.value ->> 'quantity')::integer,
+    (line.value ->> 'unit_price')::numeric * (line.value ->> 'quantity')::integer
+  from jsonb_array_elements(v_lines) as line(value);
+
+  insert into public.inventory_movements (variant_id, change, quantity_after, reason, order_id, note, created_by)
+  select
+    (line.value ->> 'variant_id')::uuid,
+    -((line.value ->> 'quantity')::integer),
+    (line.value ->> 'stock_after')::integer,
+    'order',
+    v_order_id,
+    'Order ' || v_order_number,
+    v_user
+  from jsonb_array_elements(v_lines) as line(value)
+  where line.value ->> 'kind' = 'product' and line.value ->> 'stock_after' is not null;
+
+  insert into public.order_status_events (order_id, status, payment_status, note, created_by)
+  values (v_order_id, 'pending', 'unpaid', 'Order placed', v_user);
+
+  return query select v_order_id, v_order_number;
+end;
+$$;
+
+revoke all on function public.place_order(jsonb, jsonb, jsonb, text, text, jsonb) from public, anon;
+grant execute on function public.place_order(jsonb, jsonb, jsonb, text, text, jsonb) to authenticated;
+insert into app_private.schema_migrations (name) values ('20261018002600_place_order_v6.sql') on conflict do nothing;
+
+-- ===== 20261018002700_production_week_notice.sql =====
+
+-- Fix: the calendar and the booking disagreed about the notice period.
+--
+-- production_availability() offered any week whose Monday fell in the week containing
+-- "today + booking_lead_days", while book_production_slot() refuses a start date before
+-- that day itself. With seven days' notice on a Wednesday, the calendar offered the week
+-- starting Monday — two days too soon — and booking it failed with "the earliest
+-- production can start is …". The first customer to pick the soonest week would have hit
+-- it at checkout.
+--
+-- Both now use the same rule: the first week offered is the first Monday on or after
+-- today plus the notice period.
+
+create or replace function public.production_availability(p_weeks integer default null)
+returns table (
+  week_start date,
+  slots integer,
+  booked integer,
+  available integer,
+  is_blacked_out boolean,
+  is_bookable boolean
+)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  with settings as (
+    select * from public.production_settings where id = 1
+  ),
+  -- The first Monday that still leaves the workshop its full notice period.
+  first_week as (
+    select public.production_week_start((current_date + s.booking_lead_days + 6)::date) as monday,
+           s.booking_lead_days,
+           s.horizon_weeks
+    from settings s
+  ),
+  weeks as (
+    select (f.monday + (g.n * 7))::date as week_start
+    from first_week f,
+      generate_series(0, coalesce(p_weeks, f.horizon_weeks)) as g(n)
+  ),
+  counted as (
+    select
+      w.week_start,
+      public.production_week_slots(w.week_start) as slots,
+      coalesce((
+        select sum(b.helmet_count)::integer
+        from public.production_bookings b
+        where b.week_start = w.week_start
+      ), 0) as booked,
+      exists (
+        select 1 from public.production_blackouts x
+        where x.starts_on <= (w.week_start + 4) and x.ends_on >= w.week_start
+      ) as is_blacked_out
+    from weeks w
+  )
+  select
+    c.week_start,
+    c.slots,
+    c.booked,
+    greatest(c.slots - c.booked, 0) as available,
+    c.is_blacked_out,
+    (not c.is_blacked_out and (c.slots - c.booked) > 0) as is_bookable
+  from counted c
+  order by c.week_start
+$$;
+
+revoke all on function public.production_availability(integer) from public;
+grant execute on function public.production_availability(integer) to anon, authenticated;
+insert into app_private.schema_migrations (name) values ('20261018002700_production_week_notice.sql') on conflict do nothing;
 commit;
