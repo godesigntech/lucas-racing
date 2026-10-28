@@ -211,3 +211,96 @@ export async function notifyWorkshopReply(reply: { customerEmail: string; custom
     text: `Hi ${firstName}, the workshop replied:\n\n${reply.body || "We sent you a photo."}\n\nOpen the chat on ${siteUrl()} (bottom left, once you're logged in).`,
   })
 }
+
+// ---------------------------------------------------------------------------
+// Proofs and production
+// ---------------------------------------------------------------------------
+
+/** The workshop has sent a proof; the helmet waits until the customer answers. */
+export async function notifyProofReady(proof: {
+  orderNumber: string
+  customerName: string
+  customerEmail: string
+  version: number
+}): Promise<void> {
+  const firstName = proof.customerName.split(" ")[0]
+  const href = siteUrl(`/account/orders/${proof.orderNumber}`)
+  const line =
+    proof.version === 1
+      ? `Your proof for order ${proof.orderNumber} is ready to look at.`
+      : `We've sent an updated proof (number ${proof.version}) for order ${proof.orderNumber}.`
+
+  await sendEmail({
+    to: proof.customerEmail,
+    subject: `Your helmet proof is ready – ${proof.orderNumber}`,
+    html: emailLayout({
+      heading: `${firstName}, your proof is ready`,
+      body: paragraphs(
+        `${line}\n\nHave a proper look, and either approve it or tell us what to change. Nothing is masked, painted or dipped until you've approved it, and there's no charge for changes at this stage.`,
+      ),
+      action: { label: "View and approve your proof", href },
+    }),
+    text: `${firstName}, ${line}\n\nApprove it, or tell us what to change. Nothing is painted until you approve.\n\n${href}`,
+  })
+}
+
+/** The customer has answered a proof. Goes to the workshop, not the customer. */
+export async function notifyProofAnswered(answer: {
+  orderNumber: string
+  customerName: string
+  approved: boolean
+  note: string
+  version: number
+}): Promise<void> {
+  const inbox = await workshopInbox()
+  if (!inbox) return
+  const verdict = answer.approved ? "approved" : "asked for changes to"
+
+  await sendEmail({
+    to: inbox,
+    subject: `${answer.customerName} ${verdict} proof ${answer.version} – ${answer.orderNumber}`,
+    html: emailLayout({
+      heading: answer.approved ? `Proof approved – ${answer.orderNumber}` : `Changes requested – ${answer.orderNumber}`,
+      body:
+        detailRows([
+          ["Customer", answer.customerName],
+          ["Order", answer.orderNumber],
+          ["Proof", `Number ${answer.version}`],
+        ]) + (answer.note ? paragraphs(answer.note) : ""),
+      action: { label: "Open in admin", href: siteUrl(`/admin/orders?q=${encodeURIComponent(answer.orderNumber)}`) },
+    }),
+    text: `${answer.customerName} ${verdict} proof ${answer.version} on ${answer.orderNumber}.${answer.note ? `\n\n${answer.note}` : ""}`,
+  })
+}
+
+/** Keeps the customer posted as their helmet moves through the workshop. */
+export async function notifyOrderStatus(update: {
+  orderNumber: string
+  customerName: string
+  customerEmail: string
+  label: string
+  description: string
+  note: string
+  estimatedCompletionDate: string | null
+}): Promise<void> {
+  const firstName = update.customerName.split(" ")[0]
+  const href = siteUrl(`/account/orders/${update.orderNumber}`)
+
+  await sendEmail({
+    to: update.customerEmail,
+    subject: `${update.orderNumber}: ${update.label} – Lucas Racing`,
+    html: emailLayout({
+      heading: `${firstName}, your order is ${update.label.toLowerCase()}`,
+      body:
+        paragraphs(update.description) +
+        (update.note ? paragraphs(update.note) : "") +
+        detailRows([
+          ["Order", update.orderNumber],
+          ["Status", update.label],
+          ["Estimated completion", update.estimatedCompletionDate ?? ""],
+        ]),
+      action: { label: "Track your order", href },
+    }),
+    text: `${firstName}, order ${update.orderNumber} is now: ${update.label}.\n\n${update.description}${update.note ? `\n\n${update.note}` : ""}\n\n${href}`,
+  })
+}

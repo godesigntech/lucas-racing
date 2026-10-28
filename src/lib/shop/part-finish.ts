@@ -43,7 +43,12 @@ export interface FinishPrice {
   summary: ConfigSummaryLine[]
 }
 
-/** Prices a finish for a product, or returns null if it isn't allowed or available. */
+/**
+ * Prices a finish for a product, or returns null if it isn't allowed or available.
+ * An option the client hasn't priced yet (price === null) counts as unavailable here:
+ * the parts pages have nowhere to say "price on request", and place_order() would
+ * refuse it anyway.
+ */
 export function priceFinish(product: Pick<ShopProduct, "customFinishes" | "customFee">, finish: PartFinish, priceBook: PriceBook): FinishPrice | null {
   if (!product.customFinishes.includes(finish.type)) return null
   const { colours, films, chrome, lacquers } = finishChoices(priceBook)
@@ -52,7 +57,7 @@ export function priceFinish(product: Pick<ShopProduct, "customFinishes" | "custo
 
   if (finish.type === "paint") {
     const colour = colours.find((option) => option.value === finish.value)
-    if (!colour) return null
+    if (!colour || colour.price === null) return null
     extra += colour.price
     summary.push({ key: "finish", label: "Finish", value: `Paint · ${colour.label}` })
   } else if (finish.type === "film") {
@@ -61,14 +66,14 @@ export function priceFinish(product: Pick<ShopProduct, "customFinishes" | "custo
     extra += film.price
     summary.push({ key: "finish", label: "Finish", value: `Hydro-dip film · ${film.name}` })
   } else {
-    if (!chrome) return null
+    if (!chrome || chrome.price === null) return null
     extra += chrome.price
     summary.push({ key: "finish", label: "Finish", value: chrome.label })
   }
 
   if (finish.type !== "chrome") {
     const lacquer = lacquers.find((option) => option.value === finish.lacquer)
-    if (!lacquer) return null
+    if (!lacquer || lacquer.price === null) return null
     extra += lacquer.price
     summary.push({ key: "lacquer", label: "Lacquer", value: lacquer.label })
   }
@@ -90,11 +95,15 @@ export function defaultFinish(product: Pick<ShopProduct, "customFinishes">, pric
 /** The cheapest a customised part can be: for "from £…" on cards. */
 export function lowestFinishExtra(product: Pick<ShopProduct, "customFinishes" | "customFee">, priceBook: PriceBook): number {
   const { colours, films, chrome, lacquers } = finishChoices(priceBook)
-  const lacquer = Math.min(...lacquers.map((option) => option.price), Infinity)
+  // Options with no agreed price can't be part of a "from £…", because we can't sell them.
+  const priced = (values: (number | null)[]) => values.filter((value): value is number => value !== null)
+  const lacquerPrices = priced(lacquers.map((option) => option.price))
+  const colourPrices = priced(colours.map((colour) => colour.price))
+  const lacquer = Math.min(...lacquerPrices, Infinity)
   const options: number[] = []
-  if (product.customFinishes.includes("paint") && colours.length) options.push(Math.min(...colours.map((c) => c.price)) + lacquer)
+  if (product.customFinishes.includes("paint") && colourPrices.length) options.push(Math.min(...colourPrices) + lacquer)
   if (product.customFinishes.includes("film") && films.length) options.push(Math.min(...films.map((f) => f.price)) + lacquer)
-  if (product.customFinishes.includes("chrome") && chrome) options.push(chrome.price)
+  if (product.customFinishes.includes("chrome") && chrome?.price != null) options.push(chrome.price)
   const lowest = Math.min(...options.filter(Number.isFinite))
   return product.customFee + (Number.isFinite(lowest) ? lowest : 0)
 }

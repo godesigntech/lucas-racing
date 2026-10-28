@@ -82,11 +82,19 @@ function order(seed: OrderSeed): Order {
     events.push({ id: 2, status: seed.status, paymentStatus: seed.payment, note: "Proof approved by email, payment link sent.", createdAt: sixHoursLater })
   }
 
+  // Demo orders are booked into the workshop six weeks after they were placed.
+  const productionStart = new Date(Date.parse(seed.createdAt) + 14 * 24 * 60 * 60 * 1000)
+  const completion = new Date(productionStart.getTime() + 42 * 24 * 60 * 60 * 1000)
+
   return {
     id: seed.id,
     orderNumber: seed.number,
     status: seed.status,
     paymentStatus: seed.payment,
+    productionStartDate: productionStart.toISOString().slice(0, 10),
+    estimatedCompletionDate: completion.toISOString().slice(0, 10),
+    rushTier: "standard",
+    rushFee: 0,
     customerName: seed.customer.fullName,
     customerEmail: seed.customer.email,
     total: subtotal + deliveryPrice,

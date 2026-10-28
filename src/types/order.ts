@@ -1,9 +1,18 @@
 import type { HelmetLook } from "@/types/helmet"
 
+/**
+ * In workshop order. "confirmed" predates the proof workflow and is kept so older
+ * orders stay readable; new orders go through the design review and proof steps.
+ */
 export const orderStatuses = [
   "pending",
+  "awaiting_design_review",
+  "awaiting_proof_approval",
+  "approved_for_production",
+  "scheduled",
   "confirmed",
   "in_production",
+  "quality_check",
   "ready",
   "shipped",
   "completed",
@@ -80,4 +89,9 @@ export interface Order extends OrderListItem {
   updatedAt: string
   items: OrderItem[]
   events: OrderEvent[]
+  /** When the helmet goes into the workshop. Null for orders with no custom helmet. */
+  productionStartDate: string | null
+  estimatedCompletionDate: string | null
+  rushTier: string | null
+  rushFee: number
 }

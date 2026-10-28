@@ -8,9 +8,12 @@ import { OrderItems } from "@/components/orders/order-items"
 import { OrderProgress } from "@/components/orders/order-progress"
 import { OrderTimeline } from "@/components/orders/order-timeline"
 import { OrderTotals } from "@/components/orders/order-totals"
+import { FinishedPhotos, ProofApproval } from "@/components/orders/proof-approval"
 import { OrderStatusBadge, PaymentStatusBadge } from "@/components/orders/status-badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getMyOrder } from "@/lib/data/account"
+import { listOrderProofs, pendingProof } from "@/lib/data/proofs"
+import { formatUkDateShort } from "@/lib/dates/uk"
 import { formatDateTime } from "@/lib/format"
 import { paymentDescription, statusDescription } from "@/lib/orders/status"
 
@@ -38,6 +41,9 @@ async function OrderDetail({ orderNumber, justPlaced }: { orderNumber: string; j
   const order = await getMyOrder(decodeURIComponent(orderNumber))
   const hasHelmets = order.items.some((item) => item.kind === "helmet")
   const hasProducts = order.items.some((item) => item.kind === "product")
+  const proofs = await listOrderProofs(order.id)
+  const awaiting = pendingProof(proofs)
+  const photos = proofs.filter((proof) => proof.kind === "production_photo")
 
   return (
     <div className="space-y-6">
@@ -66,13 +72,31 @@ async function OrderDetail({ orderNumber, justPlaced }: { orderNumber: string; j
         </div>
       </div>
 
+      {awaiting && <ProofApproval proof={awaiting} />}
+
       <InfoCard title="Progress">
         <OrderProgress status={order.status} />
         <p className="mt-4 text-sm text-muted-foreground">
           {statusDescription(order.status, hasHelmets)}{" "}
           {order.status !== "cancelled" && paymentDescription(order.paymentStatus, hasHelmets)}
         </p>
+        {order.productionStartDate && (
+          <dl className="mt-4 grid gap-2 border-t border-carbon/10 pt-4 text-sm sm:grid-cols-2">
+            <div className="flex justify-between gap-3 sm:block">
+              <dt className="text-muted-foreground">Production starts</dt>
+              <dd className="font-medium">{formatUkDateShort(order.productionStartDate)}</dd>
+            </div>
+            {order.estimatedCompletionDate && (
+              <div className="flex justify-between gap-3 sm:block">
+                <dt className="text-muted-foreground">Estimated completion</dt>
+                <dd className="font-medium">{formatUkDateShort(order.estimatedCompletionDate)}</dd>
+              </div>
+            )}
+          </dl>
+        )}
       </InfoCard>
+
+      <FinishedPhotos photos={photos} />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
         <InfoCard title={hasHelmets && !hasProducts ? "Helmets" : "Items"}>

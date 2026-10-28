@@ -20,20 +20,23 @@ function ChoiceCard({
   checked,
   onSelect,
   name,
+  disabled = false,
   children,
 }: {
   checked: boolean
   onSelect: () => void
   name: string
+  disabled?: boolean
   children: React.ReactNode
 }) {
   return (
-    <label className="cursor-pointer">
-      <input type="radio" name={name} checked={checked} onChange={onSelect} className="peer sr-only" />
+    <label className={cn(disabled ? "cursor-not-allowed" : "cursor-pointer")}>
+      <input type="radio" name={name} checked={checked} disabled={disabled} onChange={onSelect} className="peer sr-only" />
       <span
         className={cn(
           "relative flex h-full flex-col gap-1 rounded-2xl border p-4 transition-colors peer-focus-visible:ring-3 peer-focus-visible:ring-ring/50",
           checked ? "border-brand-ink bg-accent/60" : "border-carbon/15 bg-card hover:border-carbon/40",
+          disabled && "opacity-45",
         )}
       >
         {checked && (
@@ -82,6 +85,32 @@ const sizeGuide: Record<string, string> = {
   XXL: "63–64 cm",
 }
 
+/**
+ * Part of step 1: we supply a brand-new shell, or the customer sends their own.
+ * Only shown when the workshop has the "send my own helmet" route switched on.
+ */
+export function StepRoute({ priceBook, config, update }: { priceBook: PriceBook; config: HelmetConfiguration; update: Update }) {
+  const routes = priceBook.options.route.filter((option) => option.isActive)
+  const model = priceBook.models.find((item) => item.id === config.model)
+  if (routes.length < 2) return null
+  const current = config.route ?? "new"
+
+  return (
+    <fieldset className="grid gap-3 sm:grid-cols-2">
+      <legend className="mb-2 text-sm font-semibold">Who supplies the helmet?</legend>
+      {routes.map((route) => (
+        <ChoiceCard key={route.value} name="helmet-route" checked={current === route.value} onSelect={() => update({ v: "2", route: route.value as "new" | "own" })}>
+          <span className="font-semibold">{route.label}</span>
+          {route.hint && <span className="text-xs text-muted-foreground">{route.hint}</span>}
+          <span className="mt-auto pt-1 text-sm font-semibold text-brand-ink">
+            {route.value === "new" && model ? formatMoney(model.newHelmetPrice) : formatSurcharge(route.price) || "No extra charge"}
+          </span>
+        </ChoiceCard>
+      ))}
+    </fieldset>
+  )
+}
+
 export function StepSize({ model, config, update }: { model: HelmetModel | undefined; config: HelmetConfiguration; update: Update }) {
   const sizes = model?.sizes ?? []
   return (
@@ -112,14 +141,40 @@ export function StepSize({ model, config, update }: { model: HelmetModel | undef
   )
 }
 
-export function StepFinish({ priceBook, config, update }: { priceBook: PriceBook; config: HelmetConfiguration; update: Update }) {
+/**
+ * Step 8. Metallic and chrome are lacquered gloss, so when any part of the design uses
+ * one, the other finishes are locked and the reason is spelled out.
+ */
+export function StepFinish({
+  priceBook,
+  config,
+  update,
+  glossOnly = false,
+}: {
+  priceBook: PriceBook
+  config: HelmetConfiguration
+  update: Update
+  glossOnly?: boolean
+}) {
   const finishes = priceBook.options.finish.filter((option) => option.isActive && option.value in finishLabels)
   return (
     <div className="space-y-4">
+      {glossOnly && (
+        <p className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-200">
+          Part of your design uses metallic or chrome paint, which we finish in gloss to protect the flake and the
+          mirror. Matte and satin become available again if you change those parts back to solid colour or film.
+        </p>
+      )}
       <fieldset className="grid gap-3 sm:grid-cols-3">
         <legend className="sr-only">Finish</legend>
         {finishes.map((finish) => (
-          <ChoiceCard key={finish.value} name="finish" checked={config.finish === finish.value} onSelect={() => update({ finish: finish.value as FinishId })}>
+          <ChoiceCard
+            key={finish.value}
+            name="finish"
+            disabled={glossOnly && finish.value !== "gloss"}
+            checked={config.finish === finish.value}
+            onSelect={() => update({ finish: finish.value as FinishId })}
+          >
             <span
               aria-hidden
               className={cn(

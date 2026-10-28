@@ -11,6 +11,9 @@ interface OrderSummaryCardProps {
   subtotal: number
   deliveryLabel?: string
   deliveryPrice: number
+  /** Charged when the customer picks a faster turnaround than standard. */
+  rushFee?: number
+  rushLabel?: string
   children?: React.ReactNode
 }
 
@@ -35,7 +38,15 @@ function lineDetail(line: AvailableLine): string {
   return parts.filter(Boolean).join(" · ")
 }
 
-export function OrderSummaryCard({ lines, subtotal, deliveryLabel, deliveryPrice, children }: OrderSummaryCardProps) {
+export function OrderSummaryCard({
+  lines,
+  subtotal,
+  deliveryLabel,
+  deliveryPrice,
+  rushFee = 0,
+  rushLabel,
+  children,
+}: OrderSummaryCardProps) {
   return (
     <aside className="space-y-5 rounded-3xl bg-carbon p-6 text-paper" aria-label="Order summary">
       <h2 className="font-display text-3xl font-bold uppercase">Your order</h2>
@@ -62,10 +73,16 @@ export function OrderSummaryCard({ lines, subtotal, deliveryLabel, deliveryPrice
           <dt className="text-paper/60">Delivery{deliveryLabel && ` · ${deliveryLabel}`}</dt>
           <dd className="tabular-nums">{deliveryPrice ? formatMoney(deliveryPrice) : "Free"}</dd>
         </div>
+        {rushFee > 0 && (
+          <div className="flex justify-between gap-3">
+            <dt className="text-paper/60">{rushLabel ?? "Faster turnaround"}</dt>
+            <dd className="tabular-nums">{formatMoney(rushFee)}</dd>
+          </div>
+        )}
       </dl>
       <div className="flex items-baseline justify-between border-t border-white/10 pt-4">
         <span className="text-sm text-paper/60">Total</span>
-        <span className="font-display text-4xl font-bold">{formatMoney(subtotal + deliveryPrice)}</span>
+        <span className="font-display text-4xl font-bold">{formatMoney(subtotal + deliveryPrice + rushFee)}</span>
       </div>
       {children}
     </aside>

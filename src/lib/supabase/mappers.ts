@@ -1,6 +1,26 @@
 import type { Profile, CustomerSummary } from "@/types/account"
 import type { ConfiguratorOption, Film, OptionGroupKey } from "@/types/catalog"
-import type { FilmPattern, HelmetLook, HelmetModel } from "@/types/helmet"
+import type { FilmPattern, HelmetLook, HelmetModel, HelmetModelId } from "@/types/helmet"
+import type {
+  OrderProof,
+  ProductionBlackout,
+  ProductionBooking,
+  ProductionSettings,
+  ProductionWeek,
+  ProofKind,
+  ProofStatus,
+  RushTier,
+} from "@/types/production"
+import type {
+  AeroKit,
+  ArtworkStatus,
+  DesignTemplate,
+  HelmetSizeOption,
+  RegionKind,
+  TemplateRegion,
+  Visor,
+  VisorKind,
+} from "@/types/templates"
 import type {
   Order,
   OrderEvent,
@@ -15,17 +35,28 @@ import type { Product, ProductBadge, ProductCategoryId, ProductSpec } from "@/ty
 import type { DeliveryMethod, SiteSettings, SocialIconName, SocialLink } from "@/types/settings"
 
 import type {
+  AeroKitRow,
   ConfiguratorOptionRow,
   CustomerSummaryRow,
+  DesignTemplateRow,
   FilmRow,
   HelmetModelRow,
+  HelmetModelSizeRow,
   Json,
   OrderItemRow,
+  OrderProofRow,
   OrderRow,
   OrderStatusEventRow,
+  ProductionAvailabilityRow,
+  ProductionBlackoutRow,
+  ProductionBookingRow,
+  ProductionRushTierRow,
+  ProductionSettingsRow,
   ProductRow,
   ProfileRow,
   SiteSettingsRow,
+  TemplateRegionRow,
+  VisorRow,
 } from "./database.types"
 
 // Postgres numerics can arrive as strings; normalise to numbers.
@@ -78,7 +109,8 @@ export function toOption(row: ConfiguratorOptionRow): ConfiguratorOption {
     label: row.label,
     hint: row.hint,
     swatch: row.swatch,
-    price: num(row.price),
+    // Null is meaningful here: the price hasn't been agreed yet. Don't fold it to 0.
+    price: row.price === null ? null : num(row.price),
     isActive: row.is_active,
     sortOrder: row.sort_order,
   }
@@ -275,9 +307,156 @@ export function toOrder(
     customerNotes: row.customer_notes,
     adminNotes: row.admin_notes,
     updatedAt: row.updated_at,
+    productionStartDate: row.production_start_date,
+    estimatedCompletionDate: row.estimated_completion_date,
+    rushTier: row.rush_tier,
+    rushFee: num(row.rush_fee),
     items,
     events: [...row.order_status_events]
       .sort((a, b) => a.created_at.localeCompare(b.created_at))
       .map(toOrderEvent),
+  }
+}
+
+// --- 16-step builder: templates, accessories and production -----------------
+// Prices stay nullable all the way through: null means "not agreed with the client yet",
+// which the builder shows as "Price on request" and place_order() refuses to sell.
+
+const price = (value: unknown): number | null => (value === null || value === undefined ? null : Number(value))
+
+export function toTemplateRegion(row: TemplateRegionRow): TemplateRegion {
+  return {
+    id: row.id,
+    key: row.key,
+    label: row.label,
+    kind: row.kind as RegionKind,
+    maskUrl: row.mask_url,
+    svgElementId: row.svg_element_id,
+    defaultColour: row.default_colour,
+    allowsFilm: row.allows_film,
+    allowsChrome: row.allows_chrome,
+    allowsMetallic: row.allows_metallic,
+    sortOrder: row.sort_order,
+  }
+}
+
+export function toDesignTemplate(row: DesignTemplateRow, regions: TemplateRegionRow[] = []): DesignTemplate {
+  return {
+    id: row.id,
+    productSlug: row.product_slug,
+    modelId: row.model_id as HelmetModelId,
+    svgUrl: row.svg_url,
+    graphicMaskUrl: row.graphic_mask_url,
+    accentMaskUrl: row.accent_mask_url,
+    thumbnailUrl: row.thumbnail_url,
+    artworkStatus: row.artwork_status as ArtworkStatus,
+    isActive: row.is_active,
+    sortOrder: row.sort_order,
+    regions: regions.map(toTemplateRegion).sort((a, b) => a.sortOrder - b.sortOrder),
+  }
+}
+
+export function toAeroKit(row: AeroKitRow): AeroKit {
+  return {
+    id: row.id,
+    modelId: row.model_id as HelmetModelId,
+    name: row.name,
+    summary: row.summary,
+    meshName: row.mesh_name,
+    price: price(row.price),
+    isActive: row.is_active,
+    sortOrder: row.sort_order,
+  }
+}
+
+export function toVisor(row: VisorRow): Visor {
+  return {
+    id: row.id,
+    modelId: row.model_id as HelmetModelId,
+    name: row.name,
+    kind: row.kind as VisorKind,
+    tint: row.tint,
+    opacity: num(row.opacity),
+    metalness: num(row.metalness),
+    price: price(row.price),
+    isActive: row.is_active,
+    sortOrder: row.sort_order,
+  }
+}
+
+export function toHelmetSizeOption(row: HelmetModelSizeRow): HelmetSizeOption {
+  return {
+    modelId: row.model_id as HelmetModelId,
+    size: row.size,
+    price: price(row.price),
+    isActive: row.is_active,
+    sortOrder: row.sort_order,
+  }
+}
+
+export function toProductionSettings(row: ProductionSettingsRow): ProductionSettings {
+  return {
+    standardLeadWeeks: row.standard_lead_weeks,
+    weeklyCapacity: row.weekly_capacity,
+    bookingLeadDays: row.booking_lead_days,
+    horizonWeeks: row.horizon_weeks,
+    rushEnabled: row.rush_enabled,
+  }
+}
+
+export function toRushTier(row: ProductionRushTierRow): RushTier {
+  return {
+    key: row.key,
+    label: row.label,
+    leadWeeks: row.lead_weeks,
+    fee: price(row.fee),
+    maxPerWeek: row.max_per_week,
+    isDraft: row.is_draft,
+    isActive: row.is_active,
+    sortOrder: row.sort_order,
+  }
+}
+
+export function toProductionWeek(row: ProductionAvailabilityRow): ProductionWeek {
+  return {
+    weekStart: row.week_start,
+    slots: row.slots,
+    booked: row.booked,
+    available: row.available,
+    isBlackedOut: row.is_blacked_out,
+    isBookable: row.is_bookable,
+  }
+}
+
+export function toProductionBlackout(row: ProductionBlackoutRow): ProductionBlackout {
+  return { id: row.id, startsOn: row.starts_on, endsOn: row.ends_on, reason: row.reason }
+}
+
+export function toProductionBooking(row: ProductionBookingRow): ProductionBooking {
+  return {
+    id: row.id,
+    orderId: row.order_id,
+    startDate: row.start_date,
+    weekStart: row.week_start,
+    rushTier: row.rush_tier,
+    leadWeeks: row.lead_weeks,
+    completionDate: row.completion_date,
+    helmetCount: row.helmet_count,
+  }
+}
+
+export function toOrderProof(row: OrderProofRow): OrderProof {
+  return {
+    id: row.id,
+    orderId: row.order_id,
+    orderItemId: row.order_item_id,
+    kind: row.kind as ProofKind,
+    version: row.version,
+    imagePath: row.image_path,
+    caption: row.caption,
+    status: row.status as ProofStatus,
+    customerNote: row.customer_note,
+    respondedAt: row.responded_at,
+    createdAt: row.created_at,
   }
 }

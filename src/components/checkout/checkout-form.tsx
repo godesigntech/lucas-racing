@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Controller, useForm, useWatch } from "react-hook-form"
@@ -26,8 +26,10 @@ import type { Profile } from "@/types/account"
 import type { PriceBook } from "@/types/catalog"
 import type { CatalogProduct } from "@/types/product"
 import type { DeliveryMethod } from "@/types/settings"
+import type { ProductionOptions } from "@/lib/data/production"
 
 import { CheckoutSection } from "./checkout-section"
+import { ProductionDates } from "./production-dates"
 import { DeliveryOptions } from "./delivery-options"
 import { OrderSummaryCard } from "./order-summary-card"
 
@@ -36,9 +38,10 @@ interface CheckoutFormProps {
   deliveryMethods: DeliveryMethod[]
   products: CatalogProduct[]
   priceBook: PriceBook
+  production: ProductionOptions
 }
 
-export function CheckoutForm({ profile, deliveryMethods, products, priceBook }: CheckoutFormProps) {
+export function CheckoutForm({ profile, deliveryMethods, products, priceBook, production }: CheckoutFormProps) {
   const router = useRouter()
   const basketState = useResolvedBasket(products, priceBook)
   const loaded = basketState.loaded
@@ -73,11 +76,26 @@ export function CheckoutForm({ profile, deliveryMethods, products, priceBook }: 
       },
       notes: "",
       saveDetails: true,
+      productionStartDate: "",
+      rushTier: "standard",
+      needsProduction: false,
     },
   })
 
   const deliveryId = useWatch({ control, name: "deliveryMethod" })
   const delivery = deliveryMethods.find((method) => method.id === deliveryId)
+  const startDate = useWatch({ control, name: "productionStartDate" }) ?? ""
+  const rushTier = useWatch({ control, name: "rushTier" }) ?? "standard"
+  // Only helmets go through the workshop; a parts-only order ships from stock.
+  const chosenTier = production.tiers.find((tier) => tier.key === rushTier)
+  const rushFee = hasHelmets ? (chosenTier?.fee ?? 0) : 0
+
+  // The basket loads in the browser, so whether a start week is required is only known
+  // once it has. Telling the schema here keeps the rule in one place.
+  const needsProduction = hasHelmets && production.ready && production.weeks.some((week) => week.isBookable)
+  useEffect(() => {
+    setValue("needsProduction", needsProduction)
+  }, [needsProduction, setValue])
 
   async function onSubmit(values: CheckoutValues) {
     const result = await placeOrder({
@@ -201,7 +219,28 @@ export function CheckoutForm({ profile, deliveryMethods, products, priceBook }: 
           )}
         </CheckoutSection>
 
-        <CheckoutSection step={3} title="Anything else?" description="Optional notes for the team.">
+        {hasHelmets && production.ready && (
+          <CheckoutSection
+            step={3}
+            title="Production"
+            description="When your helmet goes into the workshop. We confirm the exact date with your proof."
+          >
+            <ProductionDates
+              weeks={production.weeks}
+              tiers={production.tiers}
+              standardLeadWeeks={production.standardLeadWeeks}
+              startDate={startDate}
+              rushTier={rushTier}
+              error={errors.productionStartDate?.message}
+              onChange={(next) => {
+                setValue("productionStartDate", next.startDate, { shouldValidate: true })
+                setValue("rushTier", next.rushTier)
+              }}
+            />
+          </CheckoutSection>
+        )}
+
+        <CheckoutSection step={hasHelmets && production.ready ? 4 : 3} title="Anything else?" description="Optional notes for the team.">
           <FormField id="checkout-notes" label="Order notes" optional error={errors.notes?.message}>
             <Textarea
               {...register("notes")}
@@ -247,6 +286,8 @@ export function CheckoutForm({ profile, deliveryMethods, products, priceBook }: 
           subtotal={subtotal}
           deliveryLabel={delivery?.label}
           deliveryPrice={delivery?.price ?? 0}
+          rushFee={rushFee}
+          rushLabel={chosenTier && chosenTier.key !== "standard" ? chosenTier.label : undefined}
         >
           <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? <Loader2 className="animate-spin" aria-hidden /> : null}

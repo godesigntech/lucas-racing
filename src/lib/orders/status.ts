@@ -11,10 +11,15 @@ interface StatusMeta {
 
 export const orderStatusMeta: Record<OrderStatus, StatusMeta> = {
   pending: { label: "Received", tone: "warning", description: "We've got your order and will send your proof soon." },
+  awaiting_design_review: { label: "In design review", tone: "info", description: "Our workshop is checking your design and artwork." },
+  awaiting_proof_approval: { label: "Proof sent", tone: "warning", description: "Your proof is ready. Approve it and we'll book it in." },
+  approved_for_production: { label: "Proof approved", tone: "info", description: "Thanks — your helmet is cleared for production." },
+  scheduled: { label: "Scheduled", tone: "info", description: "Booked in. Work starts on your production date." },
   confirmed: { label: "Confirmed", tone: "info", description: "Proof approved and payment arranged." },
   in_production: { label: "In production", tone: "progress", description: "Your helmet is being masked, dipped and lacquered." },
+  quality_check: { label: "Quality inspection", tone: "progress", description: "Final checks before we sign it off." },
   ready: { label: "Ready", tone: "success", description: "Finished and ready for collection or dispatch." },
-  shipped: { label: "Shipped", tone: "success", description: "On its way to you." },
+  shipped: { label: "Dispatched", tone: "success", description: "On its way to you." },
   completed: { label: "Completed", tone: "neutral", description: "Delivered. Enjoy your new helmet." },
   cancelled: { label: "Cancelled", tone: "danger", description: "This order was cancelled." },
 }
@@ -30,6 +35,8 @@ const productStatusText: Partial<Record<OrderStatus, string>> = {
   pending: "We've got your order and will be in touch to confirm it.",
   confirmed: "Order confirmed and payment arranged.",
   in_production: "Your order is being picked and prepared.",
+  quality_check: "We're checking your order before it goes out.",
+  scheduled: "Your order is booked in.",
 }
 const productPaymentText: Partial<Record<PaymentStatus, string>> = {
   unpaid: "We'll send a secure payment link once we've confirmed your order.",
@@ -54,9 +61,24 @@ export const toneClasses: Record<Tone, string> = {
 }
 
 /** The happy path a customer sees as a progress tracker. */
-export const orderProgressSteps: OrderStatus[] = ["pending", "confirmed", "in_production", "ready", "completed"]
+export const orderProgressSteps: OrderStatus[] = [
+  "pending",
+  "awaiting_proof_approval",
+  "approved_for_production",
+  "in_production",
+  "ready",
+  "completed",
+]
+
+/** Statuses that sit at the same point of the tracker as one of the steps above. */
+const progressAliases: Partial<Record<OrderStatus, OrderStatus>> = {
+  awaiting_design_review: "pending",
+  scheduled: "approved_for_production",
+  confirmed: "approved_for_production",
+  quality_check: "in_production",
+  shipped: "ready",
+}
 
 export function progressIndex(status: OrderStatus): number {
-  if (status === "shipped") return orderProgressSteps.indexOf("ready")
-  return orderProgressSteps.indexOf(status)
+  return orderProgressSteps.indexOf(progressAliases[status] ?? status)
 }

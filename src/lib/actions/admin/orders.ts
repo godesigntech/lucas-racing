@@ -1,9 +1,13 @@
 "use server"
 
+import { after } from "next/server"
 import { revalidatePath } from "next/cache"
 
 import { databaseError, validationError } from "@/lib/actions/result"
+import { formatUkDateShort } from "@/lib/dates/uk"
 import { DEMO_READ_ONLY, isDemoMode } from "@/lib/demo/mode"
+import { notifyOrderStatus } from "@/lib/email/notifications"
+import { orderStatusMeta } from "@/lib/orders/status"
 import { createClient } from "@/lib/supabase/server"
 import {
   adminNotesSchema,
@@ -26,7 +30,7 @@ export async function updateOrderStatus(orderId: string, values: OrderStatusUpda
   const supabase = await createClient()
   const { data: current, error: readError } = await supabase
     .from("orders")
-    .select("status, payment_status")
+    .select("status, payment_status, order_number, customer_name, customer_email, estimated_completion_date")
     .eq("id", orderId)
     .single()
   if (readError) return databaseError(readError, "We couldn't find that order.")
@@ -48,6 +52,25 @@ export async function updateOrderStatus(orderId: string, values: OrderStatusUpda
     created_by: admin.id,
   })
   if (eventError) return databaseError(eventError, "The order was updated, but its history wasn't saved.")
+
+  // Tell the customer when the order actually moves. A note on its own is internal, and
+  // "proof sent" has its own email with the proof attached to it, so it's skipped here.
+  if (changed && current.status !== status && status !== "awaiting_proof_approval") {
+    const meta = orderStatusMeta[status]
+    after(() =>
+      notifyOrderStatus({
+        orderNumber: current.order_number,
+        customerName: current.customer_name,
+        customerEmail: current.customer_email,
+        label: meta.label,
+        description: meta.description,
+        note,
+        estimatedCompletionDate: current.estimated_completion_date
+          ? formatUkDateShort(current.estimated_completion_date)
+          : null,
+      }),
+    )
+  }
 
   revalidatePath(`/admin/orders/${orderId}`)
   return { ok: true, message: changed ? "Order updated." : "Note added to the history." }

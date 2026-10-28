@@ -6,4 +6,8 @@ export const cacheTags = {
   shop: "shop",
   news: "news",
   gallery: "gallery",
+  /** Design templates and their editable regions. */
+  templates: "templates",
+  /** Production settings, capacity, blackouts and rush tiers. */
+  production: "production",
 } as const

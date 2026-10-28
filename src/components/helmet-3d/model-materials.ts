@@ -27,7 +27,7 @@ export function cloneHelmet(scene: Object3D): Object3D {
       return material
     }
     mesh.material = Array.isArray(mesh.material) ? mesh.material.map(clone) : clone(mesh.material)
-    if (mesh.name === "Spoiler_HP7_F1_Small") mesh.visible = false
+    if (aeroMeshNames.includes(mesh.name)) mesh.visible = false
   })
   // The supplied model uses metres; keep the viewer's zoom range and floor consistent.
   const size = new Box3().setFromObject(copy).getSize(new Vector3())
@@ -38,11 +38,56 @@ export function cloneHelmet(scene: Object3D): Object3D {
   return copy
 }
 
-export function updateHelmetSurface(root: Object3D, tint: string, finish: HelmetFinish, trim: string, spoiler: boolean, accessories?: BellPartColours) {
+/** The aero meshes a model carries, so one kit can be shown and the others hidden. */
+export const aeroMeshNames = ["Spoiler_HP7_F1_Small"]
+
+export interface VisorSettings {
+  tint: string
+  /** How much it hides the face: 0 is clear glass, 1 is opaque. */
+  opacity: number
+  /** Iridium visors are mirrored. */
+  metalness: number
+}
+
+/**
+ * The visor mesh ships with its own material and nothing has ever driven it. Tint,
+ * transparency and the mirrored look of an iridium visor all come from here.
+ */
+export function updateVisor(root: Object3D, visor: VisorSettings | null) {
+  root.traverse((node) => {
+    const mesh = node as Mesh
+    if (!mesh.isMesh || mesh.name !== "Visor") return
+    const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+    for (const material of materials) {
+      if (!(material instanceof MeshStandardMaterial)) continue
+      if (!visor) continue
+      material.color.set(visor.tint)
+      material.transparent = true
+      material.opacity = Math.min(0.2 + visor.opacity * 0.8, 1)
+      material.metalness = visor.metalness
+      material.roughness = visor.metalness > 0.5 ? 0.08 : 0.15
+      material.envMapIntensity = 1 + visor.metalness
+      material.needsUpdate = true
+    }
+  })
+}
+
+export function updateHelmetSurface(
+  root: Object3D,
+  tint: string,
+  finish: HelmetFinish,
+  trim: string,
+  spoiler: boolean,
+  accessories?: BellPartColours,
+  /** Mesh of the chosen aero kit; null for the standard shell. Falls back to `spoiler`. */
+  aeroMesh?: string | null,
+) {
   root.traverse((node) => {
     const mesh = node as Mesh
     if (!mesh.isMesh) return
-    if (mesh.name === "Spoiler_HP7_F1_Small") mesh.visible = spoiler
+    if (aeroMeshNames.includes(mesh.name)) {
+      mesh.visible = aeroMesh === undefined ? spoiler : mesh.name === aeroMesh
+    }
     const part = bellParts.find((item) => item.mesh === mesh.name)
     const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
     for (const material of materials) {

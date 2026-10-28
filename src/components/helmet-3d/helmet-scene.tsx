@@ -6,14 +6,34 @@ import { Bounds, Center, ContactShadows, Environment, Lightformer, OrbitControls
 import { type Object3D, type Texture } from "three"
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib"
 
+import { Box3, Vector3, type CanvasTexture } from "three"
+
 import type { BellPartColours } from "@/lib/helmet-3d/parts"
-import type { HelmetTemplateArtwork } from "@/lib/helmet-3d/templates"
 
 import type { HelmetFinish } from "@/types/helmet"
 
-import { type FilmUniforms, loadFilmTexture, loadTemplateMask } from "./film-projection"
-import { cloneHelmet, disposeHelmetMaterials, updateHelmetSurface } from "./model-materials"
+import { buildDecalAtlas, buildRegionMap, MAX_REGIONS, type DecalInput } from "./design-textures"
+import { type FilmUniforms, loadFilmTexture } from "./film-projection"
+import { cloneHelmet, disposeHelmetMaterials, updateHelmetSurface, updateVisor, type VisorSettings } from "./model-materials"
 import { SceneLoading } from "./scene-loading"
+
+/** One editable area of the template, as the preview needs it. */
+export interface SceneRegion {
+  key: string
+  /** Greyscale mask in the model's UVs. The shell is whatever no mask covers. */
+  maskUrl: string | null
+  colour: string
+  /** Hydro-dip film photo, projected over the colour. */
+  filmUrl?: string | null
+  metalness: number
+  roughness: number
+}
+
+export interface SceneDesign {
+  /** Non-shell regions, in paint order. Only the first four reach the shader. */
+  regions: SceneRegion[]
+  decals: DecalInput
+}
 
 export interface HelmetSceneProps {
   url: string
@@ -26,11 +46,12 @@ export interface HelmetSceneProps {
   spoiler?: boolean
   /** Photo of a hydro-dip film to wrap around the shell, or null for plain paint. */
   film?: string | null
-  artwork?: HelmetTemplateArtwork
-  graphic?: string
-  accent?: string
-  graphicFilm?: string
-  accentFilm?: string
+  /** The template's editable regions plus the customer's names, numbers and logos. */
+  design?: SceneDesign | null
+  /** Tint and finish of the visor, or null to leave the model's own material alone. */
+  visor?: VisorSettings | null
+  /** Mesh of the chosen aero kit; null for the standard shell. */
+  aeroMesh?: string | null
   /** Slowly spins until the customer drags it or picks an angle. */
   autoRotate?: boolean
   /** Turns the camera to a preset angle. `at` changes on every request, so picking the same angle again re-centres it. */
@@ -64,51 +85,105 @@ function setArtworkEnabled(root: Object3D, enabled: boolean) {
   uniforms.templateStrength.value = enabled ? 1 : 0
 }
 
-function setArtworkColours(root: Object3D, graphic: string, accent: string, enabled: boolean, paintFinish: "gloss" | "satin" | "matte") {
+/** Colours and materials change on every click, so they're set without reloading masks. */
+function setRegionAppearance(root: Object3D, regions: SceneRegion[], paintFinish: "gloss" | "satin" | "matte") {
   const uniforms = root.userData.film as FilmUniforms
-  uniforms.graphicColour.value.set(graphic)
-  uniforms.accentColour.value.set(accent)
   uniforms.paintRoughness.value = { gloss: 0.35, satin: 0.6, matte: 1 }[paintFinish]
-  if (!enabled) uniforms.templateStrength.value = 0
+  regions.slice(0, MAX_REGIONS).forEach((region, index) => {
+    uniforms.regionColour.value[index].set(region.colour)
+    uniforms.regionMetalness.value[index] = region.metalness
+    uniforms.regionRoughness.value[index] = region.roughness
+  })
 }
 
-function setArtworkTextures(root: Object3D, graphicMask: Texture, accentMask: Texture, graphicFilm: Texture | null, accentFilm: Texture | null) {
+/**
+ * Where the decal atlas is projected from. The helmet is measured in world space after
+ * the scene has been centred, so names and logos sit on the shell whatever the model's
+ * own scale and origin happen to be.
+ */
+function setDecalProjection(root: Object3D) {
   const uniforms = root.userData.film as FilmUniforms
-  uniforms.graphicMask.value = graphicMask
-  uniforms.accentMask.value = accentMask
-  uniforms.graphicFilm.value = graphicFilm
-  uniforms.accentFilm.value = accentFilm
-  uniforms.graphicFilmStrength.value = graphicFilm ? 1 : 0
-  uniforms.accentFilmStrength.value = accentFilm ? 1 : 0
+  root.updateMatrixWorld(true)
+  const box = new Box3().setFromObject(root)
+  const size = box.getSize(new Vector3())
+  box.getCenter(uniforms.decalCentre.value)
+  uniforms.decalScale.value = 1 / Math.max(size.x, size.y, size.z, 0.001)
+}
+
+/** Names, numbers and logos on the shell, or null to take them off. */
+function setDecals(root: Object3D, texture: CanvasTexture | null) {
+  const uniforms = root.userData.film as FilmUniforms
+  uniforms.decalMap.value = texture
+  uniforms.decalStrength.value = texture ? 1 : 0
+  if (texture) setDecalProjection(root)
+}
+
+/** The template's masks and films, once they've loaded. */
+function setRegionTextures(root: Object3D, regionMap: CanvasTexture, films: (Texture | null)[], count: number) {
+  const uniforms = root.userData.film as FilmUniforms
+  uniforms.regionMap.value = regionMap
+  uniforms.regionCount.value = count
+  films.forEach((texture, index) => {
+    uniforms.regionFilm.value[index] = texture
+    uniforms.regionFilmStrength.value[index] = texture ? 1 : 0
+  })
   uniforms.templateStrength.value = 1
 }
 
-function HelmetModel({ url, tint = "#ffffff", finish = "gloss", paintFinish = "gloss", film = null, trim = "#171917", spoiler = false, accessories, artwork, graphic = "#111412", accent = "#c6f432", graphicFilm, accentFilm }: Omit<HelmetSceneProps, "autoRotate" | "view">) {
+function HelmetModel({ url, tint = "#ffffff", finish = "gloss", paintFinish = "gloss", film = null, trim = "#171917", spoiler = false, accessories, design = null, visor = null, aeroMesh }: Omit<HelmetSceneProps, "autoRotate" | "view">) {
   const { scene } = useGLTF(url)
   const root = useMemo(() => cloneHelmet(scene), [scene])
 
+  const regions = useMemo(() => design?.regions.slice(0, MAX_REGIONS) ?? [], [design])
+  // Masks only change with the template; colours change on every click.
+  const maskKey = regions.map((region) => region.maskUrl ?? "").join("|")
+  const filmKey = regions.map((region) => region.filmUrl ?? "").join("|")
+
   useLayoutEffect(() => {
-    setArtworkColours(root, graphic, accent, Boolean(artwork), paintFinish)
-  }, [root, artwork, graphic, accent, paintFinish])
+    setRegionAppearance(root, regions, paintFinish)
+  }, [root, regions, paintFinish])
 
   // Never show the previous design while a different template's masks load.
   useLayoutEffect(() => {
     setArtworkEnabled(root, false)
-  }, [root, artwork])
+  }, [root, maskKey])
 
   useEffect(() => {
-    if (!artwork) return
+    if (regions.length === 0) return
     let cancelled = false
     Promise.all([
-      loadTemplateMask(artwork.graphicMask), loadTemplateMask(artwork.accentMask),
-      graphicFilm ? loadFilmTexture(graphicFilm) : null,
-      accentFilm ? loadFilmTexture(accentFilm) : null,
-    ]).then(([graphicMask, accentMask, graphicTexture, accentTexture]) => {
-      if (cancelled) return
-      setArtworkTextures(root, graphicMask, accentMask, graphicTexture, accentTexture)
-    }).catch((error) => console.error("Couldn't load helmet template artwork:", error))
-    return () => { cancelled = true }
-  }, [root, artwork, graphicFilm, accentFilm])
+      buildRegionMap(regions.map((region) => region.maskUrl)),
+      ...regions.map((region) => (region.filmUrl ? loadFilmTexture(region.filmUrl) : Promise.resolve(null))),
+    ])
+      .then(([regionMap, ...films]) => {
+        if (cancelled || !regionMap) return
+        setRegionTextures(root, regionMap, films, regions.length)
+      })
+      .catch((error) => console.error("Couldn't load helmet template artwork:", error))
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the mask and film URLs, not the array identity
+  }, [root, maskKey, filmKey, regions.length])
+
+  // Names, numbers and logos, drawn into one atlas and projected onto the shell.
+  useEffect(() => {
+    if (!design) {
+      setDecals(root, null)
+      return
+    }
+    let cancelled = false
+    buildDecalAtlas(design.decals)
+      .then((texture) => {
+        if (!cancelled) setDecals(root, texture)
+      })
+      .catch((error) => console.error("Couldn't draw the helmet personalisation:", error))
+    return () => {
+      cancelled = true
+    }
+  }, [root, design])
+
+  useLayoutEffect(() => updateVisor(root, visor), [root, visor])
 
   // Swap films without a loading flash: the current film stays on until the next one has loaded.
   useEffect(() => {
@@ -128,7 +203,10 @@ function HelmetModel({ url, tint = "#ffffff", finish = "gloss", paintFinish = "g
   }, [film, root])
 
   // Layout effect: the colour is set before the first frame is drawn, so the helmet never flashes white.
-  useLayoutEffect(() => updateHelmetSurface(root, tint, finish, trim, spoiler, accessories), [root, tint, finish, trim, spoiler, accessories])
+  useLayoutEffect(
+    () => updateHelmetSurface(root, tint, finish, trim, spoiler, accessories, aeroMesh),
+    [root, tint, finish, trim, spoiler, accessories, aeroMesh],
+  )
   useEffect(() => () => disposeHelmetMaterials(root), [root])
 
   return <primitive object={root} dispose={null} />
@@ -186,11 +264,9 @@ export default function HelmetScene({
   film = null,
   trim = "#171917",
   accessories,
-  artwork,
-  graphic,
-  accent,
-  graphicFilm,
-  accentFilm,
+  design = null,
+  visor = null,
+  aeroMesh,
   spoiler = false,
   autoRotate = true,
   view = null,
@@ -220,7 +296,7 @@ export default function HelmetScene({
           <StudioLights />
           <Bounds fit clip observe margin={1.15}>
             <Center>
-              <HelmetModel url={url} tint={film ? "#ffffff" : tint} finish={finish} paintFinish={paintFinish} film={film} trim={trim} spoiler={spoiler} accessories={accessories} artwork={artwork} graphic={graphic} accent={accent} graphicFilm={graphicFilm} accentFilm={accentFilm} />
+              <HelmetModel url={url} tint={film ? "#ffffff" : tint} finish={finish} paintFinish={paintFinish} film={film} trim={trim} spoiler={spoiler} accessories={accessories} design={design} visor={visor} aeroMesh={aeroMesh} />
             </Center>
           </Bounds>
           <ContactShadows position={[0, -0.42, 0]} opacity={0.35} scale={3} blur={2.6} far={1} />

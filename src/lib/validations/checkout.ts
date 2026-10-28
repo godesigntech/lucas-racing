@@ -24,8 +24,21 @@ export const checkoutSchema = z
     address: addressSchema,
     notes: z.string().trim().max(2000, "Keep notes under 2,000 characters"),
     saveDetails: z.boolean(),
+    // Production scheduling. Only asked for when the basket holds a helmet, and only
+    // trusted as far as the dates the workshop published — place_order() re-checks the
+    // week's capacity, the blackouts and the turnaround before it books anything.
+    productionStartDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Choose a production start week")
+      .optional(),
+    rushTier: z.string().trim().max(60).optional(),
+    /** True when the basket holds a helmet, so a start week has to be chosen. */
+    needsProduction: z.boolean().optional(),
   })
   .superRefine((values, ctx) => {
+    if (values.needsProduction && !values.productionStartDate) {
+      ctx.addIssue({ code: "custom", path: ["productionStartDate"], message: "Choose which week we should start" })
+    }
     if (!values.requiresAddress) return
     const required: [keyof typeof values.address, string][] = [
       ["line1", "Enter the first line of your address"],
@@ -40,23 +53,63 @@ export const checkoutSchema = z
 export type CheckoutValues = z.infer<typeof checkoutSchema>
 
 const placement = z.enum(["sides", "left", "right", "front", "back", "top"])
+const partKind = z.enum(["colour", "film", "chrome", "metallic"])
+const hex = z.string().regex(/^#[0-9a-f]{6}$/i)
+const logoPath = z.string().regex(/^[0-9a-f-]{36}\/[0-9a-f-]{36}\.(png|jpg|webp)$/, "That logo isn't valid")
+
+/** A treatment on one editable region. The server re-checks it against the template. */
+const regionTreatment = z.object({ kind: partKind, value: z.string().trim().min(1).max(80) })
+
+const personalItem = z.object({
+  kind: z.enum(["name", "number", "initials", "flag", "text"]),
+  value: z.string().trim().max(24, "Text on a helmet can be up to 24 characters"),
+  position: placement,
+  colour: hex.optional(),
+  font: z.string().trim().max(20).optional(),
+  scale: z.number().min(0.5).max(2).optional(),
+  rotation: z.number().min(-45).max(45).optional(),
+})
+
+const logoItem = z.object({
+  path: logoPath,
+  position: placement,
+  scale: z.number().min(0.2).max(2).optional(),
+  rotation: z.number().min(-180).max(180).optional(),
+})
 
 export const helmetItemSchema = z.object({
   kind: z.literal("helmet"),
   slug: z.string().min(1),
   quantity: z.number().int().min(1).max(10),
   config: z.object({
+    v: z.literal("2").optional(),
     model: z.string(),
     size: z.string(),
+    route: z.enum(["new", "own"]).optional(),
     template: z.string(),
     finish: z.enum(["gloss", "satin", "matte"]),
-    baseKind: z.enum(["colour", "film", "chrome"]),
+    baseKind: partKind,
     base: z.string(),
-    graphicKind: z.enum(["colour", "film", "chrome"]).optional(),
+    graphicKind: partKind.optional(),
     graphic: z.string().optional(),
-    accentKind: z.enum(["colour", "film", "chrome"]).optional(),
+    accentKind: partKind.optional(),
     accent: z.string().optional(),
     trim: z.string(),
+
+    aero: z.string().trim().max(60).optional(),
+    visor: z.string().trim().max(60).optional(),
+    visorStrip: z
+      .object({
+        enabled: z.boolean(),
+        colour: hex,
+        text: z.string().trim().max(40, "Visor strip text can be up to 40 characters"),
+        textColour: hex.optional(),
+        font: z.string().trim().max(20).optional(),
+      })
+      .optional(),
+    regions: z.record(z.string().max(40), regionTreatment).optional(),
+    personalisation: z.array(personalItem).max(6, "You can add up to 6 pieces of personalisation").optional(),
+    logos: z.array(logoItem).max(4, "You can add up to 4 logos").optional(),
     eyeportTrim: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),
     baseTrim: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),
     grille1: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),

@@ -5,6 +5,7 @@ import { HelmetBuilder } from "@/components/builder/helmet-builder"
 import { Container } from "@/components/layout/container"
 import { StudioHighlights } from "@/components/studio/studio-highlights"
 import { Skeleton } from "@/components/ui/skeleton"
+import { getBuilderCatalog } from "@/lib/data/builder"
 import { getPriceBook, getProducts } from "@/lib/data/products"
 
 export const metadata: Metadata = {
@@ -29,12 +30,26 @@ export default function HelmetBuilderPage({ searchParams }: { searchParams: Sear
 }
 
 async function Builder({ searchParams }: { searchParams: SearchParams }) {
-  const [products, priceBook, query] = await Promise.all([getProducts(), getPriceBook(), searchParams])
+  const [products, priceBook, builder, query] = await Promise.all([
+    getProducts(),
+    getPriceBook(),
+    getBuilderCatalog(),
+    searchParams,
+  ])
   // Lets the first paint open on the right template instead of flashing the default.
   const search = new URLSearchParams()
   for (const [key, value] of Object.entries(query)) if (typeof value === "string") search.set(key, value)
   const initialSearch = search.size ? `?${search}` : ""
-  return <HelmetBuilder products={products} priceBook={priceBook} initialSearch={initialSearch} />
+  return (
+    <HelmetBuilder
+      products={products}
+      priceBook={priceBook}
+      templates={builder.templates}
+      aeroKits={builder.aeroKits}
+      visors={builder.visors}
+      initialSearch={initialSearch}
+    />
+  )
 }
 
 function BuilderSkeleton() {

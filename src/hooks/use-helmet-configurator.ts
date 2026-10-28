@@ -9,6 +9,7 @@ import {
   getInitialConfiguration,
   normaliseConfiguration,
   summariseConfiguration,
+  type BuilderExtras,
 } from "@/lib/configurator/helmet-configuration"
 import type { PriceBook } from "@/types/catalog"
 import type { HelmetConfiguration } from "@/types/configurator"
@@ -21,7 +22,16 @@ const carriedOver = [...bellParts.map(({ key }) => key), "model", "size", "finis
  * Builder state: the chosen template (design) and the build on it, kept valid as
  * the customer changes things. Look, price and summary are derived from it.
  */
-export function useHelmetConfigurator(products: CatalogProduct[], priceBook: PriceBook, start: { product: CatalogProduct; config?: HelmetConfiguration }) {
+export function useHelmetConfigurator(
+  products: CatalogProduct[],
+  priceBook: PriceBook,
+  start: { product: CatalogProduct; config?: HelmetConfiguration },
+  /**
+   * The template's regions, aero kits and visors, so price and summary match the build.
+   * It's a function of the build because the regions depend on the helmet chosen.
+   */
+  getExtras: (config: HelmetConfiguration) => BuilderExtras = () => ({}),
+) {
   const [product, setProduct] = useState(start.product)
   const [config, setConfig] = useState<HelmetConfiguration>(() =>
     start.config ? normaliseConfiguration(start.config, start.product, priceBook) : getInitialConfiguration(start.product, priceBook),
@@ -50,7 +60,7 @@ export function useHelmetConfigurator(products: CatalogProduct[], priceBook: Pri
     chooseTemplate,
     reset,
     look: configurationToLook(product, config, priceBook),
-    price: calculateHelmetPrice(product, config, priceBook),
-    summary: summariseConfiguration(product, config, priceBook),
+    price: calculateHelmetPrice(product, config, priceBook, getExtras(config)),
+    summary: summariseConfiguration(product, config, priceBook, getExtras(config)),
   }
 }

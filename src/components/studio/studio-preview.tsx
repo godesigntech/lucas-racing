@@ -4,11 +4,11 @@ import { forwardRef, useState } from "react"
 import { Box, RotateCcw } from "lucide-react"
 
 import { HelmetArt } from "@/components/helmet/helmet-art"
-import type { HelmetAngle } from "@/components/helmet-3d/helmet-scene"
+import type { HelmetAngle, SceneDesign } from "@/components/helmet-3d/helmet-scene"
+import type { VisorSettings } from "@/components/helmet-3d/model-materials"
 import { HelmetViewer } from "@/components/helmet-3d/helmet-viewer"
 import { get3dModel } from "@/lib/helmet-3d/models"
 import { shellTint } from "@/lib/helmet-3d/tint"
-import { getTemplateArtwork } from "@/lib/helmet-3d/templates"
 import { cn } from "@/lib/utils"
 import type { HelmetLook, HelmetModelId } from "@/types/helmet"
 
@@ -26,6 +26,10 @@ interface StudioPreviewProps {
   modelName: string
   designLabel: string
   templateSlug: string
+  /** Editable regions plus names, numbers and logos. Null while a template has no 3D artwork. */
+  design?: SceneDesign | null
+  visor?: VisorSettings | null
+  aeroMesh?: string | null
 }
 
 /**
@@ -33,12 +37,13 @@ interface StudioPreviewProps {
  * get the 3D viewer and preset camera angles; others show the illustration.
  */
 export const StudioPreview = forwardRef<HTMLDivElement, StudioPreviewProps>(function StudioPreview(
-  { look, modelId, modelName, designLabel, templateSlug },
+  { look, modelId, modelName, designLabel, design = null, visor = null, aeroMesh },
   ref,
 ) {
   const [view, setView] = useState<{ angle: HelmetAngle; at: number } | null>(null)
   const model3d = get3dModel(modelId)
-  const artwork = getTemplateArtwork(modelId, templateSlug)
+  // Artwork is present when at least one region has a mask cut against this model's UVs.
+  const artwork = design?.regions.some((region) => region.maskUrl) ?? false
   const art = (
     <HelmetArt look={look} title={`${modelName} preview`} className="w-[82%] max-h-[20rem] animate-in fade-in-0 zoom-in-95 duration-300" />
   )
@@ -72,11 +77,9 @@ export const StudioPreview = forwardRef<HTMLDivElement, StudioPreviewProps>(func
               accessories={look.accessories}
               spoiler={look.spoiler}
               film={look.baseTexture ?? null}
-              artwork={artwork}
-              graphic={look.graphic}
-              accent={look.accent}
-              graphicFilm={look.filmTexture}
-              accentFilm={look.accentTexture}
+              design={design}
+              visor={visor}
+              aeroMesh={aeroMesh}
               view={view}
               label={`${modelName} in 3D with your shell colour, film, finish, accessories and spoiler`}
               fallback={art}

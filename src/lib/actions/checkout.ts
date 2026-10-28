@@ -38,6 +38,12 @@ export async function placeOrder(input: PlaceOrderInput): Promise<ActionResult<{
     p_shipping: checkout.requiresAddress ? checkout.address : {},
     p_delivery_method: checkout.deliveryMethod,
     p_notes: checkout.notes,
+    // The week the customer picked. place_order() books the slot under a lock and
+    // falls back to the soonest free week if this is missing.
+    p_production: {
+      start_date: checkout.productionStartDate ?? null,
+      rush_tier: checkout.rushTier ?? "standard",
+    },
   })
 
   if (error) return databaseError(error, "We couldn't place your order. Please try again.")

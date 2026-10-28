@@ -102,10 +102,145 @@ export type ConfiguratorOptionRow = {
   label: string
   hint: string | null
   swatch: string | null
-  price: number
+  /** Null means the price is still to be confirmed; place_order() refuses to sell it. */
+  price: number | null
   is_active: boolean
   sort_order: number
   updated_at: string
+}
+
+export type DesignTemplateRow = Timestamps & {
+  id: string
+  product_slug: string
+  model_id: string
+  svg_url: string | null
+  graphic_mask_url: string | null
+  accent_mask_url: string | null
+  thumbnail_url: string | null
+  artwork_status: string
+  is_active: boolean
+  sort_order: number
+}
+
+export type TemplateRegionRow = Timestamps & {
+  id: string
+  template_id: string
+  key: string
+  label: string
+  kind: string
+  mask_url: string | null
+  svg_element_id: string | null
+  default_colour: string
+  allows_film: boolean
+  allows_chrome: boolean
+  allows_metallic: boolean
+  sort_order: number
+}
+
+export type HelmetModelSizeRow = {
+  model_id: string
+  size: string
+  price: number | null
+  is_active: boolean
+  sort_order: number
+  updated_at: string
+}
+
+export type AeroKitRow = Timestamps & {
+  id: string
+  model_id: string
+  name: string
+  summary: string | null
+  mesh_name: string | null
+  price: number | null
+  is_active: boolean
+  sort_order: number
+}
+
+export type VisorRow = Timestamps & {
+  id: string
+  model_id: string
+  name: string
+  kind: string
+  tint: string
+  opacity: number
+  metalness: number
+  price: number | null
+  is_active: boolean
+  sort_order: number
+}
+
+export type ProductionSettingsRow = {
+  id: number
+  standard_lead_weeks: number
+  weekly_capacity: number
+  booking_lead_days: number
+  horizon_weeks: number
+  rush_enabled: boolean
+  updated_at: string
+}
+
+export type ProductionRushTierRow = {
+  key: string
+  label: string
+  lead_weeks: number
+  fee: number | null
+  max_per_week: number
+  is_draft: boolean
+  is_active: boolean
+  sort_order: number
+  updated_at: string
+}
+
+export type ProductionCapacityRow = {
+  week_start: string
+  slots: number
+  note: string
+  updated_at: string
+}
+
+export type ProductionBlackoutRow = {
+  id: string
+  starts_on: string
+  ends_on: string
+  reason: string
+  created_at: string
+}
+
+export type ProductionBookingRow = {
+  id: string
+  order_id: string
+  start_date: string
+  week_start: string
+  rush_tier: string
+  lead_weeks: number
+  completion_date: string
+  helmet_count: number
+  created_at: string
+}
+
+export type OrderProofRow = Timestamps & {
+  id: string
+  order_id: string
+  order_item_id: string | null
+  kind: string
+  version: number
+  image_path: string
+  caption: string
+  status: string
+  customer_note: string
+  responded_at: string | null
+  created_by: string | null
+}
+
+/** One bookable week from public.production_availability(). */
+export type ProductionAvailabilityRow = {
+  week_start: string
+  slots: number
+  booked: number
+  available: number
+  is_blacked_out: boolean
+  is_bookable: boolean
 }
 
 export type ProfileRow = Timestamps & {
@@ -166,6 +301,10 @@ export type OrderRow = Timestamps & {
   total: number
   customer_notes: string
   admin_notes: string
+  production_start_date: string | null
+  estimated_completion_date: string | null
+  rush_tier: string | null
+  rush_fee: number
 }
 
 export type OrderItemRow = {
@@ -551,6 +690,27 @@ export type Database = {
           },
         ]
       >
+      design_templates: Table<DesignTemplateRow, "product_slug" | "model_id", keyof DesignTemplateRow>
+      template_regions: Table<TemplateRegionRow, "template_id" | "key" | "label", keyof TemplateRegionRow>
+      helmet_model_sizes: Table<HelmetModelSizeRow, "model_id" | "size", keyof HelmetModelSizeRow>
+      aero_kits: Table<AeroKitRow, "id" | "model_id" | "name", keyof AeroKitRow>
+      visors: Table<VisorRow, "id" | "model_id" | "name" | "kind", keyof VisorRow>
+      production_settings: Table<ProductionSettingsRow, never, keyof ProductionSettingsRow>
+      production_rush_tiers: Table<ProductionRushTierRow, "key" | "label" | "lead_weeks", keyof ProductionRushTierRow>
+      production_capacity: Table<ProductionCapacityRow, "week_start" | "slots", keyof ProductionCapacityRow>
+      production_blackouts: Table<ProductionBlackoutRow, "starts_on" | "ends_on", keyof ProductionBlackoutRow>
+      production_bookings: Table<
+        ProductionBookingRow,
+        "order_id" | "start_date" | "rush_tier" | "lead_weeks" | "completion_date",
+        keyof ProductionBookingRow,
+        [OrderRelationship<"production_bookings_order_id_fkey">]
+      >
+      order_proofs: Table<
+        OrderProofRow,
+        "order_id" | "image_path",
+        keyof OrderProofRow,
+        [OrderRelationship<"order_proofs_order_id_fkey">]
+      >
     }
     Views: {
       customer_summaries: { Row: CustomerSummaryRow; Relationships: [] }
@@ -591,8 +751,18 @@ export type Database = {
           p_shipping: Json
           p_delivery_method: string
           p_notes?: string
+          /** { start_date: "YYYY-MM-DD", rush_tier: "standard" } — required once the basket holds a helmet. */
+          p_production?: Json
         }
         Returns: { order_id: string; order_number: string }[]
+      }
+      production_availability: {
+        Args: { p_weeks?: number | null }
+        Returns: ProductionAvailabilityRow[]
+      }
+      respond_to_proof: {
+        Args: { p_proof_id: string; p_approved: boolean; p_note?: string }
+        Returns: undefined
       }
     }
     Enums: Record<string, never>

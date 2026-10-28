@@ -20,6 +20,26 @@ interface OrderStatusFormProps {
   paymentStatus: PaymentStatus
 }
 
+/**
+ * What usually happens next. Statuses aren't locked down — a workshop needs to be able
+ * to put an order wherever it actually is — but a nudge saves hunting through the list.
+ */
+const nextStep: Partial<Record<OrderStatus, string>> = {
+  pending: "Next: check the artwork, then send a proof below.",
+  awaiting_design_review: "Next: send a proof below. That moves the order on by itself.",
+  awaiting_proof_approval: "Waiting on the customer. They approve or ask for changes on their order page.",
+  approved_for_production: "Approved. Next: mark it scheduled once it's booked into the week.",
+  scheduled: "Booked in. Move to In production when work starts.",
+  in_production: "Next: Quality inspection when it's off the bench.",
+  quality_check: "Next: Ready for collection, or Dispatched if it's going out.",
+  ready: "Ready for the customer to collect.",
+  shipped: "On its way. Mark Completed once it lands.",
+}
+
+function suggestion(status: OrderStatus): string {
+  return nextStep[status] ?? "Changing this emails the customer."
+}
+
 /** Update an order's fulfilment and payment status, with an optional note for the history. */
 export function OrderStatusForm({ orderId, status, paymentStatus }: OrderStatusFormProps) {
   const {
@@ -45,7 +65,15 @@ export function OrderStatusForm({ orderId, status, paymentStatus }: OrderStatusF
         control={control}
         name="status"
         render={({ field }) => (
-          <FormField id="order-status" label="Order status">
+          <FormField
+            id="order-status"
+            label="Order status"
+            hint={
+              field.value === status
+                ? suggestion(status)
+                : "Changing this emails the customer, unless you're sending a proof."
+            }
+          >
             <Select value={field.value} onValueChange={field.onChange}>
               <SelectTrigger id="order-status" className="w-full">
                 <SelectValue>{orderStatusMeta[field.value].label}</SelectValue>

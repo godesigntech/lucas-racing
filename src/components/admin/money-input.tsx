@@ -28,3 +28,33 @@ export function MoneyInput({ value, onChange, className, ...props }: MoneyInputP
     </div>
   )
 }
+
+type OptionPriceInputProps = Omit<React.ComponentProps<"input">, "type" | "value" | "onChange"> & {
+  value: number | null
+  onChange: (value: number | null) => void
+}
+
+/**
+ * Pound amount that may be left blank, which means "we haven't agreed this price yet".
+ * Those options still appear in the builder and the 3D preview, but checkout stops.
+ */
+export function OptionPriceInput({ value, onChange, className, ...props }: OptionPriceInputProps) {
+  return (
+    <div className="relative">
+      <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground" aria-hidden>
+        £
+      </span>
+      <Input
+        type="number"
+        inputMode="decimal"
+        min={0}
+        step="0.01"
+        placeholder="On request"
+        value={value === null || !Number.isFinite(value) ? "" : value}
+        onChange={(event) => onChange(event.target.value === "" ? null : Number(event.target.value))}
+        className={cn("pl-8 tabular-nums", className)}
+        {...props}
+      />
+    </div>
+  )
+}

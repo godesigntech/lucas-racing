@@ -13,7 +13,7 @@ import { optionGroupSchema, type OptionGroupValues } from "@/lib/validations/adm
 import type { ConfiguratorOption, OptionGroupKey } from "@/types/catalog"
 
 import { AdminCard } from "./admin-card"
-import { MoneyInput } from "./money-input"
+import { OptionPriceInput } from "./money-input"
 
 interface OptionGroupFormProps {
   group: OptionGroupKey
@@ -61,7 +61,7 @@ export function OptionGroupForm({ group, title, description, options }: OptionGr
       >
         <div className="hidden grid-cols-[minmax(0,1fr)_9rem_5rem] gap-3 border-b border-carbon/10 px-5 py-2 text-xs font-medium text-muted-foreground sm:grid">
           <span>Option</span>
-          <span>Extra cost</span>
+          <span>Extra cost (blank = on request)</span>
           <span className="text-right">Offered</span>
         </div>
         <ul className="divide-y divide-carbon/10">
@@ -99,11 +99,11 @@ export function OptionGroupForm({ group, title, description, options }: OptionGr
                   name={`options.${index}.price`}
                   render={({ field: price }) => (
                     <div className="col-span-2 sm:col-span-1">
-                      <MoneyInput
+                      <OptionPriceInput
                         value={price.value}
                         onChange={price.onChange}
                         onBlur={price.onBlur}
-                        aria-label={`Extra cost for option ${index + 1}`}
+                        aria-label={`Extra cost for option ${index + 1}, blank for price on request`}
                         aria-invalid={rowErrors?.price ? true : undefined}
                         className="h-10"
                       />

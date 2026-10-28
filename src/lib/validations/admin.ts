@@ -105,7 +105,9 @@ export const optionGroupSchema = z.object({
       z.object({
         value: z.string(),
         label: z.string().trim().min(1, "Enter a label").max(60),
-        price,
+        // Blank means the price is still to be agreed with the client. The option stays
+        // visible in the builder but checkout refuses it, so nothing is undercharged.
+        price: price.nullable(),
         isActive: z.boolean(),
       }),
     )

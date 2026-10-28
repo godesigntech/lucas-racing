@@ -7,6 +7,7 @@ import { SectionHeading } from "@/components/shared/section-heading"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getMyProfile } from "@/lib/data/account"
 import { getPriceBook, getProducts } from "@/lib/data/products"
+import { getProductionOptions } from "@/lib/data/production"
 import { getSiteSettings } from "@/lib/data/settings"
 
 export const metadata: Metadata = {
@@ -28,11 +29,12 @@ export default function CheckoutPage() {
 }
 
 async function CheckoutContent() {
-  const [profile, settings, products, priceBook] = await Promise.all([
+  const [profile, settings, products, priceBook, production] = await Promise.all([
     getMyProfile(),
     getSiteSettings(),
     getProducts(),
     getPriceBook(),
+    getProductionOptions(),
   ])
 
   return (
@@ -41,6 +43,7 @@ async function CheckoutContent() {
       deliveryMethods={settings.deliveryMethods.filter((method) => method.active)}
       products={products}
       priceBook={priceBook}
+      production={production}
     />
   )
 }

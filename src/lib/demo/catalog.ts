@@ -2,6 +2,7 @@ import type { ConfiguratorOption, Film } from "@/types/catalog"
 import type { HelmetModel } from "@/types/helmet"
 import type { Product } from "@/types/product"
 import type { SiteSettings } from "@/types/settings"
+import type { AeroKit, DesignTemplate, TemplateRegion, Visor } from "@/types/templates"
 
 // Sample data for demo mode. Mirrors supabase/migrations/*_seed.sql.
 
@@ -54,7 +55,8 @@ const option = (
   group: ConfiguratorOption["group"],
   value: string,
   label: string,
-  price: number,
+  /** Null mirrors a real option the client hasn't priced yet. */
+  price: number | null,
   sortOrder: number,
   extra: { hint?: string; swatch?: string } = {},
 ): ConfiguratorOption => ({ group, value, label, price, sortOrder, isActive: true, hint: extra.hint ?? null, swatch: extra.swatch ?? null })
@@ -65,6 +67,16 @@ export const demoOptions: ConfiguratorOption[] = [
   option("finish", "gloss", "Gloss", 0, 1),
   option("finish", "matte", "Matte", 25, 2),
   option("finish", "chrome", "Chrome", 150, 3, { hint: "In-house chrome base" }),
+  option("material", "chrome", "Chrome", 150, 1, { swatch: "#c9ccd1", hint: "Polished in-house chrome" }),
+  // Prices the client hasn't confirmed: previewable, but checkout stops on them.
+  option("material", "metallic", "Metallic", null, 2, { swatch: "#b8bdc4" }),
+  option("visor_strip", "none", "No visor strip", 0, 1),
+  option("visor_strip", "printed", "Printed visor strip", null, 2),
+  option("personalisation", "name", "Name", 0, 1),
+  option("personalisation", "number", "Racing number", 0, 2),
+  option("personalisation", "initials", "Initials", 0, 3),
+  option("personalisation", "flag", "National flag", 0, 4),
+  option("personalisation", "text", "Custom text", 0, 5),
   option("base", "#f4f3ee", "Paddock white", 0, 1, { swatch: "#f4f3ee" }),
   option("base", "#111412", "Carbon black", 0, 2, { swatch: "#111412" }),
   option("base", "#d7261e", "Race red", 0, 3, { swatch: "#d7261e" }),
@@ -159,3 +171,111 @@ export const demoProducts: Product[] = [
     isActive: true, sortOrder: 8,
   },
 ]
+
+// --- 16-step builder ---------------------------------------------------------
+// Mirrors the 20261018* migrations: templates with editable regions, aero kits and
+// visors. The Bell KC7 masks are the real artwork already in /public.
+
+const region = (
+  key: string,
+  label: string,
+  defaultColour: string,
+  extra: Partial<TemplateRegion> = {},
+): TemplateRegion => ({
+  id: `demo-region-${key}`,
+  key,
+  label,
+  kind: "fill",
+  maskUrl: null,
+  svgElementId: null,
+  defaultColour,
+  allowsFilm: true,
+  allowsChrome: false,
+  allowsMetallic: true,
+  sortOrder: 0,
+  ...extra,
+})
+
+const bellTemplate = (slug: string, sortOrder: number): DesignTemplate => {
+  const path = `/models/templates/bell-kc7/${slug}`
+  return {
+    id: `demo-template-${slug}`,
+    productSlug: slug,
+    modelId: "bell-kc7",
+    svgUrl: null,
+    graphicMaskUrl: `${path}/graphic-mask.png`,
+    accentMaskUrl: `${path}/accent-mask.png`,
+    thumbnailUrl: `${path}/thumbnail.png`,
+    artworkStatus: "ready",
+    isActive: true,
+    sortOrder,
+    regions: [
+      region("base", "Shell", "#101114", { allowsChrome: true, sortOrder: 1 }),
+      region("graphic", "Graphic", "#d81f2a", { maskUrl: `${path}/graphic-mask.png`, sortOrder: 2 }),
+      region("accent", "Pinstripe", "#f2f2f2", { kind: "pinstripe", maskUrl: `${path}/accent-mask.png`, sortOrder: 3 }),
+    ],
+  }
+}
+
+export const demoTemplates: DesignTemplate[] = [
+  "apex",
+  "twin-stripe",
+  "split-tone",
+  "shard",
+  "forged-flow",
+  "chrome-strike",
+].map((slug, index) => bellTemplate(slug, index + 1))
+
+export const demoAeroKits: AeroKit[] = [
+  {
+    id: "bell-kc7-standard",
+    modelId: "bell-kc7",
+    name: "Standard aero",
+    summary: "The helmet as Bell supplies it.",
+    meshName: null,
+    price: 0,
+    isActive: true,
+    sortOrder: 1,
+  },
+  {
+    id: "bell-kc7-hp7-small",
+    modelId: "bell-kc7",
+    name: "HP7 F1 small spoiler",
+    summary: "Low-profile rear spoiler.",
+    meshName: "Spoiler_HP7_F1_Small",
+    // Not priced yet: previewable, but checkout stops on it.
+    price: null,
+    isActive: true,
+    sortOrder: 2,
+  },
+  {
+    id: "arai-sk6-standard",
+    modelId: "arai-sk6",
+    name: "Standard aero",
+    summary: "The helmet as Arai supplies it.",
+    meshName: null,
+    price: 0,
+    isActive: true,
+    sortOrder: 1,
+  },
+]
+
+const visor = (id: string, modelId: string, name: string, kind: Visor["kind"], tint: string, opacity: number, metalness: number, price: number | null, sortOrder: number): Visor => ({
+  id,
+  modelId,
+  name,
+  kind,
+  tint,
+  opacity,
+  metalness,
+  price,
+  isActive: true,
+  sortOrder,
+})
+
+export const demoVisors: Visor[] = demoModels.flatMap((model) => [
+  visor(`clear-${model.id}`, model.id, "Clear", "clear", "#ffffff", 0.12, 0, 0, 1),
+  visor(`smoked-${model.id}`, model.id, "Smoked", "smoked", "#2b2f36", 0.72, 0, null, 2),
+  visor(`iridium-silver-${model.id}`, model.id, "Iridium silver", "iridium", "#c9d4e2", 0.62, 0.85, null, 3),
+  visor(`iridium-blue-${model.id}`, model.id, "Iridium blue", "iridium", "#3f6ad8", 0.62, 0.85, null, 4),
+])

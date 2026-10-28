@@ -22,8 +22,17 @@ export function formatPrice(amount: number | null): string {
 }
 
 /** "+£25" for option surcharges; empty when free. */
-export function formatSurcharge(amount: number | undefined): string {
+export function formatSurcharge(amount: number | null | undefined): string {
   return amount ? `+${formatMoney(amount)}` : ""
+}
+
+/**
+ * What to show against one configurator option: a surcharge, nothing when it's included,
+ * or a note when the workshop hasn't priced it yet. Those can be previewed but not bought.
+ */
+export function formatOptionPrice(amount: number | null | undefined): string {
+  if (amount === null) return "Price on request"
+  return formatSurcharge(amount)
 }
 
 export function formatDate(value: string): string {

@@ -6,6 +6,7 @@ import { AdminCard } from "@/components/admin/admin-card"
 import { AdminNotesForm } from "@/components/admin/admin-notes-form"
 import { AdminPageHeader } from "@/components/admin/admin-page-header"
 import { OrderStatusForm } from "@/components/admin/order-status-form"
+import { OrderProofs } from "@/components/admin/orders/order-proofs"
 import { DeliveryDetails } from "@/components/orders/delivery-details"
 import { OrderItems } from "@/components/orders/order-items"
 import { OrderTimeline } from "@/components/orders/order-timeline"
@@ -14,6 +15,7 @@ import { OrderStatusBadge, PaymentStatusBadge } from "@/components/orders/status
 import { Skeleton } from "@/components/ui/skeleton"
 import { requireOrderViewer } from "@/lib/auth/session"
 import { getAdminOrder, getOrderLogos } from "@/lib/data/admin"
+import { listOrderProofs } from "@/lib/data/proofs"
 import { formatDateTime } from "@/lib/format"
 
 export const metadata = { title: "Order" }
@@ -32,7 +34,10 @@ async function OrderDetail({ id }: { id: string }) {
   const [user, order] = await Promise.all([requireOrderViewer(), getAdminOrder(id)])
   // Teamwear staff can look, not change: no logos, notes or status updates.
   const canManage = user.isAdmin
-  const logos = canManage ? await getOrderLogos(order) : []
+  const [logos, proofs] = await Promise.all([
+    canManage ? getOrderLogos(order) : [],
+    canManage ? listOrderProofs(order.id) : [],
+  ])
 
   return (
     <>
@@ -74,6 +79,8 @@ async function OrderDetail({ id }: { id: string }) {
               </ul>
             </AdminCard>
           )}
+
+          {canManage && <OrderProofs orderId={order.id} proofs={proofs} />}
 
           {order.customerNotes && (
             <AdminCard title="Customer notes">

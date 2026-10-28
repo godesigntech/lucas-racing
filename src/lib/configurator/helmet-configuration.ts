@@ -1,6 +1,8 @@
 import { bellParts, hasCustomBellParts } from "@/lib/helmet-3d/parts"
 import { colourDistance } from "@/lib/design-assistant/colour"
+import { getTreatment } from "@/lib/configurator/regions"
 import { first3dModel } from "@/lib/helmet-3d/models"
+import type { AeroKit, Visor } from "@/types/templates"
 import type { ConfiguratorOption, Film, PriceBook } from "@/types/catalog"
 import type {
   ConfigSummaryLine,
@@ -45,6 +47,22 @@ export const logoPlacements: Placement[] = ["back", "top", "left", "right", "fro
 /** Parts a template has: every design has a shell and pinstripe; plain ones have no graphic. */
 export function templateParts(product: CatalogProduct): PartId[] {
   return product.look.layout === "blank" ? ["base", "accent"] : ["base", "graphic", "accent"]
+}
+
+/**
+ * The builder's catalogue beyond the price book. Passed in rather than fetched, so the
+ * pricing mirror and the summary stay pure and match what the customer is looking at.
+ */
+export interface BuilderExtras {
+  regions?: { key: string; label: string }[]
+  aeroKits?: AeroKit[]
+  visors?: Visor[]
+}
+
+/** Regions to price: the template's own when we know them, else the original three. */
+function priceableRegions(product: CatalogProduct, extras: BuilderExtras): { key: string; label: string }[] {
+  if (extras.regions?.length) return extras.regions
+  return templateParts(product).map((part) => ({ key: part, label: partLabels[part] }))
 }
 
 export function partOf(config: HelmetConfiguration, part: PartId): { kind: PartKind; value: string } | null {
@@ -184,12 +202,86 @@ export function normaliseConfiguration(
   const raceNumber = typeof input.raceNumber === "string" ? input.raceNumber.replace(/[^0-9a-z]/gi, "").slice(0, 3).toUpperCase() : ""
   if (riderName) config.riderName = riderName
   if (raceNumber) config.raceNumber = raceNumber
-  if (typeof input.logo === "string" && /^[0-9a-f-]{36}\/[0-9a-f-]{36}\.(png|jpg|webp)$/.test(input.logo)) config.logo = input.logo
+  if (typeof input.logo === "string" && LOGO_PATH.test(input.logo)) config.logo = input.logo
   config.namePosition = validPlacement(input.namePosition, namePlacements, "sides")
   config.numberPosition = validPlacement(input.numberPosition, numberPlacements, "sides")
   config.logoPosition = validPlacement(input.logoPosition, logoPlacements, "back")
+  return carryV2Fields(config, raw as Partial<HelmetConfiguration>, priceBook)
+}
+
+const LOGO_PATH = /^[0-9a-f-]{36}\/[0-9a-f-]{36}\.(png|jpg|webp)$/
+const PART_KINDS: PartKind[] = ["colour", "film", "chrome", "metallic"]
+
+/**
+ * The fields the 16-step builder added. They're checked for shape here; what can
+ * actually be sold is settled by public.place_order(), which re-reads every price.
+ *
+ * Anything unrecognised is dropped rather than carried, so a hand-edited share link
+ * can't smuggle values into the basket.
+ */
+function carryV2Fields(
+  config: HelmetConfiguration,
+  input: Partial<HelmetConfiguration>,
+  priceBook: PriceBook,
+): HelmetConfiguration {
+  if (input.route === "own" && activeOptions(priceBook, "route").some((option) => option.value === "own")) {
+    config.route = "own"
+  } else if (input.route === "new" || input.route === "own") {
+    config.route = "new"
+  }
+
+  if (typeof input.aero === "string" && input.aero) config.aero = input.aero.slice(0, 60)
+  if (typeof input.visor === "string" && input.visor) config.visor = input.visor.slice(0, 60)
+
+  const strip = input.visorStrip
+  if (strip && typeof strip === "object" && typeof strip.text === "string") {
+    config.visorStrip = {
+      enabled: Boolean(strip.enabled),
+      colour: isHex(strip.colour) ? strip.colour : "#101114",
+      text: strip.text.slice(0, 40),
+      textColour: isHex(strip.textColour) ? strip.textColour : "#ffffff",
+      font: typeof strip.font === "string" ? strip.font.slice(0, 20) : "racing",
+    }
+  }
+
+  if (input.regions && typeof input.regions === "object") {
+    const regions: NonNullable<HelmetConfiguration["regions"]> = {}
+    for (const [key, treatment] of Object.entries(input.regions)) {
+      if (!treatment || typeof treatment !== "object") continue
+      if (!PART_KINDS.includes(treatment.kind) || typeof treatment.value !== "string") continue
+      regions[key.slice(0, 40)] = { kind: treatment.kind, value: treatment.value.slice(0, 80) }
+    }
+    if (Object.keys(regions).length > 0) config.regions = regions
+  }
+
+  if (Array.isArray(input.personalisation)) {
+    const items = input.personalisation
+      .filter((item) => item && typeof item.value === "string" && typeof item.kind === "string")
+      .slice(0, 6)
+      .map((item) => ({
+        ...item,
+        value: item.value.slice(0, 24),
+        position: validPlacement(item.position, item.kind === "number" ? numberPlacements : namePlacements, "sides"),
+      }))
+    if (items.length > 0) config.personalisation = items
+  }
+
+  if (Array.isArray(input.logos)) {
+    const logos = input.logos
+      .filter((logo) => logo && typeof logo.path === "string" && LOGO_PATH.test(logo.path))
+      .slice(0, 4)
+      .map((logo) => ({ ...logo, position: validPlacement(logo.position, logoPlacements, "back") }))
+    if (logos.length > 0) config.logos = logos
+  }
+
+  // Mark the build as the new format once it carries anything only that format has.
+  if (config.regions || config.personalisation || config.logos || config.visorStrip || config.aero || config.visor || config.route) {
+    config.v = "2"
+  }
   return config
 }
+
+const isHex = (value: unknown): value is string => typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value)
 
 function colourOption(priceBook: PriceBook, value: string) {
   return priceBook.options.base.find((option) => option.value === value)
@@ -248,25 +340,31 @@ export function configurationToLook(product: CatalogProduct, config: HelmetConfi
  * Price of one helmet. Mirrors public.place_order(), the source of truth at checkout.
  * Null for designs priced on request.
  */
-export function calculateHelmetPrice(product: CatalogProduct, config: HelmetConfiguration, priceBook: PriceBook): PriceBreakdown | null {
+export function calculateHelmetPrice(
+  product: CatalogProduct,
+  config: HelmetConfiguration,
+  priceBook: PriceBook,
+  extras: BuilderExtras = {},
+): PriceBreakdown | null {
   if (product.startingPrice === null || hasCustomBellParts(config)) return null
   const lines: PriceLine[] = [{ label: `${product.name} design`, amount: product.startingPrice }]
 
+  // Only charge for a helmet when we're the ones supplying it.
   const model = priceBook.models.find((item) => item.id === config.model)
-  if (model) lines.push({ label: `New ${model.name}`, amount: model.newHelmetPrice })
+  if (model && (config.route ?? "new") === "new") lines.push({ label: `New ${model.name}`, amount: model.newHelmetPrice })
 
-  for (const part of templateParts(product)) {
-    const paint = partOf(config, part)
+  for (const { key, label } of priceableRegions(product, extras)) {
+    const paint = getTreatment(config, key)
     if (!paint) continue
     if (paint.kind === "film") {
       const film = priceBook.films.find((item) => item.id === paint.value)
-      if (film?.price) lines.push({ label: `${partLabels[part]}: ${film.name}`, amount: film.price })
-    } else if (paint.kind === "chrome") {
-      const chrome = priceBook.options.material.find((option) => option.value === "chrome")
-      if (chrome?.price) lines.push({ label: `${partLabels[part]}: chrome`, amount: chrome.price })
+      if (film?.price) lines.push({ label: `${label}: ${film.name}`, amount: film.price })
+    } else if (paint.kind === "chrome" || paint.kind === "metallic") {
+      const material = priceBook.options.material.find((option) => option.value === paint.kind)
+      if (material?.price) lines.push({ label: `${label}: ${material.label.toLowerCase()}`, amount: material.price })
     } else {
       const colour = colourOption(priceBook, paint.value)
-      if (colour?.price) lines.push({ label: `${partLabels[part]}: ${colour.label}`, amount: colour.price })
+      if (colour?.price) lines.push({ label: `${label}: ${colour.label}`, amount: colour.price })
     }
   }
 
@@ -274,31 +372,77 @@ export function calculateHelmetPrice(product: CatalogProduct, config: HelmetConf
   if (finish?.price) lines.push({ label: `${finish.label} finish`, amount: finish.price })
   const trim = priceBook.options.trim.find((item) => item.value === config.trim)
   if (trim?.price) lines.push({ label: `${trim.label} rubber trim`, amount: trim.price })
-  const spoiler = priceBook.options.spoiler.find((item) => item.value === config.spoiler)
-  if (spoiler?.price) lines.push({ label: "Rear spoiler", amount: spoiler.price })
+
+  const aero = extras.aeroKits?.find((kit) => kit.id === config.aero)
+  if (aero) {
+    if (aero.price) lines.push({ label: aero.name, amount: aero.price })
+  } else {
+    const spoiler = priceBook.options.spoiler.find((item) => item.value === config.spoiler)
+    if (spoiler?.price) lines.push({ label: "Rear spoiler", amount: spoiler.price })
+  }
+
+  const visor = extras.visors?.find((item) => item.id === config.visor)
+  if (visor?.price) lines.push({ label: `${visor.name} visor`, amount: visor.price })
+
+  if (config.visorStrip?.enabled) {
+    const strip = priceBook.options.visor_strip?.find((item) => item.value === "printed")
+    if (strip?.price) lines.push({ label: "Visor strip", amount: strip.price })
+  }
+
+  for (const item of config.personalisation ?? []) {
+    if (!item.value.trim()) continue
+    const option = priceBook.options.personalisation?.find((entry) => entry.value === item.kind)
+    if (option?.price) lines.push({ label: option.label, amount: option.price })
+  }
 
   return { lines, total: lines.reduce((sum, line) => sum + line.amount, 0) }
 }
 
 /** Plain-language summary of a build, matching the order summary saved at checkout. */
-export function summariseConfiguration(product: CatalogProduct, config: HelmetConfiguration, priceBook: PriceBook): ConfigSummaryLine[] {
+export function summariseConfiguration(
+  product: CatalogProduct,
+  config: HelmetConfiguration,
+  priceBook: PriceBook,
+  extras: BuilderExtras = {},
+): ConfigSummaryLine[] {
   const model = priceBook.models.find((item) => item.id === config.model)
+  const supply = (config.route ?? "new") === "own" ? "your own shell" : "new"
   const lines: ConfigSummaryLine[] = [
-    { key: "model", label: "Helmet", value: model ? `${model.name} (new)` : config.model },
+    { key: "model", label: "Helmet", value: model ? `${model.name} (${supply})` : config.model },
     { key: "size", label: "Helmet size", value: config.size },
     { key: "template", label: "Template", value: product.name },
   ]
-  for (const part of templateParts(product)) {
-    const paint = partOf(config, part)
-    if (paint) lines.push({ key: part, label: partLabels[part], value: partLabel(priceBook, paint) })
+  for (const { key, label } of priceableRegions(product, extras)) {
+    const paint = getTreatment(config, key)
+    if (paint) lines.push({ key, label, value: partLabel(priceBook, paint) })
   }
   const option = (group: "finish" | "trim" | "spoiler") =>
     priceBook.options[group].find((item) => item.value === config[group])?.label ?? config[group]
   lines.push(
     { key: "finish", label: "Finish", value: option("finish") },
     { key: "trim", label: config.eyeportTrim || config.baseTrim ? "Default trim colour" : "Rubber trim", value: option("trim") },
-    { key: "spoiler", label: "Rear spoiler", value: option("spoiler") },
   )
+
+  const aero = extras.aeroKits?.find((kit) => kit.id === config.aero)
+  lines.push(aero ? { key: "aero", label: "Aero kit", value: aero.name } : { key: "spoiler", label: "Rear spoiler", value: option("spoiler") })
+
+  const visor = extras.visors?.find((item) => item.id === config.visor)
+  if (visor) lines.push({ key: "visor", label: "Visor", value: visor.name })
+
+  if (config.visorStrip?.enabled) {
+    lines.push({ key: "visorStrip", label: "Visor strip", value: config.visorStrip.text.trim() || "Plain" })
+  }
+
+  // Indexed keys: a build can carry several names or logos, and React needs them unique.
+  ;(config.personalisation ?? []).forEach((item, index) => {
+    if (!item.value.trim()) return
+    const label = priceBook.options.personalisation?.find((entry) => entry.value === item.kind)?.label ?? item.kind
+    lines.push({ key: `personalisation-${index}`, label, value: `${item.value.trim()} · ${placementLabels[item.position]}` })
+  })
+
+  ;(config.logos ?? []).forEach((logo, index) => {
+    lines.push({ key: `logos-${index}`, label: "Logo", value: `Uploaded · ${placementLabels[logo.position]}` })
+  })
   if (config.model === "bell-kc7") {
     for (const { key, label } of bellParts) {
       const colour = config[key]
@@ -320,11 +464,25 @@ export function configurationToText(product: CatalogProduct, summary: ConfigSumm
   return [`Design: ${product.name}`, ...summary.map((line) => `${line.label}: ${line.value}`)].join("\n")
 }
 
-/** Share link parameters for a build. The logo is private, so it isn't shared. */
+/**
+ * Share link parameters for a build. Logos are private, so they aren't shared.
+ *
+ * The flat fields stay as plain query parameters, which keeps every link shared before
+ * the 16-step builder working. Anything that doesn't fit in a single string — regions,
+ * personalisation, the visor strip — is packed into one `d` parameter.
+ */
 export function configToSearchParams(config: HelmetConfiguration): URLSearchParams {
   const params = new URLSearchParams()
+  const nested: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(config)) {
-    if (key !== "logo" && typeof value === "string" && value) params.set(key, value)
+    if (key === "logo" || key === "logos") continue
+    if (typeof value === "string" && value) params.set(key, value)
+    else if (value && typeof value === "object") nested[key] = value
+  }
+  if (Object.keys(nested).length > 0) {
+    // base64url, so the link survives being pasted into a message or an email.
+    const packed = btoa(JSON.stringify(nested)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")
+    params.set("d", packed)
   }
   return params
 }

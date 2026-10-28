@@ -28,6 +28,7 @@ interface StepPartsProps {
 const kindMeta: Record<PartKind, { label: string; icon: typeof Palette }> = {
   colour: { label: "Colour", icon: Palette },
   film: { label: "Hydro-dip film", icon: Droplets },
+  metallic: { label: "Metallic", icon: Sparkles },
   chrome: { label: "Chrome", icon: Sparkles },
 }
 

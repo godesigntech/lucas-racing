@@ -19,9 +19,9 @@ export interface Film {
   sortOrder: number
 }
 
-export type OptionGroupKey = "route" | "finish" | "base" | "trim" | "spoiler" | "material"
+export type OptionGroupKey = "route" | "finish" | "base" | "trim" | "spoiler" | "material" | "visor_strip" | "personalisation"
 
-export const optionGroupKeys: OptionGroupKey[] = ["route", "finish", "base", "trim", "spoiler", "material"]
+export const optionGroupKeys: OptionGroupKey[] = ["route", "finish", "base", "trim", "spoiler", "material", "visor_strip", "personalisation"]
 
 export interface ConfiguratorOption {
   group: OptionGroupKey
@@ -29,9 +29,15 @@ export interface ConfiguratorOption {
   label: string
   hint: string | null
   swatch: string | null
-  price: number
+  /** Null means the price is still to be agreed: previewable, but checkout is blocked. */
+  price: number | null
   isActive: boolean
   sortOrder: number
+}
+
+/** True when anything the customer picked has no agreed price yet. */
+export function isPriceOnRequest(option: Pick<ConfiguratorOption, "price"> | undefined | null): boolean {
+  return option != null && option.price === null
 }
 
 /** Everything needed to price and render the configurator. */
