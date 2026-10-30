@@ -157,7 +157,8 @@ if (decalStrength > 0.0) {
   vec4 decal = vec4(0.0);
 
   // Both sides share a quadrant, mirrored, so a name reads correctly left and right.
-  flat2 = vec2(sign(dn.x) * dp.z + 0.5, 0.5 - dp.y);
+  // Seen from +x the camera's right is -z (and from -x it's +z), hence the minus.
+  flat2 = vec2(-sign(dn.x) * dp.z + 0.5, 0.5 - dp.y);
   decal = mix(decal, sampleDecal(flat2, vec2(0.0, 0.0)), pow(abs(dn.x), 3.0));
 
   flat2 = vec2(dp.x + 0.5, 0.5 - dp.y);
