@@ -79,6 +79,7 @@ export function CheckoutForm({ profile, deliveryMethods, products, priceBook, pr
       productionStartDate: "",
       rushTier: "standard",
       needsProduction: false,
+      hasHelmet: false,
     },
   })
 
@@ -96,6 +97,11 @@ export function CheckoutForm({ profile, deliveryMethods, products, priceBook, pr
   useEffect(() => {
     setValue("needsProduction", needsProduction)
   }, [needsProduction, setValue])
+  // Helmet orders need a full profile (phone and address), whatever the delivery method.
+  useEffect(() => {
+    setValue("hasHelmet", hasHelmets)
+  }, [hasHelmets, setValue])
+  const showAddress = Boolean(delivery?.requiresAddress) || hasHelmets
 
   async function onSubmit(values: CheckoutValues) {
     const result = await placeOrder({
@@ -172,7 +178,7 @@ export function CheckoutForm({ profile, deliveryMethods, products, priceBook, pr
                 autoComplete="email"
               />
             </FormField>
-            <FormField id="checkout-phone" label="Phone" optional error={errors.phone?.message}>
+            <FormField id="checkout-phone" label="Phone" optional={!hasHelmets} error={errors.phone?.message}>
               <Input
                 {...register("phone")}
                 {...fieldA11y("checkout-phone", errors.phone?.message)}
@@ -199,9 +205,15 @@ export function CheckoutForm({ profile, deliveryMethods, products, priceBook, pr
               />
             )}
           />
-          {delivery?.requiresAddress && (
+          {showAddress && (
             <div className="mt-6 border-t border-carbon/10 pt-6">
-              <h3 className="mb-4 text-sm font-semibold">Delivery address</h3>
+              <h3 className="mb-1 text-sm font-semibold">{delivery?.requiresAddress ? "Delivery address" : "Your address"}</h3>
+              {hasHelmets && (
+                <p className="mb-4 text-xs text-muted-foreground">
+                  Custom helmets need your full contact details. We save them to your account so the workshop can reach you.
+                </p>
+              )}
+              {!hasHelmets && <div className="mb-3" />}
               <AddressFields
                 register={register}
                 idPrefix="checkout-address"
@@ -249,7 +261,8 @@ export function CheckoutForm({ profile, deliveryMethods, products, priceBook, pr
               placeholder="e.g. the race date you need it for, or anything we should know about your order."
             />
           </FormField>
-          <Controller
+          {/* Helmet orders always save the details to the account; the choice only applies to other orders. */}
+          {!hasHelmets && <Controller
             control={control}
             name="saveDetails"
             render={({ field }) => (
@@ -264,7 +277,7 @@ export function CheckoutForm({ profile, deliveryMethods, products, priceBook, pr
                 </Label>
               </div>
             )}
-          />
+          />}
         </CheckoutSection>
 
         <div className="flex gap-4 rounded-3xl border border-brand-ink/20 bg-accent p-5 text-accent-foreground">

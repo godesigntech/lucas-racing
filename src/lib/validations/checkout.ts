@@ -34,12 +34,22 @@ export const checkoutSchema = z
     rushTier: z.string().trim().max(60).optional(),
     /** True when the basket holds a helmet, so a start week has to be chosen. */
     needsProduction: z.boolean().optional(),
+    /**
+     * True when the basket holds a custom helmet. Helmet orders need a complete
+     * profile (phone and full address) whatever the delivery method, so the
+     * workshop can always reach the customer. The server works this out from the
+     * basket itself rather than trusting the browser.
+     */
+    hasHelmet: z.boolean().optional(),
   })
   .superRefine((values, ctx) => {
     if (values.needsProduction && !values.productionStartDate) {
       ctx.addIssue({ code: "custom", path: ["productionStartDate"], message: "Choose which week we should start" })
     }
-    if (!values.requiresAddress) return
+    if (values.hasHelmet && !values.phone) {
+      ctx.addIssue({ code: "custom", path: ["phone"], message: "Enter a phone number so we can reach you about your helmet" })
+    }
+    if (!values.requiresAddress && !values.hasHelmet) return
     const required: [keyof typeof values.address, string][] = [
       ["line1", "Enter the first line of your address"],
       ["city", "Enter your town or city"],

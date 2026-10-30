@@ -7,7 +7,7 @@ import { getCurrentUser } from "@/lib/auth/session"
 import { isDemoMode } from "@/lib/demo/mode"
 import { notifyOrderPlaced } from "@/lib/email/notifications"
 import { createClient } from "@/lib/supabase/server"
-import { placeOrderSchema, type PlaceOrderInput } from "@/lib/validations/checkout"
+import { checkoutSchema, placeOrderSchema, type PlaceOrderInput } from "@/lib/validations/checkout"
 import type { ActionResult } from "@/types/account"
 
 import { databaseError, failure, validationError } from "./result"
@@ -20,10 +20,17 @@ export async function placeOrder(input: PlaceOrderInput): Promise<ActionResult<{
 
   const parsed = placeOrderSchema.safeParse(input)
   if (!parsed.success) return validationError(parsed.error)
-  const { items, checkout } = parsed.data
+  const { items } = parsed.data
   if (items.some((item) => item.kind === "helmet" && hasCustomBellParts(item.config))) {
     return failure("Custom Bell KC7 accessory colours need a workshop quote. Please send your design as an enquiry.")
   }
+
+  // Helmet orders need a complete profile (phone and full address). Decided from the
+  // basket here, not from the browser's flag, so the rule can't be skipped.
+  const hasHelmet = items.some((item) => item.kind !== "product")
+  const profileCheck = checkoutSchema.safeParse({ ...parsed.data.checkout, hasHelmet })
+  if (!profileCheck.success) return validationError(profileCheck.error)
+  const checkout = profileCheck.data
 
   const supabase = await createClient()
   // place_order() takes helmet builds as { slug, quantity, config } and products as { kind, variant_id, quantity }.
@@ -50,14 +57,15 @@ export async function placeOrder(input: PlaceOrderInput): Promise<ActionResult<{
   const order = data?.[0]
   if (!order) return failure("We couldn't place your order. Please try again.")
 
-  if (checkout.saveDetails) {
+  // Helmet orders always keep the profile complete, so the workshop can reach the customer.
+  if (checkout.saveDetails || hasHelmet) {
     const { address } = checkout
     await supabase
       .from("profiles")
       .update({
         full_name: checkout.name,
         phone: checkout.phone,
-        ...(checkout.requiresAddress && {
+        ...((checkout.requiresAddress || hasHelmet) && {
           address_line1: address.line1,
           address_line2: address.line2,
           city: address.city,
