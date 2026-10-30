@@ -111,7 +111,7 @@ export function StepReview({ summary, price, onEdit, pending = [] }: StepReviewP
         </dl>
       ) : (
         <p className="rounded-2xl bg-accent p-4 text-sm text-accent-foreground">
-          This design is priced on request. Send it to the workshop and we&apos;ll come back with a proof and a quote.
+          Send this design to the workshop and we&apos;ll come back with a proof and a quote.
         </p>
       )}
 

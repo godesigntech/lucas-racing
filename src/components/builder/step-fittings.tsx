@@ -4,7 +4,7 @@ import { Check } from "lucide-react"
 
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
-import { formatOptionPrice } from "@/lib/format"
+import { optionPriceLabel } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { PriceBook } from "@/types/catalog"
 import type { HelmetConfiguration, VisorStrip } from "@/types/configurator"
@@ -18,7 +18,7 @@ interface UpdateProps {
   update: (changes: Partial<HelmetConfiguration>) => void
 }
 
-/** A card in a single-choice list, with its price or "price on request". */
+/** A card in a single-choice list, with its price (nothing while it has none). */
 function ChoiceCard({
   selected,
   title,
@@ -51,9 +51,7 @@ function ChoiceCard({
           {selected && <Check className="size-4 text-brand-ink" aria-hidden />}
         </span>
         {summary && <span className="mt-0.5 block text-xs text-muted-foreground">{summary}</span>}
-        <span className={cn("mt-1 block text-xs font-semibold", price === null ? "text-amber-700" : "text-brand-ink")}>
-          {formatOptionPrice(price) || "Included"}
-        </span>
+        {price !== null && <span className="mt-1 block text-xs font-semibold text-brand-ink">{optionPriceLabel(price)}</span>}
       </span>
     </button>
   )
@@ -130,11 +128,7 @@ export function StepVisorStrip({ priceBook, config, update }: UpdateProps & { pr
           <span className="mt-0.5 block text-xs text-muted-foreground">
             A printed band across the top of the visor, with your name, number or a sponsor.
           </span>
-          {option && (
-            <span className={cn("mt-1 block text-xs font-semibold", option.price === null ? "text-amber-700" : "text-brand-ink")}>
-              {formatOptionPrice(option.price) || "Included"}
-            </span>
-          )}
+          {option && option.price !== null && <span className="mt-1 block text-xs font-semibold text-brand-ink">{optionPriceLabel(option.price)}</span>}
         </span>
         <Switch checked={strip.enabled} onCheckedChange={(enabled) => set({ enabled })} aria-label="Add a visor strip" />
       </label>

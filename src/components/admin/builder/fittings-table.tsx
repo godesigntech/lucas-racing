@@ -40,7 +40,7 @@ import type { AeroKit, Visor, VisorKind } from "@/types/templates"
 function PriceTag({ price }: { price: number | null }) {
   return (
     <span className={cn("text-xs font-semibold", price === null ? "text-amber-700" : "text-brand-ink")}>
-      {formatOptionPrice(price) || "Included"}
+      {price === null ? "No price set" : formatOptionPrice(price) || "Included"}
     </span>
   )
 }

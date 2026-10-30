@@ -285,7 +285,7 @@ function BuilderBody({
           </div>
           <p className="shrink-0 text-right">
             <span className="block font-display text-2xl font-bold leading-none sm:text-3xl" aria-live="polite">
-              {blocked ? "On request" : price ? formatMoney(price.total) : "On request"}
+              {!blocked && price ? formatMoney(price.total) : "—"}
             </span>
             <span className="text-xs text-muted-foreground">No payment today</span>
           </p>

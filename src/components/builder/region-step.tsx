@@ -7,7 +7,7 @@ import { FilmPicker } from "@/components/studio/film-picker"
 import { cn } from "@/lib/utils"
 import { allowedKinds, getTreatment, setTreatment, type BuilderRegion } from "@/lib/configurator/regions"
 import { pickableFilms } from "@/lib/configurator/helmet-configuration"
-import { formatOptionPrice } from "@/lib/format"
+import { optionPriceLabel } from "@/lib/format"
 import type { PriceBook } from "@/types/catalog"
 import type { HelmetConfiguration, PartKind } from "@/types/configurator"
 
@@ -140,7 +140,7 @@ export function RegionStep({ mode, regions, priceBook, config, update }: RegionS
                     {meta.label}
                   </span>
                   <span className="text-xs text-muted-foreground">{meta.hint}</span>
-                  {option && <span className="text-xs font-semibold text-brand-ink">{formatOptionPrice(option.price) || "Included"}</span>}
+                  {option && option.price !== null && <span className="text-xs font-semibold text-brand-ink">{optionPriceLabel(option.price)}</span>}
                 </button>
               )
             })}
