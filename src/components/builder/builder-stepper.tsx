@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { Check, Lock } from "lucide-react"
+import { Check, Flag } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -48,19 +48,23 @@ export function BuilderStepper({ current, visited, onSelect }: BuilderStepperPro
         {builderSteps.map((step, position) => {
           const active = step.id === current
           const done = !active && visited.has(step.id)
+          // The last two happen after the basket, so they're marked as a later stage —
+          // but they open, because customers (and the workshop) want to see what's coming.
           const later = step.stage !== "build"
           return (
             <li key={step.id} className="shrink-0">
               <button
                 type="button"
                 onClick={() => onSelect(step.id)}
-                disabled={later}
                 aria-current={active ? "step" : undefined}
-                title={later ? "This happens after your basket" : undefined}
+                // The label has to come first, or a screen reader announces the tooltip
+                // instead of the step's name.
+                aria-label={later ? `${step.label} — happens after your basket` : undefined}
+                title={later ? "Happens after your basket — open it to see what's next" : undefined}
                 className={cn(
                   "flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
                   active ? "bg-carbon text-paper" : "text-carbon/70 hover:bg-carbon/5 hover:text-carbon",
-                  later && "cursor-default text-carbon/35 hover:bg-transparent hover:text-carbon/35",
+                  later && !active && "text-carbon/45",
                 )}
               >
                 <span
@@ -69,7 +73,7 @@ export function BuilderStepper({ current, visited, onSelect }: BuilderStepperPro
                     active ? "bg-brand text-carbon" : done ? "bg-brand-ink text-paper" : "bg-carbon/10 text-carbon",
                   )}
                 >
-                  {later ? <Lock className="size-2.5" aria-hidden /> : done ? <Check className="size-3" aria-hidden /> : position + 1}
+                  {later ? <Flag className="size-2.5" aria-hidden /> : done ? <Check className="size-3" aria-hidden /> : position + 1}
                 </span>
                 {step.label}
               </button>

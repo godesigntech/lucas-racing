@@ -23,13 +23,15 @@ import type { PriceBook } from "@/types/catalog"
 import type { HelmetConfiguration } from "@/types/configurator"
 import type { CatalogProduct } from "@/types/product"
 import type { AeroKit, DesignTemplate, Visor } from "@/types/templates"
+import type { ProductionOptions } from "@/lib/data/production"
 
-import { buildSteps, builderSteps, type BuilderStepId } from "./builder-steps"
+import { builderSteps, type BuilderStepId } from "./builder-steps"
 import { BuilderStepper } from "./builder-stepper"
 import { RegionStep } from "./region-step"
 import { StepFinish, StepHelmet, StepRoute, StepSize, StepTrims } from "./step-options"
 import { StepAero, StepVisor, StepVisorStrip } from "./step-fittings"
 import { StepLogos, StepPersonalisation } from "./step-personal"
+import { StepConfirm, StepProduction } from "./step-next-stages"
 import { StepReview } from "./step-review"
 import { StepTemplate } from "./step-template"
 
@@ -39,9 +41,13 @@ interface HelmetBuilderProps {
   templates?: DesignTemplate[]
   aeroKits?: AeroKit[]
   visors?: Visor[]
+  production?: ProductionOptions
 }
 
 const noSubscription = () => () => {}
+
+/** Used until the production tables exist; the preview then shows generic wording. */
+const emptyProduction: ProductionOptions = { ready: false, weeks: [], tiers: [], standardLeadWeeks: 6 }
 
 /** Where an in-progress build is kept, so a reload doesn't lose it. */
 const DRAFT_KEY = "lucas-racing:builder-draft:v1"
@@ -57,6 +63,7 @@ export function HelmetBuilder({
   templates = [],
   aeroKits = [],
   visors = [],
+  production = emptyProduction,
   initialSearch = "",
 }: HelmetBuilderProps & { initialSearch?: string }) {
   const search = useSyncExternalStore(noSubscription, () => window.location.search, () => initialSearch)
@@ -88,6 +95,7 @@ export function HelmetBuilder({
       templates={templates}
       aeroKits={aeroKits}
       visors={visors}
+      production={production}
       start={{ product: start.product, config: start.config, shared: start.shared }}
     />
   )
@@ -145,6 +153,7 @@ function BuilderBody({
   templates = [],
   aeroKits = [],
   visors = [],
+  production = emptyProduction,
   start,
 }: HelmetBuilderProps & { start: { product: CatalogProduct; config?: HelmetConfiguration; shared?: boolean } }) {
   // Resolved from the build's own template slug, so switching template can't be stale.
@@ -172,9 +181,10 @@ function BuilderBody({
 
   const index = builderSteps.findIndex((step) => step.id === stepId)
   const step = builderSteps[index]
-  const buildIndex = buildSteps.findIndex((item) => item.id === stepId)
-  const next = buildSteps[buildIndex + 1]
-  const previous = buildSteps[buildIndex - 1]
+  // Navigation runs over all sixteen: the last two are previews of what happens after
+  // the basket, not dead ends.
+  const next = builderSteps[index + 1]
+  const previous = builderSteps[index - 1]
   const model = priceBook.models.find((item) => item.id === config.model)
   const models = priceBook.models.filter((item) => item.isActive && product.models.includes(item.id))
   const enquiryHref = `/contact?${new URLSearchParams({ design: product.slug, build: configurationToText(product, summary) })}`
@@ -315,6 +325,10 @@ function BuilderBody({
           {stepId === "exterior" && <StepTrims priceBook={priceBook} config={config} update={update} />}
           {stepId === "visor" && <StepVisor visors={visors} config={config} update={update} />}
           {stepId === "visorStrip" && <StepVisorStrip priceBook={priceBook} config={config} update={update} />}
+          {stepId === "confirm" && (
+            <StepConfirm production={production} hasBasketItem={added} enquiryHref={enquiryHref} blocked={blocked} />
+          )}
+          {stepId === "production" && <StepProduction />}
           {stepId === "review" && (
             <>
               <StepReview summary={summary} price={price} onEdit={go} pending={pending} />
@@ -346,7 +360,18 @@ function BuilderBody({
             <span />
           )}
           <span className="ml-auto" />
-          {next ? (
+          {step.stage !== "build" ? (
+            // The last two are previews; their own actions live in the panel above.
+            next ? (
+              <Button variant="outline" size="lg" onClick={() => go(next.id)}>
+                Next: {next.label} <ArrowRight />
+              </Button>
+            ) : (
+              <span />
+            )
+          ) : next && next.stage === "build" ? (
+            // Review keeps "Add to basket" as its action; Confirm and Production are
+            // reached from the stepper, not by stepping past the basket.
             <Button size="lg" onClick={() => go(next.id)}>
               Next: {next.label} <ArrowRight />
             </Button>

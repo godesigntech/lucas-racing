@@ -7,6 +7,7 @@ import { StudioHighlights } from "@/components/studio/studio-highlights"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getBuilderCatalog } from "@/lib/data/builder"
 import { getPriceBook, getProducts } from "@/lib/data/products"
+import { getProductionOptions } from "@/lib/data/production"
 
 export const metadata: Metadata = {
   title: "Helmet builder",
@@ -30,10 +31,11 @@ export default function HelmetBuilderPage({ searchParams }: { searchParams: Sear
 }
 
 async function Builder({ searchParams }: { searchParams: SearchParams }) {
-  const [products, priceBook, builder, query] = await Promise.all([
+  const [products, priceBook, builder, production, query] = await Promise.all([
     getProducts(),
     getPriceBook(),
     getBuilderCatalog(),
+    getProductionOptions(),
     searchParams,
   ])
   // Lets the first paint open on the right template instead of flashing the default.
@@ -47,6 +49,7 @@ async function Builder({ searchParams }: { searchParams: SearchParams }) {
       templates={builder.templates}
       aeroKits={builder.aeroKits}
       visors={builder.visors}
+      production={production}
       initialSearch={initialSearch}
     />
   )
