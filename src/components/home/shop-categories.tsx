@@ -18,15 +18,15 @@ interface Category {
 
 const categories: Category[] = [
   {
-    title: "Complete karts",
-    description: "MS Kart chassis and race-ready packages, set up by the team",
-    href: "/shop/complete-karts",
+    title: "Prokart",
+    description: "MS Kart complete karts, race-ready and set up by the team",
+    href: "/shop/prokart",
     image: images.teamAwning,
   },
   {
-    title: "Parts and spares",
+    title: "Spare parts",
     description: "Genuine MS Kart parts, components and race-day spares",
-    href: "/shop/parts",
+    href: "/shop/spare-parts",
     image: images.connor,
   },
   {

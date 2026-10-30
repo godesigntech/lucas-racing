@@ -28,8 +28,8 @@ export const mainNav: NavGroup[] = [
     href: "/shop",
     children: [
       { label: "Shop all", href: "/shop", description: "Karts, parts and accessories from the UK home of MS Kart" },
-      { label: "Complete karts", href: "/shop/complete-karts", description: "Race-ready MS Kart chassis and packages" },
-      { label: "Parts and spares", href: "/shop/parts", description: "Chassis parts, components and race-day spares" },
+      { label: "Prokart", href: "/shop/prokart", description: "Race-ready MS Kart complete karts" },
+      { label: "Spare parts", href: "/shop/spare-parts", description: "Chassis parts, components and race-day spares" },
     ],
   },
   {

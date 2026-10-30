@@ -41,12 +41,12 @@ export function HomeServices() {
               </p>
               <div className="mt-auto flex flex-col gap-2 pt-2 sm:flex-row">
                 <Button asChild>
-                  <Link href="/shop/complete-karts">
-                    Complete karts <ArrowRight />
+                  <Link href="/shop/prokart">
+                    Prokart <ArrowRight />
                   </Link>
                 </Button>
                 <Button asChild variant="outline">
-                  <Link href="/shop/parts">Parts and spares</Link>
+                  <Link href="/shop/spare-parts">Spare parts</Link>
                 </Button>
               </div>
             </div>
