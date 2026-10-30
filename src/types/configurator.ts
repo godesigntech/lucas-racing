@@ -36,6 +36,18 @@ export interface PersonalItem {
   scale?: number
   /** Degrees, -45 to 45. */
   rotation?: number
+  /** Fine placement within its spot: -1 (left) to 1 (right). */
+  offsetX?: number
+  /** Fine placement within its spot: -1 (up) to 1 (down). */
+  offsetY?: number
+  bold?: boolean
+  italic?: boolean
+  /** Extra space between letters, in ems: -0.1 to 0.5. */
+  letterSpacing?: number
+  /** Hex colour of an outline around the letters. */
+  outline?: string
+  /** Outline thickness relative to the letter size: 0 (none) to 0.3. */
+  outlineWidth?: number
 }
 
 export interface LogoPlacementItem {
@@ -44,6 +56,10 @@ export interface LogoPlacementItem {
   position: Placement
   scale?: number
   rotation?: number
+  /** Fine placement within its spot: -1 (left) to 1 (right). */
+  offsetX?: number
+  /** Fine placement within its spot: -1 (up) to 1 (down). */
+  offsetY?: number
 }
 
 export interface VisorStrip {
@@ -55,8 +71,28 @@ export interface VisorStrip {
   font?: string
 }
 
-/** Fonts offered for names, numbers and the visor strip. */
-export const helmetFonts = ["racing", "block", "script"] as const
+/**
+ * Fonts offered for names, numbers and the visor strip. The first three are the
+ * original system fonts (so saved designs look the same); the rest are web fonts,
+ * defined in components/helmet-3d/helmet-fonts.
+ */
+export const helmetFonts = [
+  "racing",
+  "block",
+  "script",
+  "racing-sans",
+  "russo",
+  "orbitron",
+  "bebas",
+  "teko",
+  "audiowide",
+  "black-ops",
+  "michroma",
+  "exo",
+  "anton",
+  "kaushan",
+  "marker",
+] as const
 export type HelmetFont = (typeof helmetFonts)[number]
 
 export type FinishId = "gloss" | "satin" | "matte"

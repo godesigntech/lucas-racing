@@ -78,6 +78,13 @@ const personalItem = z.object({
   font: z.string().trim().max(20).optional(),
   scale: z.number().min(0.5).max(2).optional(),
   rotation: z.number().min(-45).max(45).optional(),
+  offsetX: z.number().min(-1).max(1).optional(),
+  offsetY: z.number().min(-1).max(1).optional(),
+  bold: z.boolean().optional(),
+  italic: z.boolean().optional(),
+  letterSpacing: z.number().min(-0.1).max(0.5).optional(),
+  outline: hex.optional(),
+  outlineWidth: z.number().min(0).max(0.3).optional(),
 })
 
 const logoItem = z.object({
@@ -85,6 +92,8 @@ const logoItem = z.object({
   position: placement,
   scale: z.number().min(0.2).max(2).optional(),
   rotation: z.number().min(-180).max(180).optional(),
+  offsetX: z.number().min(-1).max(1).optional(),
+  offsetY: z.number().min(-1).max(1).optional(),
 })
 
 export const helmetItemSchema = z.object({

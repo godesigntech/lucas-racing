@@ -8,7 +8,7 @@ import { optionPriceLabel } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { PriceBook } from "@/types/catalog"
 import type { HelmetConfiguration, VisorStrip } from "@/types/configurator"
-import { helmetFonts } from "@/types/configurator"
+import { helmetFontStyles } from "@/components/helmet-3d/helmet-fonts"
 import type { AeroKit, Visor } from "@/types/templates"
 
 import { SwatchGrid } from "./swatch-grid"
@@ -154,19 +154,21 @@ export function StepVisorStrip({ priceBook, config, update }: UpdateProps & { pr
 
           <fieldset className="space-y-2">
             <legend className="text-sm font-semibold">Lettering</legend>
-            <div className="flex flex-wrap gap-2">
-              {helmetFonts.map((font) => (
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+              {helmetFontStyles.map((font) => (
                 <button
-                  key={font}
+                  key={font.id}
                   type="button"
-                  onClick={() => set({ font })}
-                  aria-pressed={strip.font === font}
+                  onClick={() => set({ font: font.id })}
+                  aria-pressed={strip.font === font.id}
+                  aria-label={`${font.label} font`}
                   className={cn(
-                    "rounded-full border px-3 py-1.5 text-sm capitalize transition",
-                    strip.font === font ? "border-brand-ink bg-brand-ink text-white" : "border-carbon/15 hover:border-carbon/35",
+                    "truncate rounded-xl border px-2 py-2 text-base leading-none transition",
+                    strip.font === font.id ? "border-brand-ink bg-brand-ink text-white" : "border-carbon/15 hover:border-carbon/35",
                   )}
+                  style={{ fontFamily: font.family, fontWeight: font.weight, fontStyle: font.italic ? "italic" : "normal" }}
                 >
-                  {font}
+                  {font.label}
                 </button>
               ))}
             </div>

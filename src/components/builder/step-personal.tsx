@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Plus, Trash2 } from "lucide-react"
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Plus, RotateCcw, Trash2 } from "lucide-react"
 
+import { helmetFont, helmetFontStyles } from "@/components/helmet-3d/helmet-fonts"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { logoPlacements, namePlacements, numberPlacements } from "@/lib/configurator/helmet-configuration"
@@ -10,7 +11,7 @@ import { formatOptionPrice } from "@/lib/format"
 import { createClient } from "@/lib/supabase/browser"
 import { cn } from "@/lib/utils"
 import type { PriceBook } from "@/types/catalog"
-import { helmetFonts, type HelmetConfiguration, type LogoPlacementItem, type PersonalItem, type PersonalKind } from "@/types/configurator"
+import type { HelmetConfiguration, LogoPlacementItem, PersonalItem, PersonalKind } from "@/types/configurator"
 
 import { LogoUpload } from "./logo-upload"
 import { PlacementPicker } from "./placement-picker"
@@ -101,58 +102,99 @@ export function StepPersonalisation({ priceBook, config, update }: UpdateProps &
                   onChange={(position) => patch(index, { position })}
                 />
 
+                <FinePosition
+                  id={`personal-${index}`}
+                  x={item.offsetX ?? 0}
+                  y={item.offsetY ?? 0}
+                  onChange={(offsetX, offsetY) => patch(index, { offsetX, offsetY })}
+                />
+
                 {item.kind !== "flag" && (
                   <>
+                    <LetteringPreview item={item} />
+
                     <fieldset className="space-y-2">
-                      <legend className="text-sm font-semibold">Lettering</legend>
-                      <div className="flex flex-wrap gap-2">
-                        {helmetFonts.map((font) => (
-                          <button
-                            key={font}
-                            type="button"
-                            onClick={() => patch(index, { font })}
-                            aria-pressed={item.font === font}
-                            className={cn(
-                              "rounded-full border px-3 py-1.5 text-sm capitalize transition",
-                              item.font === font ? "border-brand-ink bg-brand-ink text-white" : "border-carbon/15 hover:border-carbon/35",
-                            )}
-                          >
-                            {font}
-                          </button>
-                        ))}
+                      <legend className="text-sm font-semibold">Font</legend>
+                      <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+                        {helmetFontStyles.map((font) => {
+                          const selected = (item.font ?? "racing") === font.id
+                          return (
+                            <button
+                              key={font.id}
+                              type="button"
+                              onClick={() => patch(index, { font: font.id })}
+                              aria-pressed={selected}
+                              aria-label={`${font.label} font`}
+                              className={cn(
+                                "truncate rounded-xl border px-2 py-2 text-base leading-none transition",
+                                selected ? "border-brand-ink bg-brand-ink text-white" : "border-carbon/15 hover:border-carbon/35",
+                              )}
+                              style={{ fontFamily: font.family, fontWeight: font.weight, fontStyle: font.italic ? "italic" : "normal" }}
+                            >
+                              {font.label}
+                            </button>
+                          )
+                        })}
                       </div>
                     </fieldset>
 
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <label className="space-y-1.5 text-sm">
-                        <span className="font-semibold">Size</span>
-                        <input
-                          type="range"
-                          min={0.5}
-                          max={2}
-                          step={0.1}
-                          value={item.scale ?? 1}
-                          onChange={(event) => patch(index, { scale: Number(event.target.value) })}
-                          className="w-full accent-brand-ink"
-                        />
-                      </label>
-                      <label className="space-y-1.5 text-sm">
-                        <span className="font-semibold">Angle</span>
-                        <input
-                          type="range"
-                          min={-45}
-                          max={45}
-                          step={1}
-                          value={item.rotation ?? 0}
-                          onChange={(event) => patch(index, { rotation: Number(event.target.value) })}
-                          className="w-full accent-brand-ink"
-                        />
-                      </label>
+                    <fieldset className="space-y-2">
+                      <legend className="text-sm font-semibold">Style</legend>
+                      <div className="flex flex-wrap gap-2">
+                        <ToggleChip pressed={Boolean(item.bold)} onClick={() => patch(index, { bold: !item.bold })}>
+                          <span className="font-bold">Bold</span>
+                        </ToggleChip>
+                        <ToggleChip
+                          pressed={item.italic ?? helmetFont(item.font).italic}
+                          onClick={() => patch(index, { italic: !(item.italic ?? helmetFont(item.font).italic) })}
+                        >
+                          <span className="italic">Italic</span>
+                        </ToggleChip>
+                      </div>
+                    </fieldset>
+
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <Slider label="Size" min={0.5} max={2} step={0.1} value={item.scale ?? 1} onChange={(scale) => patch(index, { scale })} />
+                      <Slider label="Angle" min={-45} max={45} step={1} value={item.rotation ?? 0} onChange={(rotation) => patch(index, { rotation })} />
+                      <Slider
+                        label="Letter spacing"
+                        min={-0.1}
+                        max={0.5}
+                        step={0.02}
+                        value={item.letterSpacing ?? 0}
+                        onChange={(letterSpacing) => patch(index, { letterSpacing })}
+                      />
                     </div>
 
-                    <div className="max-w-xs">
-                      <PersonalColour colours={colours} value={item.colour} onChange={(colour) => patch(index, { colour })} />
-                    </div>
+                    <ColourChoice label="Colour" colours={colours} value={item.colour} onChange={(colour) => patch(index, { colour })} />
+
+                    <fieldset className="space-y-3 rounded-xl bg-paddock/40 p-3">
+                      <legend className="sr-only">Outline</legend>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-sm font-semibold">Outline</span>
+                        <ToggleChip
+                          pressed={Boolean(item.outline)}
+                          onClick={() =>
+                            patch(index, item.outline ? { outline: undefined, outlineWidth: 0 } : { outline: "#111412", outlineWidth: item.outlineWidth || 0.08 })
+                          }
+                        >
+                          {item.outline ? "On" : "Off"}
+                        </ToggleChip>
+                      </div>
+                      {item.outline && (
+                        <>
+                          <ColourChoice label="Outline colour" colours={colours} value={item.outline} onChange={(outline) => patch(index, { outline })} />
+                          <Slider
+                            label="Outline thickness"
+                            min={0.02}
+                            max={0.3}
+                            step={0.01}
+                            value={item.outlineWidth ?? 0.08}
+                            onChange={(outlineWidth) => patch(index, { outlineWidth })}
+                          />
+                        </>
+                      )}
+                    </fieldset>
                   </>
                 )}
               </li>
@@ -164,35 +206,169 @@ export function StepPersonalisation({ priceBook, config, update }: UpdateProps &
   )
 }
 
-function PersonalColour({
+const HEX = /^#[0-9a-f]{6}$/i
+
+/** The paint palette, plus a free colour picker for any other colour. */
+function ColourChoice({
+  label,
   colours,
   value,
   onChange,
 }: {
+  label: string
   colours: PriceBook["options"]["base"]
   value: string | undefined
   onChange: (value: string) => void
 }) {
+  const swatches = colours.map((colour) => (colour.swatch ?? colour.value).toLowerCase()).filter((hex) => HEX.test(hex))
+  const custom = value && !swatches.includes(value.toLowerCase())
   return (
     <fieldset className="space-y-2">
-      <legend className="text-sm font-semibold">Colour</legend>
-      <div className="flex flex-wrap gap-1.5">
-        {colours.map((colour) => (
-          <button
-            key={colour.value}
-            type="button"
-            onClick={() => onChange(colour.swatch ?? colour.value)}
-            aria-label={colour.label}
-            aria-pressed={value === (colour.swatch ?? colour.value)}
-            className={cn(
-              "size-7 rounded-full ring-1 ring-carbon/20 transition",
-              value === (colour.swatch ?? colour.value) && "ring-2 ring-brand-ink ring-offset-2",
-            )}
-            style={{ backgroundColor: colour.swatch ?? colour.value }}
+      <legend className="text-sm font-semibold">{label}</legend>
+      <div className="flex flex-wrap items-center gap-1.5">
+        {colours.map((colour) => {
+          const hex = colour.swatch ?? colour.value
+          return (
+            <button
+              key={colour.value}
+              type="button"
+              onClick={() => onChange(hex)}
+              aria-label={colour.label}
+              aria-pressed={value?.toLowerCase() === hex.toLowerCase()}
+              className={cn("size-7 rounded-full ring-1 ring-carbon/20 transition", value?.toLowerCase() === hex.toLowerCase() && "ring-2 ring-brand-ink ring-offset-2")}
+              style={{ backgroundColor: hex }}
+            />
+          )
+        })}
+        <label
+          className={cn(
+            "relative flex h-7 cursor-pointer items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium transition focus-within:ring-3 focus-within:ring-ring/50",
+            custom ? "border-brand-ink" : "border-carbon/15 hover:border-carbon/35",
+          )}
+        >
+          <span
+            className="size-4 rounded-full ring-1 ring-carbon/20"
+            style={{ background: custom ? value : "conic-gradient(red, yellow, lime, cyan, blue, magenta, red)" }}
+            aria-hidden
           />
-        ))}
+          Any colour
+          <input
+            type="color"
+            value={value && HEX.test(value) ? value : "#ffffff"}
+            onChange={(event) => onChange(event.target.value)}
+            aria-label={`${label}: pick any colour`}
+            className="absolute inset-0 size-full cursor-pointer opacity-0"
+          />
+        </label>
       </div>
     </fieldset>
+  )
+}
+
+function Slider({ label, min, max, step, value, onChange }: { label: string; min: number; max: number; step: number; value: number; onChange: (value: number) => void }) {
+  return (
+    <label className="space-y-1.5 text-sm">
+      <span className="font-semibold">{label}</span>
+      <input type="range" min={min} max={max} step={step} value={value} onChange={(event) => onChange(Number(event.target.value))} className="w-full accent-brand-ink" />
+    </label>
+  )
+}
+
+function ToggleChip({ pressed, onClick, children }: { pressed: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={pressed}
+      onClick={onClick}
+      className={cn(
+        "h-8 rounded-full border px-3.5 text-sm transition",
+        pressed ? "border-brand-ink bg-brand-ink text-white" : "border-carbon/15 hover:border-carbon/35",
+      )}
+    >
+      {children}
+    </button>
+  )
+}
+
+const NUDGE = 0.05
+const clampOffset = (value: number) => Math.max(-1, Math.min(1, Math.round(value * 100) / 100))
+
+/**
+ * Moves an item within its spot on the helmet: sliders for big moves, arrows to nudge.
+ * Offsets run from -1 to 1 (left/up to right/down); 0 is the spot's centre.
+ */
+function FinePosition({ id, x, y, onChange }: { id: string; x: number; y: number; onChange: (x: number, y: number) => void }) {
+  const arrow = "grid size-8 place-items-center rounded-lg border border-carbon/15 text-carbon transition hover:border-carbon/40"
+  return (
+    <fieldset className="space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <legend className="text-sm font-semibold">Fine position</legend>
+        {(x !== 0 || y !== 0) && (
+          <button type="button" onClick={() => onChange(0, 0)} className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-carbon">
+            <RotateCcw className="size-3.5" aria-hidden /> Centre
+          </button>
+        )}
+      </div>
+      <div className="grid items-center gap-4 sm:grid-cols-[minmax(0,1fr)_auto]">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label htmlFor={`${id}-x`} className="space-y-1.5 text-sm">
+            <span className="font-medium">Left ↔ right</span>
+            <input id={`${id}-x`} type="range" min={-1} max={1} step={0.05} value={x} onChange={(event) => onChange(Number(event.target.value), y)} className="w-full accent-brand-ink" />
+          </label>
+          <label htmlFor={`${id}-y`} className="space-y-1.5 text-sm">
+            <span className="font-medium">Up ↕ down</span>
+            <input id={`${id}-y`} type="range" min={-1} max={1} step={0.05} value={y} onChange={(event) => onChange(x, Number(event.target.value))} className="w-full accent-brand-ink" />
+          </label>
+        </div>
+        <div className="grid grid-cols-3 gap-1 justify-self-start" role="group" aria-label="Nudge">
+          <span />
+          <button type="button" className={arrow} aria-label="Nudge up" onClick={() => onChange(x, clampOffset(y - NUDGE))}>
+            <ChevronUp className="size-4" aria-hidden />
+          </button>
+          <span />
+          <button type="button" className={arrow} aria-label="Nudge left" onClick={() => onChange(clampOffset(x - NUDGE), y)}>
+            <ChevronLeft className="size-4" aria-hidden />
+          </button>
+          <span className="grid size-8 place-items-center text-[0.65rem] text-muted-foreground" aria-hidden>
+            •
+          </span>
+          <button type="button" className={arrow} aria-label="Nudge right" onClick={() => onChange(clampOffset(x + NUDGE), y)}>
+            <ChevronRight className="size-4" aria-hidden />
+          </button>
+          <span />
+          <button type="button" className={arrow} aria-label="Nudge down" onClick={() => onChange(x, clampOffset(y + NUDGE))}>
+            <ChevronDown className="size-4" aria-hidden />
+          </button>
+          <span />
+        </div>
+      </div>
+    </fieldset>
+  )
+}
+
+/** The text as it will be lettered, in its font, style, colour and outline. */
+function LetteringPreview({ item }: { item: PersonalItem }) {
+  const font = helmetFont(item.font)
+  const italic = item.italic ?? font.italic
+  const weight = item.bold ? Math.max(700, font.weight) : font.weight
+  const outline = item.outline && (item.outlineWidth ?? 0) > 0 ? `${Math.max(1, (item.outlineWidth ?? 0) * 40).toFixed(1)}px ${item.outline}` : undefined
+  return (
+    <div className="flex min-h-20 items-center justify-center overflow-hidden rounded-xl bg-[repeating-conic-gradient(#ececec_0_25%,#f7f7f7_0_50%)] bg-[length:16px_16px] px-4 py-3">
+      <span
+        className="max-w-full truncate text-4xl leading-tight"
+        style={{
+          fontFamily: font.family,
+          fontWeight: weight,
+          fontStyle: italic ? "italic" : "normal",
+          letterSpacing: `${item.letterSpacing ?? 0}em`,
+          color: item.colour ?? "#111412",
+          WebkitTextStroke: outline,
+          paintOrder: "stroke fill",
+        }}
+      >
+        {item.value || "Preview"}
+      </span>
+    </div>
   )
 }
 
@@ -231,6 +407,12 @@ export function StepLogos({
               options={logoPlacements}
               value={logo.position}
               onChange={(position) => setLogos(logos.map((item, p) => (p === index ? { ...item, position } : item)))}
+            />
+            <FinePosition
+              id={`logo-${index}`}
+              x={logo.offsetX ?? 0}
+              y={logo.offsetY ?? 0}
+              onChange={(offsetX, offsetY) => setLogos(logos.map((item, p) => (p === index ? { ...item, offsetX, offsetY } : item)))}
             />
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="space-y-1.5 text-sm">

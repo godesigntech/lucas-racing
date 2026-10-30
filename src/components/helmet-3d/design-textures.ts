@@ -2,6 +2,8 @@ import { CanvasTexture, LinearFilter, NoColorSpace, SRGBColorSpace } from "three
 
 import type { LogoPlacementItem, PersonalItem, Placement } from "@/types/configurator"
 
+import { canvasFont } from "./helmet-fonts"
+
 /**
  * Textures the helmet shader needs, built in the browser from the customer's build.
  *
@@ -103,14 +105,19 @@ export async function buildRegionMap(maskUrls: (string | null)[]): Promise<Canva
   return texture
 }
 
-const fontStacks: Record<string, string> = {
-  racing: "900 italic {size}px 'Arial Narrow', 'Helvetica Neue', Arial, sans-serif",
-  block: "800 {size}px Impact, 'Haettenschweiler', 'Arial Black', sans-serif",
-  script: "700 italic {size}px 'Brush Script MT', 'Segoe Script', cursive",
+/** How far an item can be moved from its spot, as a share of the face it's drawn on. */
+const OFFSET_RANGE = QUADRANT * 0.4
+
+/** Where an item lands: its spot on the face (stacked under earlier items), plus the customer's nudge. */
+function itemCentre(face: DecalFace, slot: number, offsetX = 0, offsetY = 0): [number, number] {
+  const [originX, originY] = quadrantOrigin[face]
+  return [originX + QUADRANT / 2 + offsetX * OFFSET_RANGE, originY + QUADRANT * (0.42 + slot * 0.2) + offsetY * OFFSET_RANGE]
 }
 
-function fontFor(name: string | undefined, size: number): string {
-  return (fontStacks[name ?? "racing"] ?? fontStacks.racing).replace("{size}", String(Math.round(size)))
+/** Web fonts load on demand: wait for this one so the helmet never shows a stand-in font. */
+async function ensureFont(font: string, text: string) {
+  if (typeof document === "undefined" || !document.fonts) return
+  await document.fonts.load(font, text).catch(() => undefined)
 }
 
 /** Where a placement lands in the atlas. Left and right share the "sides" quadrant. */
@@ -155,20 +162,29 @@ export async function buildDecalAtlas(input: DecalInput): Promise<CanvasTexture 
 
   for (const item of texts) {
     const face = faceFor(item.position)
-    const [originX, originY] = quadrantOrigin[face]
-    const slot = used[face]++
+    const [centreX, centreY] = itemCentre(face, used[face]++, item.offsetX, item.offsetY)
     const size = QUADRANT * 0.14 * (item.scale ?? 1)
-    const centreX = originX + QUADRANT / 2
-    const centreY = originY + QUADRANT * (0.42 + slot * 0.2)
+    const text = item.kind === "flag" ? item.value.toUpperCase() : item.value
+    const font = canvasFont(item.font, size, { bold: item.bold, italic: item.italic })
+    await ensureFont(font, text)
 
     ctx.save()
     ctx.translate(centreX, centreY)
     ctx.rotate(((item.rotation ?? 0) * Math.PI) / 180)
-    ctx.font = fontFor(item.font, size)
+    ctx.font = font
     ctx.textAlign = "center"
     ctx.textBaseline = "middle"
+    // Letter spacing is a newer canvas feature; browsers without it just draw normal spacing.
+    if ("letterSpacing" in ctx) (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = `${((item.letterSpacing ?? 0) * size).toFixed(1)}px`
+    const outlineWidth = (item.outlineWidth ?? 0) * size
+    if (item.outline && outlineWidth > 0) {
+      // Drawn first and twice as wide, so the fill covers the inner half and the outline sits outside the letters.
+      ctx.lineJoin = "round"
+      ctx.lineWidth = outlineWidth * 2
+      ctx.strokeStyle = item.outline
+      ctx.strokeText(text, 0, 0, QUADRANT * 0.62)
+    }
     ctx.fillStyle = item.colour ?? input.defaultColour
-    const text = item.kind === "flag" ? item.value.toUpperCase() : item.value
     ctx.fillText(text, 0, 0, QUADRANT * 0.62)
     ctx.restore()
   }
@@ -177,12 +193,9 @@ export async function buildDecalAtlas(input: DecalInput): Promise<CanvasTexture 
     const image = await loadImage(input.logoUrls[item.path]).catch(() => null)
     if (!image) continue
     const face = faceFor(item.position)
-    const [originX, originY] = quadrantOrigin[face]
-    const slot = used[face]++
+    const [centreX, centreY] = itemCentre(face, used[face]++, item.offsetX, item.offsetY)
     const width = QUADRANT * 0.3 * (item.scale ?? 1)
     const height = (width * image.height) / (image.width || 1)
-    const centreX = originX + QUADRANT / 2
-    const centreY = originY + QUADRANT * (0.42 + slot * 0.2)
 
     ctx.save()
     ctx.translate(centreX, centreY)
