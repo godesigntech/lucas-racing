@@ -6,6 +6,7 @@ import { AdminCard } from "@/components/admin/admin-card"
 import { AdminNotesForm } from "@/components/admin/admin-notes-form"
 import { AdminPageHeader } from "@/components/admin/admin-page-header"
 import { OrderStatusForm } from "@/components/admin/order-status-form"
+import { OrderDesign } from "@/components/admin/orders/order-design"
 import { OrderProofs } from "@/components/admin/orders/order-proofs"
 import { DeliveryDetails } from "@/components/orders/delivery-details"
 import { OrderItems } from "@/components/orders/order-items"
@@ -14,7 +15,9 @@ import { OrderTotals } from "@/components/orders/order-totals"
 import { OrderStatusBadge, PaymentStatusBadge } from "@/components/orders/status-badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { requireOrderViewer } from "@/lib/auth/session"
-import { getAdminOrder, getOrderLogos } from "@/lib/data/admin"
+import { getAdminOrder, getOrderDesigns, getOrderLogos } from "@/lib/data/admin"
+import { getBuilderCatalog } from "@/lib/data/builder"
+import { getPriceBook } from "@/lib/data/products"
 import { listOrderProofs } from "@/lib/data/proofs"
 import { formatDateTime } from "@/lib/format"
 
@@ -34,9 +37,12 @@ async function OrderDetail({ id }: { id: string }) {
   const [user, order] = await Promise.all([requireOrderViewer(), getAdminOrder(id)])
   // Teamwear staff can look, not change: no logos, notes or status updates.
   const canManage = user.isAdmin
-  const [logos, proofs] = await Promise.all([
+  const [logos, proofs, designs, builder, priceBook] = await Promise.all([
     canManage ? getOrderLogos(order) : [],
     canManage ? listOrderProofs(order.id) : [],
+    canManage ? getOrderDesigns(order) : [],
+    getBuilderCatalog(),
+    getPriceBook(),
   ])
 
   return (
@@ -61,6 +67,28 @@ async function OrderDetail({ id }: { id: string }) {
               <OrderTotals order={order} />
             </div>
           </AdminCard>
+
+          {designs.map((design, index) => {
+            const item = order.items.find((candidate) => candidate.id === design.itemId)
+            return (
+              <AdminCard
+                key={design.itemId}
+                title={designs.length > 1 ? `Helmet ${index + 1}: ${design.product.name}` : `Helmet design: ${design.product.name}`}
+                description="Exactly as the customer designed it. Drag to turn the helmet, or pick an angle."
+              >
+                <OrderDesign
+                  product={design.product}
+                  config={design.config}
+                  priceBook={priceBook}
+                  templates={builder.templates}
+                  aeroKits={builder.aeroKits}
+                  visors={builder.visors}
+                  logoUrls={design.logoUrls}
+                  summary={item?.summary ?? []}
+                />
+              </AdminCard>
+            )
+          })}
 
           {logos.length > 0 && (
             <AdminCard title="Customer logos" description="Uploaded in the builder. Links work for an hour; reload to refresh them.">

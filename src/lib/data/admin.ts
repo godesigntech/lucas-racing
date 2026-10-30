@@ -5,6 +5,8 @@ import { notFound } from "next/navigation"
 import { requireAdmin, requireFullAdmin, requireOrderViewer } from "@/lib/auth/session"
 import { demoAdmin } from "@/lib/demo/admin"
 import { isDemoMode } from "@/lib/demo/mode"
+import { normaliseConfiguration } from "@/lib/configurator/helmet-configuration"
+import { getPriceBook, getProducts } from "@/lib/data/products"
 import { createClient } from "@/lib/supabase/server"
 import {
   toCustomerSummary,
@@ -20,7 +22,9 @@ import {
 import type { AdminUser, CustomerSummary, Profile, StaffRole } from "@/types/account"
 import type { ConfiguratorOption, Film } from "@/types/catalog"
 import type { HelmetModel } from "@/types/helmet"
-import { orderStatuses, type Order, type OrderListItem, type OrderStatus } from "@/types/order"
+import type { HelmetConfiguration } from "@/types/configurator"
+import { orderStatuses, type Order, type OrderItem, type OrderListItem, type OrderStatus } from "@/types/order"
+import type { CatalogProduct } from "@/types/product"
 import type { Product } from "@/types/product"
 import type { SiteSettings } from "@/types/settings"
 
@@ -332,17 +336,55 @@ export async function getAdminSettings(): Promise<{ settings: SiteSettings; admi
   }
 }
 
+/** Storage paths of every logo on a helmet line: the builder's list, and the older single logo. */
+function logoPaths(item: OrderItem): string[] {
+  const values = item.values as unknown as { logo?: unknown; logos?: unknown }
+  const listed = Array.isArray(values.logos)
+    ? values.logos.map((logo) => (logo && typeof logo === "object" ? (logo as { path?: unknown }).path : null))
+    : []
+  return [...new Set([...listed, values.logo].filter((path): path is string => typeof path === "string" && path.length > 0))]
+}
+
+/** Short-lived links (an hour) to the logos customers uploaded, by storage path. */
+async function signLogos(paths: string[]): Promise<Record<string, string>> {
+  if (paths.length === 0) return {}
+  const supabase = await createClient()
+  const { data } = await supabase.storage.from("design-logos").createSignedUrls(paths, 60 * 60)
+  const links: Record<string, string> = {}
+  for (const link of data ?? []) if (link.path && link.signedUrl) links[link.path] = link.signedUrl
+  return links
+}
+
 /** Short-lived links to the logos customers uploaded for an order's helmets. */
 export async function getOrderLogos(order: Order): Promise<{ itemName: string; url: string }[]> {
   await requireAdmin()
-  const items = order.items.filter((item) => item.values.logo)
-  if (isDemoMode() || items.length === 0) return []
-  const supabase = await createClient()
-  const links = await Promise.all(
-    items.map(async (item) => {
-      const { data } = await supabase.storage.from("design-logos").createSignedUrl(item.values.logo!, 60 * 60)
-      return data ? { itemName: item.productName, url: data.signedUrl } : null
-    }),
-  )
-  return links.filter((link): link is { itemName: string; url: string } => link !== null)
+  if (isDemoMode()) return []
+  const items = order.items.filter((item) => item.kind === "helmet")
+  const urls = await signLogos(items.flatMap(logoPaths))
+  return items.flatMap((item) => logoPaths(item).flatMap((path) => (urls[path] ? [{ itemName: item.productName, url: urls[path] }] : [])))
+}
+
+/** A helmet line rebuilt for the workshop's 3D view, exactly as the customer designed it. */
+export interface OrderDesign {
+  itemId: string
+  product: CatalogProduct
+  config: HelmetConfiguration
+  /** Signed links to its logos, keyed by storage path, so the 3D view can draw them. */
+  logoUrls: Record<string, string>
+}
+
+/** The customer's helmet designs on an order, ready for the 3D preview. Staff only. */
+export async function getOrderDesigns(order: Order): Promise<OrderDesign[]> {
+  await requireOrderViewer()
+  const items = order.items.filter((item) => item.kind === "helmet")
+  if (items.length === 0) return []
+  const [products, priceBook] = await Promise.all([getProducts(), getPriceBook()])
+  const urls = isDemoMode() ? {} : await signLogos(items.flatMap(logoPaths))
+  return items.flatMap((item) => {
+    const product = products.find((candidate) => candidate.slug === (item.values.template ?? item.productSlug)) ?? products.find((candidate) => candidate.slug === item.productSlug)
+    if (!product) return []
+    const config = normaliseConfiguration(item.values as Record<string, unknown>, product, priceBook)
+    const logoUrls = Object.fromEntries(logoPaths(item).flatMap((path) => (urls[path] ? [[path, urls[path]]] : [])))
+    return [{ itemId: item.id, product, config, logoUrls }]
+  })
 }

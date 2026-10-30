@@ -30,6 +30,10 @@ interface StudioPreviewProps {
   design?: SceneDesign | null
   visor?: VisorSettings | null
   aeroMesh?: string | null
+  /** Small heading above the helmet name. */
+  eyebrow?: string
+  /** The "Unpaid preview" stamp customers see. Off for the workshop's own view of an order. */
+  watermark?: boolean
 }
 
 /**
@@ -37,7 +41,7 @@ interface StudioPreviewProps {
  * get the 3D viewer and preset camera angles; others show the illustration.
  */
 export const StudioPreview = forwardRef<HTMLDivElement, StudioPreviewProps>(function StudioPreview(
-  { look, modelId, modelName, designLabel, design = null, visor = null, aeroMesh },
+  { look, modelId, modelName, designLabel, design = null, visor = null, aeroMesh, eyebrow = "Live preview", watermark = true },
   ref,
 ) {
   const [view, setView] = useState<{ angle: HelmetAngle; at: number } | null>(null)
@@ -55,7 +59,7 @@ export const StudioPreview = forwardRef<HTMLDivElement, StudioPreviewProps>(func
     >
       <div className="flex items-start justify-between gap-4 px-5 pt-4 sm:p-7">
         <div>
-          <p className="eyebrow text-muted-foreground">Live preview</p>
+          <p className="eyebrow text-muted-foreground">{eyebrow}</p>
           <p className="mt-1 font-display text-xl font-bold uppercase sm:text-2xl">{modelName}</p>
         </div>
         <span className="hidden rounded-full border border-carbon/20 bg-card/70 px-3 py-1.5 font-mono text-[0.68rem] font-medium uppercase tracking-wider sm:inline">
@@ -89,12 +93,14 @@ export const StudioPreview = forwardRef<HTMLDivElement, StudioPreviewProps>(func
         ) : (
           art
         )}
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-0 grid place-items-center overflow-hidden font-display text-3xl font-bold uppercase tracking-[0.3em] text-carbon/[0.07] sm:text-4xl"
-        >
-          <span className="-rotate-[18deg] whitespace-nowrap">Lucas Racing / Unpaid preview</span>
-        </span>
+        {watermark && (
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0 grid place-items-center overflow-hidden font-display text-3xl font-bold uppercase tracking-[0.3em] text-carbon/[0.07] sm:text-4xl"
+          >
+            <span className="-rotate-[18deg] whitespace-nowrap">Lucas Racing / Unpaid preview</span>
+          </span>
+        )}
       </div>
 
       <div className="flex min-w-0 flex-col gap-3 px-4 pb-4 sm:flex-row sm:items-center sm:justify-between sm:px-7 sm:pb-5">
