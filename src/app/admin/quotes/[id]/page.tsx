@@ -5,6 +5,7 @@ import { ExternalLink, Mail, Phone, UserRound } from "lucide-react"
 import { AdminCard } from "@/components/admin/admin-card"
 import { AdminPageHeader } from "@/components/admin/admin-page-header"
 import { QuoteStatusBadge } from "@/components/admin/quotes/quote-status-badge"
+import { OwnHelmetRequest } from "@/components/admin/quotes/own-helmet-request"
 import { QuoteUpdateForm } from "@/components/admin/quotes/quote-update-form"
 import { HelmetArt } from "@/components/helmet/helmet-art"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -26,8 +27,9 @@ export default function AdminQuotePage({ params }: PageProps<"/admin/quotes/[id]
 }
 
 async function QuoteDetail({ id }: { id: string }) {
-  const { quote, photoUrl, aiImageUrl, suggestions } = await getQuoteRequest(id)
-  const helmet = quoteHelmetLabels[quote.helmet as QuoteHelmet] ?? quote.helmet
+  const { quote, photoUrl, aiImageUrl, suggestions, photoUrls, logoUrls } = await getQuoteRequest(id)
+  const ownHelmet = quote.kind === "own_helmet"
+  const helmet = ownHelmet ? `Their own helmet${quote.details.makeModel ? `: ${quote.details.makeModel}` : ""}` : (quoteHelmetLabels[quote.helmet as QuoteHelmet] ?? quote.helmet)
 
   return (
     <>
@@ -40,7 +42,8 @@ async function QuoteDetail({ id }: { id: string }) {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="min-w-0 space-y-6">
-          <div className="grid gap-6 md:grid-cols-2">
+          {ownHelmet && <OwnHelmetRequest quote={quote} photoUrls={photoUrls} logoUrls={logoUrls} />}
+          {!ownHelmet && <div className="grid gap-6 md:grid-cols-2">
             <AdminCard title="Customer's photo" flush>
               {photoUrl ? (
                 <a href={photoUrl} target="_blank" rel="noreferrer" className="block bg-carbon/5">
@@ -83,7 +86,7 @@ async function QuoteDetail({ id }: { id: string }) {
               )}
               {quote.concept.summary && <p className="p-5 text-sm leading-relaxed">{quote.concept.summary}</p>}
             </AdminCard>
-          </div>
+          </div>}
 
           <AdminCard title="What they asked for">
             <dl className="grid gap-4 text-sm sm:grid-cols-[9rem_minmax(0,1fr)]">

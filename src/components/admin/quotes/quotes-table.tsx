@@ -82,7 +82,15 @@ export function QuotesTable({ quotes, emptyMessage }: { quotes: QuoteRequest[]; 
                   {!quote.userId && " · guest"}
                 </p>
               </TableCell>
-              <TableCell className="text-sm">{helmetLabel(quote.helmet)}</TableCell>
+              <TableCell className="text-sm">
+                {quote.kind === "own_helmet" ? (
+                  <span className="inline-flex items-center rounded-full bg-accent px-2.5 py-0.5 text-xs font-semibold text-accent-foreground">
+                    Own helmet{quote.details.makeModel ? `: ${quote.details.makeModel}` : ""}
+                  </span>
+                ) : (
+                  helmetLabel(quote.helmet)
+                )}
+              </TableCell>
               <TableCell>
                 <Swatches palette={quote.palette} />
               </TableCell>

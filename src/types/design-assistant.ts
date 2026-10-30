@@ -75,4 +75,23 @@ export interface QuoteRequest {
   status: QuoteStatus
   adminNotes: string
   createdAt: string
+  /** "design": from the design assistant. "own_helmet": a customer sending their own helmet. */
+  kind: "design" | "own_helmet"
+  /** Own-helmet requests: storage paths of the photos of their helmet. */
+  photoPaths: string[]
+  details: OwnHelmetDetails
+}
+
+/** What a customer chose when asking us to customise their own helmet. */
+export interface OwnHelmetDetails {
+  makeModel: string
+  size: string
+  finishes: string[]
+  lacquer: string
+  films: { name: string; code: string }[]
+  racingName: string
+  racingNumber: string
+  extraText: string
+  /** Storage paths in design-logos. */
+  logos: string[]
 }

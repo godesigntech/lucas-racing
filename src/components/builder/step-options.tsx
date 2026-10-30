@@ -1,5 +1,6 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import { Box, Check, Ruler } from "lucide-react"
 
 import { finishLabels } from "@/lib/configurator/helmet-configuration"
@@ -90,6 +91,7 @@ const sizeGuide: Record<string, string> = {
  * Only shown when the workshop has the "send my own helmet" route switched on.
  */
 export function StepRoute({ priceBook, config, update }: { priceBook: PriceBook; config: HelmetConfiguration; update: Update }) {
+  const router = useRouter()
   const routes = priceBook.options.route.filter((option) => option.isActive)
   const model = priceBook.models.find((item) => item.id === config.model)
   if (routes.length < 2) return null
@@ -99,11 +101,17 @@ export function StepRoute({ priceBook, config, update }: { priceBook: PriceBook;
     <fieldset className="grid gap-3 sm:grid-cols-2">
       <legend className="mb-2 text-sm font-semibold">Who supplies the helmet?</legend>
       {routes.map((route) => (
-        <ChoiceCard key={route.value} name="helmet-route" checked={current === route.value} onSelect={() => update({ v: "2", route: route.value as "new" | "own" })}>
+        <ChoiceCard
+          key={route.value}
+          name="helmet-route"
+          checked={current === route.value}
+          // A customer's own helmet isn't designed here: they send photos and details for a quote.
+          onSelect={() => (route.value === "own" ? router.push("/helmet-builder/own-helmet") : update({ v: "2", route: route.value as "new" | "own" }))}
+        >
           <span className="font-semibold">{route.label}</span>
           {route.hint && <span className="text-xs text-muted-foreground">{route.hint}</span>}
           <span className="mt-auto pt-1 text-sm font-semibold text-brand-ink">
-            {route.value === "new" && model ? formatMoney(model.newHelmetPrice) : formatSurcharge(route.price) || "No extra charge"}
+            {route.value === "new" && model ? formatMoney(model.newHelmetPrice) : route.value === "own" ? "Send photos for a quote →" : formatSurcharge(route.price) || "No extra charge"}
           </span>
         </ChoiceCard>
       ))}

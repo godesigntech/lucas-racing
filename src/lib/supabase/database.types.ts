@@ -383,6 +383,12 @@ export type QuoteRequestRow = Timestamps & {
   suggested_products: string[]
   status: string
   admin_notes: string
+  /** "design" (the design assistant) or "own_helmet" (a customer's own shell). */
+  kind: string
+  /** Own-helmet requests: photos of the customer's helmet in design-uploads. */
+  photo_paths: string[]
+  /** Own-helmet requests: the customer's choices (finishes, films, lacquer, text, logos). */
+  details: Json
 }
 
 export type NewsCategoryRow = Timestamps & {
@@ -742,6 +748,10 @@ export type Database = {
           p_suggested_products: string[]
           p_ai_image_path?: string | null
         }
+        Returns: { reference: string }[]
+      }
+      submit_own_helmet_request: {
+        Args: { p_notes: string; p_photo_paths: string[]; p_details: Json }
         Returns: { reference: string }[]
       }
       place_order: {
