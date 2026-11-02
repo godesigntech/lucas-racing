@@ -10,6 +10,7 @@ import { HelmetViewer } from "@/components/helmet-3d/helmet-viewer"
 import { get3dModel } from "@/lib/helmet-3d/models"
 import { shellTint } from "@/lib/helmet-3d/tint"
 import { cn } from "@/lib/utils"
+import type { VisorStrip } from "@/types/configurator"
 import type { HelmetLook, HelmetModelId } from "@/types/helmet"
 
 const angles: { angle: HelmetAngle; label: string }[] = [
@@ -29,6 +30,7 @@ interface StudioPreviewProps {
   /** Editable regions plus names, numbers and logos. Null while a template has no 3D artwork. */
   design?: SceneDesign | null
   visor?: VisorSettings | null
+  visorStrip?: VisorStrip | null
   aeroMesh?: string | null
   /** Small heading above the helmet name. */
   eyebrow?: string
@@ -41,7 +43,7 @@ interface StudioPreviewProps {
  * get the 3D viewer and preset camera angles; others show the illustration.
  */
 export const StudioPreview = forwardRef<HTMLDivElement, StudioPreviewProps>(function StudioPreview(
-  { look, modelId, modelName, designLabel, design = null, visor = null, aeroMesh, eyebrow = "Live preview", watermark = true },
+  { look, modelId, modelName, designLabel, design = null, visor = null, visorStrip = null, aeroMesh, eyebrow = "Live preview", watermark = true },
   ref,
 ) {
   const [view, setView] = useState<{ angle: HelmetAngle; at: number } | null>(null)
@@ -83,6 +85,7 @@ export const StudioPreview = forwardRef<HTMLDivElement, StudioPreviewProps>(func
               film={look.baseTexture ?? null}
               design={design}
               visor={visor}
+              visorStrip={visorStrip}
               aeroMesh={aeroMesh}
               view={view}
               label={`${modelName} in 3D with your shell colour, film, finish, accessories and spoiler`}

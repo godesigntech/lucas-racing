@@ -111,6 +111,7 @@ export function OrderDesign({ product, config, priceBook, templates, aeroKits, v
         designLabel={`${getCategory(product.category).label} · ${product.name}`}
         design={design}
         visor={visor}
+        visorStrip={config.visorStrip ?? null}
         aeroMesh={aeroMesh}
         eyebrow="Customer's design"
         watermark={false}

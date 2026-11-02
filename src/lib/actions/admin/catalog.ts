@@ -28,7 +28,7 @@ import { getFullAdmin, NOT_ALLOWED } from "./guard"
 /** Public pages read the catalogue from a tagged cache; expire it after every change. */
 function refreshCatalog(...paths: string[]) {
   updateTag(cacheTags.catalog)
-  for (const path of paths) revalidatePath(path)
+  for (const path of paths) revalidatePath(path, path === "/admin/builder" ? "layout" : undefined)
 }
 
 // Products ------------------------------------------------------------------
@@ -65,7 +65,7 @@ export async function updateProduct(productId: string, values: ProductValues): P
     .single()
 
   if (error) return databaseError(error, "We couldn't save the product.")
-  refreshCatalog("/admin/products", `/admin/products/${row.slug}`)
+  refreshCatalog("/admin/builder/templates", `/admin/products/${row.slug}`)
   return { ok: true, message: `${data.name} saved.` }
 }
 
@@ -108,7 +108,7 @@ export async function createProduct(values: NewProductValues): Promise<ActionRes
   })
   if (error) return databaseError(error, "We couldn't create the design.")
 
-  refreshCatalog("/admin/products")
+  refreshCatalog("/admin/builder/templates")
   return { ok: true, message: `${parsed.data.name} created. Fill in the details, then switch it live.`, data: { slug } }
 }
 
@@ -118,7 +118,7 @@ export async function setProductActive(productId: string, isActive: boolean): Pr
   const supabase = await createClient()
   const { error } = await supabase.from("products").update({ is_active: isActive }).eq("id", productId)
   if (error) return databaseError(error, "We couldn't update the product.")
-  refreshCatalog("/admin/products")
+  refreshCatalog("/admin/builder/templates")
   return { ok: true, message: isActive ? "Product is now live on the site." : "Product hidden from the site." }
 }
 
@@ -152,7 +152,7 @@ export async function saveFilm(values: FilmValues, mode: "create" | "update"): P
     if (error.code === "23505") return failure("A film with that ID already exists. Choose a different ID.")
     return databaseError(error, "We couldn't save the film.")
   }
-  refreshCatalog("/admin/films")
+  refreshCatalog("/admin/builder/films")
   return { ok: true, message: mode === "create" ? `${film.name} added.` : `${film.name} saved.` }
 }
 
@@ -164,7 +164,7 @@ export async function deleteFilm(id: string): Promise<ActionResult> {
   const supabase = await createClient()
   const { error } = await supabase.from("films").delete().eq("id", id)
   if (error) return databaseError(error, "We couldn't delete the film.")
-  refreshCatalog("/admin/films")
+  refreshCatalog("/admin/builder/films")
   return { ok: true, message: "Film deleted." }
 }
 
@@ -184,7 +184,7 @@ export async function setFilmCategoryPrice(values: FilmCategoryPriceValues): Pro
     .neq("id", "none")
     .select("id")
   if (error) return databaseError(error, "We couldn't update the prices.")
-  refreshCatalog("/admin/films")
+  refreshCatalog("/admin/builder/films")
   const count = data?.length ?? 0
   return { ok: true, message: `${count} ${category} ${count === 1 ? "film" : "films"} now cost ${formatMoney(price)}.` }
 }
@@ -209,7 +209,7 @@ export async function updateHelmetModel(id: string, values: HelmetModelValues): 
     })
     .eq("id", id)
   if (error) return databaseError(error, "We couldn't save the helmet.")
-  refreshCatalog("/admin/pricing")
+  refreshCatalog("/admin/builder")
   return { ok: true, message: `${parsed.data.name} saved.` }
 }
 
@@ -236,6 +236,6 @@ export async function updateOptionGroup(values: OptionGroupValues): Promise<Acti
   const failed = results.find((result) => result.error)
   if (failed?.error) return databaseError(failed.error, "Some options weren't saved. Please try again.")
 
-  refreshCatalog("/admin/pricing")
+  refreshCatalog("/admin/builder")
   return { ok: true, message: "Prices saved." }
 }

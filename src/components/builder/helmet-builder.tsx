@@ -222,6 +222,20 @@ function BuilderBody({
     if (glossOnly && config.finish !== "gloss") update({ finish: "gloss" })
   }, [glossOnly, config.finish, update])
 
+  // Spoilers come from the aero kits (step 2), so every build carries a real kit for its
+  // helmet: the standard one unless the customer picks another. Without one, pricing and
+  // the 3D view fell back to the old yes/no spoiler and could add it unseen.
+  useEffect(() => {
+    const kits = aeroKits.filter((kit) => kit.modelId === config.model && kit.isActive)
+    if (kits.length === 0) {
+      if (config.spoiler === "yes") update({ spoiler: "no" })
+      return
+    }
+    if (kits.some((kit) => kit.id === config.aero)) return
+    const standard = kits.find((kit) => !kit.meshName) ?? kits[0]
+    update({ v: "2", aero: standard.id, spoiler: standard.meshName ? "yes" : "no" })
+  }, [aeroKits, config.model, config.aero, config.spoiler, update])
+
   // Keep the build through a reload, and keep the address bar shareable.
   useEffect(() => {
     try {
@@ -267,6 +281,7 @@ function BuilderBody({
           designLabel={`${getCategory(product.category).label} · ${product.name}`}
           design={design}
           visor={visor}
+          visorStrip={config.visorStrip ?? null}
           aeroMesh={aeroMesh}
         />
         {config.model === "bell-kc7" && (

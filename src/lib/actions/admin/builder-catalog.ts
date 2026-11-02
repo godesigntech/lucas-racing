@@ -35,8 +35,7 @@ const orNull = (value: string) => value.trim() || null
 function refreshBuilder() {
   updateTag(cacheTags.templates)
   updateTag(cacheTags.catalog)
-  revalidatePath("/admin/templates")
-  revalidatePath("/admin/fittings")
+  revalidatePath("/admin/builder", "layout")
   revalidatePath("/helmet-builder")
 }
 
@@ -238,6 +237,5 @@ export async function saveHelmetSizes(values: HelmetSizesValues): Promise<Action
   if (error) return databaseError(error, "We couldn't save the sizes.")
 
   refreshBuilder()
-  revalidatePath("/admin/pricing")
   return { ok: true, message: "Sizes saved." }
 }

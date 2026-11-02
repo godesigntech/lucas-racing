@@ -14,7 +14,7 @@ export default function AdminProductionPage() {
   return (
     <>
       <AdminPageHeader
-        title="Production"
+        title="Step 15 · Production & delivery"
         description="When helmets can start in the workshop, how many at a time, and what a rush costs. Customers choose a start date at checkout; the completion date follows from it."
       />
       <Suspense fallback={<Skeleton className="h-[40rem] rounded-2xl" />}>

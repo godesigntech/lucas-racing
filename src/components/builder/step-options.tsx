@@ -205,24 +205,13 @@ export function StepFinish({
   )
 }
 
+/** Step 11: rubber trims and, on the Bell KC7, its accessory colours. Spoilers are aero kits (step 2). */
 export function StepTrims({ priceBook, config, update }: { priceBook: PriceBook; config: HelmetConfiguration; update: Update }) {
   const trims = priceBook.options.trim.filter((option) => option.isActive)
-  const spoilers = priceBook.options.spoiler.filter((option) => option.isActive)
   return (
     <div className="space-y-6">
       {config.model === "bell-kc7" && <BellPartOptions config={config} priceBook={priceBook} update={update} />}
       <SwatchGrid label="Rubber trim (eye-port and base)" options={trims} value={config.trim} onChange={(trim) => update({ trim, eyeportTrim: undefined, baseTrim: undefined })} size="lg" />
-      <fieldset className="space-y-3">
-        <legend className="text-sm font-semibold">Rear spoiler</legend>
-        <div className="grid grid-cols-2 gap-3">
-          {spoilers.map((option) => (
-            <ChoiceCard key={option.value} name="spoiler" checked={config.spoiler === option.value} onSelect={() => update({ spoiler: option.value as "yes" | "no" })}>
-              <span className="font-semibold">{option.value === "yes" ? "Add a spoiler" : "No spoiler"}</span>
-              <span className="text-sm text-brand-ink">{formatSurcharge(option.price) || "Included"}</span>
-            </ChoiceCard>
-          ))}
-        </div>
-      </fieldset>
     </div>
   )
 }

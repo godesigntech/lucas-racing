@@ -31,7 +31,7 @@ import { getFullAdmin, NOT_ALLOWED } from "./guard"
  */
 function refreshProduction() {
   updateTag(cacheTags.production)
-  revalidatePath("/admin/production")
+  revalidatePath("/admin/builder/production")
   revalidatePath("/checkout")
 }
 

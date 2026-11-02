@@ -26,14 +26,14 @@ function buildHref(query: Query, changes: Partial<Query>) {
   const params = new URLSearchParams()
   for (const [key, value] of Object.entries({ ...query, ...changes })) if (value) params.set(key, value)
   const search = params.toString()
-  return search ? `/admin/films?${search}` : "/admin/films"
+  return search ? `/admin/builder/films?${search}` : "/admin/builder/films"
 }
 
-export default function AdminFilmsPage({ searchParams }: PageProps<"/admin/films">) {
+export default function AdminFilmsPage({ searchParams }: PageProps<"/admin/builder/films">) {
   return (
     <>
       <AdminPageHeader
-        title="Films"
+        title="Step 6 · Hydro-dip films"
         description="The in-stock hydro-dip films customers choose from. A film's price is added to the helmet."
         actions={
           <FilmDialog

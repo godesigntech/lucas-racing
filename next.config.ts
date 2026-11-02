@@ -26,6 +26,13 @@ const nextConfig: NextConfig = {
       { source: "/customisation", has: [{ type: "query", key: "helmet" }], destination: "/customisation/helmets", permanent: true },
       { source: "/kart-parts", destination: "/shop", permanent: true },
       { source: "/kart-customiser", destination: "/customisation/kart-parts", permanent: true },
+      // Admin catalogue pages regrouped under the helmet builder's 16 steps.
+      { source: "/admin/pricing", destination: "/admin/builder", permanent: false },
+      { source: "/admin/fittings", destination: "/admin/builder/aero", permanent: false },
+      { source: "/admin/templates", destination: "/admin/builder/templates", permanent: false },
+      { source: "/admin/products", destination: "/admin/builder/templates", permanent: false },
+      { source: "/admin/films", destination: "/admin/builder/films", permanent: false },
+      { source: "/admin/production", destination: "/admin/builder/production", permanent: false },
     ]
   },
   images: {

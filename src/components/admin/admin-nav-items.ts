@@ -1,16 +1,11 @@
 import {
   BookOpen,
-  CalendarDays,
-  Droplets,
-  Glasses,
+  HardHat,
   Images,
-  Layers,
   Inbox,
   LayoutDashboard,
   MessagesSquare,
   Newspaper,
-  Package,
-  PoundSterling,
   Settings,
   ShoppingBag,
   Sparkles,
@@ -51,14 +46,9 @@ export const adminNavSections: { title: string; items: AdminNavItem[] }[] = [
   {
     title: "Catalogue",
     items: [
+      { label: "Helmet builder", href: "/admin/builder", icon: HardHat, fullAdminOnly: true },
       { label: "Shop products", href: "/admin/shop", icon: Store, fullAdminOnly: true, teamwear: true },
       { label: "Teamwear guide", href: "/admin/teamwear-guide", icon: BookOpen, teamwearAndAdminOnly: true, teamwear: true },
-      { label: "Helmet designs", href: "/admin/products", icon: Package, fullAdminOnly: true },
-      { label: "Design templates", href: "/admin/templates", icon: Layers, fullAdminOnly: true },
-      { label: "Aero and visors", href: "/admin/fittings", icon: Glasses, fullAdminOnly: true },
-      { label: "Films", href: "/admin/films", icon: Droplets, fullAdminOnly: true },
-      { label: "Production", href: "/admin/production", icon: CalendarDays, fullAdminOnly: true },
-      { label: "Pricing", href: "/admin/pricing", icon: PoundSterling, fullAdminOnly: true },
     ],
   },
   {
@@ -80,5 +70,8 @@ export function visibleNavItems(item: AdminNavItem, role: StaffRole | null): boo
 }
 
 export function isAdminNavActive(pathname: string, href: string): boolean {
-  return href === "/admin" ? pathname === "/admin" : pathname === href || pathname.startsWith(`${href}/`)
+  if (href === "/admin") return pathname === "/admin"
+  // A template's details page lives at /admin/products/[slug], inside the helmet builder.
+  if (href === "/admin/builder" && pathname.startsWith("/admin/products/")) return true
+  return pathname === href || pathname.startsWith(`${href}/`)
 }

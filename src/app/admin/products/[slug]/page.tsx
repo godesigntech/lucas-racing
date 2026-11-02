@@ -5,7 +5,7 @@ import { ProductForm } from "@/components/admin/product-form"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getAdminProduct, listAdminHelmetModels } from "@/lib/data/admin"
 
-export const metadata = { title: "Edit product" }
+export const metadata = { title: "Edit template" }
 
 export default function AdminProductPage({ params }: PageProps<"/admin/products/[slug]">) {
   return (
@@ -23,7 +23,7 @@ async function ProductEditor({ slug }: { slug: string }) {
   return (
     <>
       <AdminPageHeader
-        back={{ href: "/admin/products", label: "Products" }}
+        back={{ href: "/admin/builder/templates", label: "Templates" }}
         title={product.name}
         description="Changes go live on the website as soon as you save."
       />

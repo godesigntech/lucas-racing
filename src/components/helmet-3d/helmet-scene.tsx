@@ -10,12 +10,14 @@ import { Box3, Vector3, type CanvasTexture } from "three"
 
 import type { BellPartColours } from "@/lib/helmet-3d/parts"
 
+import type { VisorStrip } from "@/types/configurator"
 import type { HelmetFinish } from "@/types/helmet"
 
 import { buildDecalAtlas, buildRegionMap, MAX_REGIONS, type DecalInput } from "./design-textures"
 import { type FilmUniforms, loadFilmTexture } from "./film-projection"
 import { cloneHelmet, disposeHelmetMaterials, updateHelmetSurface, updateVisor, type VisorSettings } from "./model-materials"
 import { SceneLoading } from "./scene-loading"
+import { removeVisorStrips, updateVisorStrip } from "./visor-strip"
 
 /** One editable area of the template, as the preview needs it. */
 export interface SceneRegion {
@@ -50,6 +52,8 @@ export interface HelmetSceneProps {
   design?: SceneDesign | null
   /** Tint and finish of the visor, or null to leave the model's own material alone. */
   visor?: VisorSettings | null
+  /** Step 13's printed band across the top of the visor. */
+  visorStrip?: VisorStrip | null
   /** Mesh of the chosen aero kit; null for the standard shell. */
   aeroMesh?: string | null
   /** Slowly spins until the customer drags it or picks an angle. */
@@ -130,7 +134,7 @@ function setRegionTextures(root: Object3D, regionMap: CanvasTexture, films: (Tex
   uniforms.templateStrength.value = 1
 }
 
-function HelmetModel({ url, tint = "#ffffff", finish = "gloss", paintFinish = "gloss", film = null, trim = "#171917", spoiler = false, accessories, design = null, visor = null, aeroMesh }: Omit<HelmetSceneProps, "autoRotate" | "view">) {
+function HelmetModel({ url, tint = "#ffffff", finish = "gloss", paintFinish = "gloss", film = null, trim = "#171917", spoiler = false, accessories, design = null, visor = null, visorStrip = null, aeroMesh }: Omit<HelmetSceneProps, "autoRotate" | "view">) {
   const { scene } = useGLTF(url)
   const root = useMemo(() => cloneHelmet(scene), [scene])
 
@@ -184,6 +188,19 @@ function HelmetModel({ url, tint = "#ffffff", finish = "gloss", paintFinish = "g
   }, [root, design])
 
   useLayoutEffect(() => updateVisor(root, visor), [root, visor])
+
+  // The strip is redrawn when its text, colours or font change; the old one stays until the new one is ready.
+  const stripKey = visorStrip?.enabled ? JSON.stringify(visorStrip) : ""
+  useEffect(() => {
+    let cancelled = false
+    updateVisorStrip(root, stripKey ? (JSON.parse(stripKey) as VisorStrip) : null, () => cancelled).catch((error) =>
+      console.error("Couldn't draw the visor strip:", error),
+    )
+    return () => {
+      cancelled = true
+    }
+  }, [root, stripKey])
+  useEffect(() => () => removeVisorStrips(root), [root])
 
   // Swap films without a loading flash: the current film stays on until the next one has loaded.
   useEffect(() => {
@@ -266,6 +283,7 @@ export default function HelmetScene({
   accessories,
   design = null,
   visor = null,
+  visorStrip = null,
   aeroMesh,
   spoiler = false,
   autoRotate = true,
@@ -296,7 +314,7 @@ export default function HelmetScene({
           <StudioLights />
           <Bounds fit clip observe margin={1.15}>
             <Center>
-              <HelmetModel url={url} tint={film ? "#ffffff" : tint} finish={finish} paintFinish={paintFinish} film={film} trim={trim} spoiler={spoiler} accessories={accessories} design={design} visor={visor} aeroMesh={aeroMesh} />
+              <HelmetModel url={url} tint={film ? "#ffffff" : tint} finish={finish} paintFinish={paintFinish} film={film} trim={trim} spoiler={spoiler} accessories={accessories} design={design} visor={visor} visorStrip={visorStrip} aeroMesh={aeroMesh} />
             </Center>
           </Bounds>
           <ContactShadows position={[0, -0.42, 0]} opacity={0.35} scale={3} blur={2.6} far={1} />
