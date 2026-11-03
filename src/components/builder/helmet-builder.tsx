@@ -15,7 +15,7 @@ import { getCategory } from "@/lib/catalog/categories"
 import { configToSearchParams, configurationToText } from "@/lib/configurator/helmet-configuration"
 import { pendingPrices } from "@/lib/configurator/pending-prices"
 import { requiresGloss, resolveRegions } from "@/lib/configurator/regions"
-import { buildSceneDesign } from "@/lib/configurator/scene-design"
+import { buildSceneDesign, withShellPrint } from "@/lib/configurator/scene-design"
 import { formatMoney } from "@/lib/format"
 import { hasCustomBellParts } from "@/lib/helmet-3d/parts"
 import { createClient } from "@/lib/supabase/browser"
@@ -192,6 +192,7 @@ function BuilderBody({
   const regions = useMemo(() => resolveRegions(product, config.model, templates), [product, config.model, templates])
   const glossOnly = requiresGloss(config, regions)
   const design = useMemo(() => buildSceneDesign(config, regions, priceBook, logoUrls), [config, regions, priceBook, logoUrls])
+  const previewLook = useMemo(() => withShellPrint(look, config, logoUrls), [look, config, logoUrls])
   const visor = useMemo(() => visors.find((item) => item.id === config.visor) ?? null, [visors, config.visor])
   const aeroMesh = useMemo(() => aeroKits.find((kit) => kit.id === config.aero)?.meshName ?? null, [aeroKits, config.aero])
 
@@ -204,6 +205,25 @@ function BuilderBody({
   const onLogoUrl = useCallback((path: string, url: string) => {
     setLogoUrls((current) => (current[path] === url ? current : { ...current, [path]: url }))
   }, [])
+
+  // A reopened build's own prints are private files: sign them so the 3D preview can show them straight away.
+  const unsignedPrints = Object.values(config.regions ?? {})
+    .flatMap((treatment) => (treatment.print && !logoUrls[treatment.print] ? [treatment.print] : []))
+    .join("|")
+  useEffect(() => {
+    if (!unsignedPrints) return
+    let cancelled = false
+    createClient()
+      .storage.from("design-logos")
+      .createSignedUrls(unsignedPrints.split("|"), 3600)
+      .then(({ data }) => {
+        if (cancelled) return
+        for (const link of data ?? []) if (link.path && link.signedUrl) onLogoUrl(link.path, link.signedUrl)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [unsignedPrints, onLogoUrl])
 
   // Picks up an unfinished build after a reload. Done here rather than in the initial
   // state because sessionStorage doesn't exist on the server, and a share link or a
@@ -274,7 +294,7 @@ function BuilderBody({
       <div className="lg:sticky lg:top-24">
         <StudioPreview
           ref={previewRef}
-          look={look}
+          look={previewLook}
           modelId={config.model}
           templateSlug={product.slug}
           modelName={model?.name ?? "Helmet"}
@@ -330,7 +350,9 @@ function BuilderBody({
           {stepId === "template" && <StepTemplate products={products} value={product.slug} modelId={config.model} onChange={chooseTemplate} />}
           {stepId === "colours" && <RegionStep mode="colour" regions={regions} priceBook={priceBook} config={config} update={update} />}
           {stepId === "materials" && <RegionStep mode="material" regions={regions} priceBook={priceBook} config={config} update={update} />}
-          {stepId === "films" && <RegionStep mode="film" regions={regions} priceBook={priceBook} config={config} update={update} />}
+          {stepId === "films" && (
+            <RegionStep mode="film" regions={regions} priceBook={priceBook} config={config} update={update} returnTo={`/helmet-builder?template=${product.slug}`} onImageUrl={onLogoUrl} />
+          )}
           {stepId === "pinstripes" && <RegionStep mode="pinstripe" regions={regions} priceBook={priceBook} config={config} update={update} />}
           {stepId === "finish" && <StepFinish priceBook={priceBook} config={config} update={update} glossOnly={glossOnly} />}
           {stepId === "details" && <StepPersonalisation priceBook={priceBook} config={config} update={update} />}

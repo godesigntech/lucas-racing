@@ -7,7 +7,7 @@ import { StudioPreview } from "@/components/studio/studio-preview"
 import { getCategory } from "@/lib/catalog/categories"
 import { configurationToLook } from "@/lib/configurator/helmet-configuration"
 import { resolveRegions } from "@/lib/configurator/regions"
-import { buildSceneDesign } from "@/lib/configurator/scene-design"
+import { buildSceneDesign, withShellPrint } from "@/lib/configurator/scene-design"
 import type { PriceBook } from "@/types/catalog"
 import type { HelmetConfiguration } from "@/types/configurator"
 import type { OrderSummaryLine } from "@/types/order"
@@ -95,7 +95,7 @@ function LetteringDetails({ config }: { config: HelmetConfiguration }) {
  */
 export function OrderDesign({ product, config, priceBook, templates, aeroKits, visors, logoUrls, summary }: OrderDesignProps) {
   const regions = useMemo(() => resolveRegions(product, config.model, templates), [product, config.model, templates])
-  const look = useMemo(() => configurationToLook(product, config, priceBook), [product, config, priceBook])
+  const look = useMemo(() => withShellPrint(configurationToLook(product, config, priceBook), config, logoUrls), [product, config, priceBook, logoUrls])
   const design = useMemo(() => buildSceneDesign(config, regions, priceBook, logoUrls), [config, regions, priceBook, logoUrls])
   const visor = visors.find((item) => item.id === config.visor) ?? null
   const aeroMesh = aeroKits.find((kit) => kit.id === config.aero)?.meshName ?? null

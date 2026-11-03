@@ -210,8 +210,8 @@ const bellTemplate = (slug: string, sortOrder: number): DesignTemplate => {
     isActive: true,
     sortOrder,
     regions: [
-      region("base", "Shell", "#101114", { allowsChrome: true, sortOrder: 1 }),
-      region("graphic", "Graphic", "#d81f2a", { maskUrl: `${path}/graphic-mask.png`, sortOrder: 2 }),
+      region("base", "Base colour", "#101114", { allowsChrome: true, sortOrder: 1 }),
+      region("graphic", "Design shapes", "#d81f2a", { maskUrl: `${path}/graphic-mask.png`, sortOrder: 2 }),
       region("accent", "Pinstripe", "#f2f2f2", { kind: "pinstripe", maskUrl: `${path}/accent-mask.png`, sortOrder: 3 }),
     ],
   }

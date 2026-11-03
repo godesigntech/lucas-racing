@@ -19,6 +19,8 @@ export interface RegionTreatment {
   kind: PartKind
   /** Hex colour, film id, or the material name for chrome and metallic. */
   value: string
+  /** For the bespoke print film: the customer's own artwork, a path in the design-logos bucket. */
+  print?: string
 }
 
 /** Text the customer adds to the helmet. */

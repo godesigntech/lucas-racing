@@ -2,7 +2,8 @@ import type { SceneDesign, SceneRegion } from "@/components/helmet-3d/helmet-sce
 import type { BuilderRegion } from "@/lib/configurator/regions"
 import { getTreatment } from "@/lib/configurator/regions"
 import type { PriceBook } from "@/types/catalog"
-import type { FinishId, HelmetConfiguration, PartKind } from "@/types/configurator"
+import type { FinishId, HelmetConfiguration, PartKind, RegionTreatment } from "@/types/configurator"
+import type { HelmetLook } from "@/types/helmet"
 
 /**
  * Turns a build into the textures and materials the 3D preview needs.
@@ -28,9 +29,12 @@ const FILM_BASE = "#8a8d8b"
 /** The colour the shader should paint a region, and the film photo to project over it. */
 function appearance(
   priceBook: PriceBook,
-  treatment: { kind: PartKind; value: string },
+  treatment: RegionTreatment,
   fallback: string,
+  uploads: Record<string, string> = {},
 ): { colour: string; filmUrl: string | null } {
+  const print = treatment.print ? uploads[treatment.print] : undefined
+  if (treatment.kind === "film" && print) return { colour: FILM_BASE, filmUrl: print }
   if (treatment.kind === "chrome") return { colour: CHROME_SWATCH, filmUrl: null }
   if (treatment.kind === "metallic") {
     // Metallic keeps the chosen colour; the metalness in the shader does the rest.
@@ -55,7 +59,7 @@ export function buildSceneDesign(
     .filter((region) => region.key !== "base")
     .map((region) => {
       const treatment = getTreatment(config, region.key) ?? { kind: "colour" as const, value: region.defaultColour }
-      const { colour, filmUrl } = appearance(priceBook, treatment, region.defaultColour)
+      const { colour, filmUrl } = appearance(priceBook, treatment, region.defaultColour, logoUrls)
       return {
         key: region.key,
         maskUrl: region.maskUrl,
@@ -80,4 +84,13 @@ export function buildSceneDesign(
       ).colour,
     },
   }
+}
+
+/**
+ * The shell's film is drawn from the look rather than as a region, so a customer's own
+ * print on the shell is swapped in here once its signed link is known.
+ */
+export function withShellPrint(look: HelmetLook, config: HelmetConfiguration, uploads: Record<string, string>): HelmetLook {
+  const print = config.regions?.base?.print
+  return print && uploads[print] ? { ...look, baseTexture: uploads[print] } : look
 }

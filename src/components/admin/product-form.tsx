@@ -37,7 +37,7 @@ const layoutLabels: Record<HelmetLayout, string> = {
 
 const colourFields = [
   { key: "base", label: "Base colour" },
-  { key: "graphic", label: "Graphic colour" },
+  { key: "graphic", label: "Design shapes colour" },
   { key: "accent", label: "Pinstripe colour" },
   { key: "trim", label: "Rubber trim" },
 ] as const

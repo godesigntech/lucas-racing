@@ -12,8 +12,38 @@ const LOGO_BUCKET = "design-logos"
 const LOGO_TYPES: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" }
 const LOGO_MAX_BYTES = 5 * 1024 * 1024
 
-/** Uploads a customer's logo to their private folder. Signed-in customers only. */
-export function LogoUpload({ path, onChange, returnTo }: { path?: string; onChange: (path: string) => void; returnTo: string }) {
+/** Wording for what is being uploaded: a sponsor logo by default, or a print for a bespoke film. */
+export interface UploadCopy {
+  title: string
+  action: string
+  hint: string
+  note: string
+  noun: string
+}
+
+const logoCopy: UploadCopy = {
+  title: "Logo or sponsor",
+  action: "Upload a logo",
+  hint: "PNG with a transparent background works best. Up to 5 MB.",
+  note: "We'll place it on your proof for you to approve.",
+  noun: "logo",
+}
+
+/** Uploads a customer's image (a logo, or artwork for a bespoke print) to their private folder. Signed-in customers only. */
+export function LogoUpload({
+  path,
+  onChange,
+  onUrl,
+  returnTo,
+  copy = logoCopy,
+}: {
+  path?: string
+  onChange: (path: string) => void
+  /** Told the image's link once it's known, so the 3D preview can show it. */
+  onUrl?: (path: string, url: string) => void
+  returnTo: string
+  copy?: UploadCopy
+}) {
   const inputId = useId()
   const [userId, setUserId] = useState<string | null | undefined>(undefined)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -37,27 +67,33 @@ export function LogoUpload({ path, onChange, returnTo }: { path?: string; onChan
     createClient()
       .storage.from(LOGO_BUCKET)
       .createSignedUrl(path, 3600)
-      .then(({ data }) => !cancelled && data && setPreviewUrl(data.signedUrl))
+      .then(({ data }) => {
+        if (cancelled || !data) return
+        setPreviewUrl(data.signedUrl)
+        onUrl?.(path, data.signedUrl)
+      })
     return () => {
       cancelled = true
     }
-  }, [path, previewUrl])
+  }, [path, previewUrl, onUrl])
 
   async function upload(file: File | undefined) {
     if (!file || !userId) return
     const extension = LOGO_TYPES[file.type]
     if (!extension) return toast.error("Please choose a PNG, JPG or WebP image.")
-    if (file.size > LOGO_MAX_BYTES) return toast.error("That logo is over 5 MB. Please choose a smaller file.")
+    if (file.size > LOGO_MAX_BYTES) return toast.error(`That ${copy.noun} is over 5 MB. Please choose a smaller file.`)
 
     setUploading(true)
     try {
       const objectPath = `${userId}/${crypto.randomUUID()}.${extension}`
       const { error } = await createClient().storage.from(LOGO_BUCKET).upload(objectPath, file, { contentType: file.type })
       if (error) throw error
-      setPreviewUrl(URL.createObjectURL(file))
+      const localUrl = URL.createObjectURL(file)
+      setPreviewUrl(localUrl)
+      onUrl?.(objectPath, localUrl)
       onChange(objectPath)
     } catch {
-      toast.error("Your logo didn't upload. Please try again.")
+      toast.error(`Your ${copy.noun} didn't upload. Please try again.`)
     } finally {
       setUploading(false)
     }
@@ -66,19 +102,19 @@ export function LogoUpload({ path, onChange, returnTo }: { path?: string; onChan
   return (
     <div className="space-y-1.5">
       <p className="text-sm font-semibold">
-        Logo or sponsor <span className="font-normal text-muted-foreground">(optional)</span>
+        {copy.title} <span className="font-normal text-muted-foreground">(optional)</span>
       </p>
       {path ? (
         <div className="flex items-center gap-3 rounded-xl border border-carbon/10 bg-paper/60 p-2 pr-3">
           <span className="grid size-14 shrink-0 place-items-center overflow-hidden rounded-lg bg-card ring-1 ring-carbon/10">
             {previewUrl ? (
               // eslint-disable-next-line @next/next/no-img-element -- private signed URL or local preview
-              <img src={previewUrl} alt="Your logo" className="size-full object-contain" />
+              <img src={previewUrl} alt={`Your ${copy.noun}`} className="size-full object-contain" />
             ) : (
               <Loader2 className="size-4 animate-spin text-muted-foreground" aria-hidden />
             )}
           </span>
-          <p className="min-w-0 flex-1 text-xs text-muted-foreground">We&apos;ll place it on your proof for you to approve.</p>
+          <p className="min-w-0 flex-1 text-xs text-muted-foreground">{copy.note}</p>
           <Button
             type="button"
             variant="ghost"
@@ -96,7 +132,7 @@ export function LogoUpload({ path, onChange, returnTo }: { path?: string; onChan
           <Link href={`/login?next=${encodeURIComponent(returnTo)}`} className="font-semibold text-carbon underline-offset-4 hover:underline">
             Log in
           </Link>{" "}
-          to add your own logo.
+          to add your own {copy.noun}.
         </p>
       ) : (
         <label
@@ -105,8 +141,8 @@ export function LogoUpload({ path, onChange, returnTo }: { path?: string; onChan
         >
           {uploading ? <Loader2 className="size-5 animate-spin text-muted-foreground" aria-hidden /> : <ImagePlus className="size-5 text-muted-foreground" aria-hidden />}
           <span>
-            <span className="font-semibold">{uploading ? "Uploading…" : "Upload a logo"}</span>
-            <span className="block text-xs text-muted-foreground">PNG with a transparent background works best. Up to 5 MB.</span>
+            <span className="font-semibold">{uploading ? "Uploading…" : copy.action}</span>
+            <span className="block text-xs text-muted-foreground">{copy.hint}</span>
           </span>
           <input
             id={inputId}

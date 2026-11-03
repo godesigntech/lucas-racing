@@ -1,17 +1,26 @@
 "use client"
 
 import { useState } from "react"
-import { Droplets, Palette, Sparkles } from "lucide-react"
+import { Droplets, ImagePlus, Palette, Sparkles } from "lucide-react"
 
 import { FilmPicker } from "@/components/studio/film-picker"
 import { cn } from "@/lib/utils"
 import { allowedKinds, getTreatment, setTreatment, type BuilderRegion } from "@/lib/configurator/regions"
-import { pickableFilms } from "@/lib/configurator/helmet-configuration"
-import { optionPriceLabel } from "@/lib/format"
+import { BESPOKE_PRINT_FILM, defaultCarbonFilm, pickableFilms } from "@/lib/configurator/helmet-configuration"
+import { formatSurcharge, optionPriceLabel } from "@/lib/format"
 import type { PriceBook } from "@/types/catalog"
-import type { HelmetConfiguration, PartKind } from "@/types/configurator"
+import type { HelmetConfiguration, PartKind, RegionTreatment } from "@/types/configurator"
 
+import { LogoUpload, type UploadCopy } from "./logo-upload"
 import { SwatchGrid } from "./swatch-grid"
+
+const printCopy: UploadCopy = {
+  title: "Your artwork",
+  action: "Upload your print",
+  hint: "A high-resolution PNG or JPG works best. Up to 5 MB.",
+  note: "We'll check the artwork and show it on your proof before printing.",
+  noun: "print",
+}
 
 /**
  * Steps 4 to 7 are the same job on different parts of the design: choose a region, then
@@ -26,6 +35,10 @@ interface RegionStepProps {
   priceBook: PriceBook
   config: HelmetConfiguration
   update: (changes: Partial<HelmetConfiguration>) => void
+  /** Where to come back to after logging in to upload a print. */
+  returnTo?: string
+  /** Told an uploaded print's link, so the 3D preview can show it. */
+  onImageUrl?: (path: string, url: string) => void
 }
 
 const materialMeta: Record<Exclude<PartKind, "film">, { label: string; hint: string; icon: typeof Palette }> = {
@@ -34,7 +47,7 @@ const materialMeta: Record<Exclude<PartKind, "film">, { label: string; hint: str
   chrome: { label: "Chrome", hint: "Polished in-house chrome.", icon: Sparkles },
 }
 
-export function RegionStep({ mode, regions, priceBook, config, update }: RegionStepProps) {
+export function RegionStep({ mode, regions, priceBook, config, update, returnTo = "/helmet-builder", onImageUrl }: RegionStepProps) {
   const list = mode === "pinstripe" ? regions.filter((r) => r.kind === "pinstripe") : regions.filter((r) => r.kind !== "pinstripe")
   const usable = mode === "film" ? list.filter((region) => region.allowsFilm) : list
   const [activeKey, setActiveKey] = useState(usable[0]?.key ?? "")
@@ -56,13 +69,15 @@ export function RegionStep({ mode, regions, priceBook, config, update }: RegionS
   const treatment = getTreatment(config, region.key)
   const colours = priceBook.options.base.filter((option) => option.isActive)
   const films = pickableFilms(priceBook)
+  const carbon = defaultCarbonFilm(priceBook)
+  const bespoke = region.allowsFilm ? priceBook.films.find((film) => film.id === BESPOKE_PRINT_FILM && film.textureUrl) : undefined
   // Only offer a material the workshop has actually set up. Without a row in the price
   // list there's nothing to charge and checkout would reject the build.
   const kinds = allowedKinds(region)
     .filter((kind): kind is Exclude<PartKind, "film"> => kind !== "film")
     .filter((kind) => kind === "colour" || priceBook.options.material.some((item) => item.value === kind && item.isActive))
 
-  const apply = (changes: { kind: PartKind; value: string }) => update(setTreatment(config, region.key, changes))
+  const apply = (changes: RegionTreatment) => update(setTreatment(config, region.key, changes))
 
   return (
     <div className="space-y-5">
@@ -100,13 +115,46 @@ export function RegionStep({ mode, regions, priceBook, config, update }: RegionS
       {region.hint && <p className="text-sm text-muted-foreground">{region.hint}</p>}
 
       {(mode === "colour" || mode === "pinstripe") && (
-        <SwatchGrid
-          label={`${region.label} colour`}
-          options={colours}
-          value={treatment?.kind === "colour" || treatment?.kind === "metallic" ? treatment.value : undefined}
-          onChange={(value) => apply({ kind: treatment?.kind === "metallic" ? "metallic" : "colour", value })}
-          size="lg"
-        />
+        <>
+          {treatment?.kind === "film" && (
+            <p className="flex gap-2 rounded-xl bg-paddock/50 p-3 text-xs text-muted-foreground">
+              <Droplets className="size-4 shrink-0 text-brand-ink" aria-hidden />
+              {treatment.value === BESPOKE_PRINT_FILM ? "Your own print" : (films.find((film) => film.id === treatment.value)?.name ?? "A film")} is on
+              this part. Pick a colour to paint it instead.
+            </p>
+          )}
+          <SwatchGrid
+            label={/colour/i.test(region.label) ? region.label : `${region.label} colour`}
+            options={colours}
+            value={treatment?.kind === "colour" || treatment?.kind === "metallic" ? treatment.value : undefined}
+            onChange={(value) => apply({ kind: treatment?.kind === "metallic" ? "metallic" : "colour", value })}
+            size="lg"
+          />
+          {mode === "colour" && carbon && region.allowsFilm && (
+            <button
+              type="button"
+              onClick={() => apply({ kind: "film", value: carbon.id })}
+              aria-pressed={treatment?.kind === "film" && treatment.value === carbon.id}
+              className={cn(
+                "flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition",
+                treatment?.kind === "film" && treatment.value === carbon.id
+                  ? "border-brand-ink ring-2 ring-brand-ink/20"
+                  : "border-carbon/15 hover:border-carbon/35",
+              )}
+            >
+              <span
+                aria-hidden
+                className="size-10 shrink-0 rounded-xl bg-cover bg-center ring-1 ring-carbon/20"
+                style={{ backgroundImage: `url(${carbon.thumbUrl ?? carbon.textureUrl})` }}
+              />
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold">Make it carbon</span>
+                <span className="block text-xs text-muted-foreground">Carbon fibre film on the {region.label.toLowerCase()} instead of paint.</span>
+              </span>
+              <span className="text-xs font-semibold text-brand-ink">{formatSurcharge(carbon.price)}</span>
+            </button>
+          )}
+        </>
       )}
 
       {mode === "material" && (
@@ -173,6 +221,30 @@ export function RegionStep({ mode, regions, priceBook, config, update }: RegionS
               Films and paint can sit on different parts of the same helmet.
             </span>
           </div>
+          {bespoke && (
+            <div className="space-y-2 rounded-2xl border border-carbon/15 p-4">
+              <p className="flex items-center justify-between gap-3 text-sm">
+                <span className="flex items-center gap-2 font-semibold">
+                  <ImagePlus className="size-4 text-brand-ink" aria-hidden />
+                  Your own print on the {region.label.toLowerCase()}
+                </span>
+                <span className="text-xs font-semibold text-brand-ink">{formatSurcharge(bespoke.price)}</span>
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Upload a pattern, photo or artwork and we&apos;ll print it as a hydro-dip film for this part.
+              </p>
+              <LogoUpload
+                key={region.key}
+                path={treatment?.kind === "film" && treatment.value === BESPOKE_PRINT_FILM ? treatment.print : undefined}
+                onChange={(path) =>
+                  apply(path ? { kind: "film", value: BESPOKE_PRINT_FILM, print: path } : { kind: "colour", value: region.defaultColour })
+                }
+                onUrl={onImageUrl}
+                returnTo={returnTo}
+                copy={printCopy}
+              />
+            </div>
+          )}
           <FilmPicker
             films={films}
             value={treatment?.kind === "film" ? treatment.value : ""}

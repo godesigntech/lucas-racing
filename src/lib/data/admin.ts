@@ -336,13 +336,20 @@ export async function getAdminSettings(): Promise<{ settings: SiteSettings; admi
   }
 }
 
-/** Storage paths of every logo on a helmet line: the builder's list, and the older single logo. */
+/**
+ * Storage paths of every file a customer uploaded for a helmet line: the builder's
+ * logos, the older single logo, and their own prints for bespoke films.
+ */
 function logoPaths(item: OrderItem): string[] {
-  const values = item.values as unknown as { logo?: unknown; logos?: unknown }
+  const values = item.values as unknown as { logo?: unknown; logos?: unknown; regions?: unknown }
   const listed = Array.isArray(values.logos)
     ? values.logos.map((logo) => (logo && typeof logo === "object" ? (logo as { path?: unknown }).path : null))
     : []
-  return [...new Set([...listed, values.logo].filter((path): path is string => typeof path === "string" && path.length > 0))]
+  const prints =
+    values.regions && typeof values.regions === "object"
+      ? Object.values(values.regions).map((treatment) => (treatment && typeof treatment === "object" ? (treatment as { print?: unknown }).print : null))
+      : []
+  return [...new Set([...listed, values.logo, ...prints].filter((path): path is string => typeof path === "string" && path.length > 0))]
 }
 
 /** Short-lived links (an hour) to the logos customers uploaded, by storage path. */

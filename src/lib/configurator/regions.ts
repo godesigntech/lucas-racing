@@ -19,11 +19,11 @@ import type { DesignTemplate, RegionKind } from "@/types/templates"
 /** Region keys that are also stored as flat fields on the build. */
 export const legacyRegionKeys: PartId[] = ["base", "graphic", "accent"]
 
-const legacyLabels: Record<PartId, string> = { base: "Shell", graphic: "Graphic", accent: "Pinstripe" }
+const legacyLabels: Record<PartId, string> = { base: "Base colour", graphic: "Design shapes", accent: "Pinstripe" }
 const legacyHints: Record<PartId, string> = {
-  base: "The main colour of the helmet.",
-  graphic: "The stripes or shapes of your template.",
-  accent: "The thin line that outlines the graphic.",
+  base: "The main colour of the whole helmet, behind the design.",
+  graphic: "The stripes and shapes of your template. Paint them, make them carbon, or dip them in a film at step 6.",
+  accent: "The thin line that outlines the design shapes.",
 }
 
 export interface BuilderRegion {

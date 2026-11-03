@@ -23,7 +23,7 @@ import type { CatalogProduct } from "@/types/product"
 const DEFAULT_SIZE = "M"
 const CHROME_SWATCH = "#c9ccd1"
 
-export const partLabels: Record<PartId, string> = { base: "Shell", graphic: "Graphic", accent: "Pinstripe" }
+export const partLabels: Record<PartId, string> = { base: "Base colour", graphic: "Design shapes", accent: "Pinstripe" }
 export const partHints: Record<PartId, string> = {
   base: "The main colour of the helmet.",
   graphic: "The stripes or shapes of your template.",
@@ -73,8 +73,20 @@ export function partOf(config: HelmetConfiguration, part: PartId): { kind: PartK
 }
 
 /** Films customers can pick for a part: in-stock films with a photo. */
+/**
+ * The film row behind a customer's own print. It carries the price and the placeholder
+ * shown until the artwork loads; the artwork itself travels with the region.
+ */
+export const BESPOKE_PRINT_FILM = "bespoke-print"
+
+/** The film library, without the bespoke print (that one is offered as an upload). */
 export function pickableFilms(priceBook: PriceBook): Film[] {
-  return priceBook.films.filter((film) => film.textureUrl)
+  return priceBook.films.filter((film) => film.textureUrl && film.id !== BESPOKE_PRINT_FILM)
+}
+
+/** The carbon fibre film behind the "Make it carbon" shortcut: the first in the library. */
+export function defaultCarbonFilm(priceBook: PriceBook): Film | undefined {
+  return pickableFilms(priceBook).find((film) => film.pattern === "carbon")
 }
 
 function activeOptions(priceBook: PriceBook, group: keyof PriceBook["options"]): ConfiguratorOption[] {
@@ -250,6 +262,9 @@ function carryV2Fields(
       if (!treatment || typeof treatment !== "object") continue
       if (!PART_KINDS.includes(treatment.kind) || typeof treatment.value !== "string") continue
       regions[key.slice(0, 40)] = { kind: treatment.kind, value: treatment.value.slice(0, 80) }
+      if (treatment.kind === "film" && treatment.value === BESPOKE_PRINT_FILM && typeof treatment.print === "string" && LOGO_PATH.test(treatment.print)) {
+        regions[key.slice(0, 40)].print = treatment.print
+      }
     }
     if (Object.keys(regions).length > 0) config.regions = regions
   }
