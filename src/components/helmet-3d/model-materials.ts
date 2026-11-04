@@ -27,7 +27,7 @@ export function cloneHelmet(scene: Object3D): Object3D {
       return material
     }
     mesh.material = Array.isArray(mesh.material) ? mesh.material.map(clone) : clone(mesh.material)
-    if (aeroMeshNames.includes(mesh.name)) mesh.visible = false
+    if (isAeroPart(mesh.name) || mesh.name === "VisorStrip") mesh.visible = false
   })
   // The supplied model uses metres; keep the viewer's zoom range and floor consistent.
   const size = new Box3().setFromObject(copy).getSize(new Vector3())
@@ -38,8 +38,15 @@ export function cloneHelmet(scene: Object3D): Object3D {
   return copy
 }
 
-/** The aero meshes a model carries, so one kit can be shown and the others hidden. */
-export const aeroMeshNames = ["Spoiler_HP7_F1_Small"]
+/**
+ * The aero kits a model carries, so one can be shown and the others hidden. A kit's own
+ * parts share its name as a prefix, e.g. "Spoiler_Top" and "Spoiler_Top_Bolts".
+ */
+export const aeroMeshNames = ["Spoiler_HP7_F1_Small", "Spoiler_Top"]
+
+function isAeroPart(meshName: string) {
+  return aeroMeshNames.some((name) => meshName.startsWith(name))
+}
 
 export interface VisorSettings {
   tint: string
@@ -85,8 +92,9 @@ export function updateHelmetSurface(
   root.traverse((node) => {
     const mesh = node as Mesh
     if (!mesh.isMesh) return
-    if (aeroMeshNames.includes(mesh.name)) {
-      mesh.visible = aeroMesh === undefined ? spoiler : mesh.name === aeroMesh
+    if (isAeroPart(mesh.name)) {
+      // Builds from before aero kits only know "spoiler or not", which meant the rear one.
+      mesh.visible = aeroMesh === undefined ? spoiler && mesh.name.startsWith(aeroMeshNames[0]) : Boolean(aeroMesh) && mesh.name.startsWith(aeroMesh as string)
     }
     const part = bellParts.find((item) => item.mesh === mesh.name)
     const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]

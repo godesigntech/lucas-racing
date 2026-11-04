@@ -9,7 +9,7 @@ export interface Helmet3dModel {
 
 /** Helmets we can show in 3D. Add the Arai SK-6 here when its model arrives. */
 export const helmet3dModels: Partial<Record<HelmetModelId, Helmet3dModel>> = {
-  "bell-kc7": { url: "/models/bell-kc7.glb?v=kc7-customizable-2", placeholder: false },
+  "bell-kc7": { url: "/models/bell-kc7.glb?v=kc7-artist-1", placeholder: false },
 }
 
 export function get3dModel(modelId: HelmetModelId | undefined): Helmet3dModel | undefined {

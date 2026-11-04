@@ -6074,4 +6074,13 @@ on conflict (id) do nothing;
 update public.template_regions set label = 'Base colour' where key = 'base' and label = 'Shell';
 update public.template_regions set label = 'Design shapes' where key = 'graphic' and label = 'Graphic';
 insert into app_private.schema_migrations (name) values ('20261103002900_bespoke_print_film.sql') on conflict do nothing;
+
+-- ===== 20261104003000_bell_kc7_top_spoiler.sql =====
+
+-- The 3D artist's new Bell KC7 model has a second spoiler kit. Its price is a placeholder
+-- until the client confirms it (admin, Helmet builder → Aero).
+insert into public.aero_kits (id, model_id, name, summary, mesh_name, price, is_active, sort_order)
+values ('bell-kc7-top-spoiler', 'bell-kc7', 'Top spoiler', 'Clear aero panels across the top of the helmet.', 'Spoiler_Top', 45, true, 3)
+on conflict (id) do nothing;
+insert into app_private.schema_migrations (name) values ('20261104003000_bell_kc7_top_spoiler.sql') on conflict do nothing;
 commit;

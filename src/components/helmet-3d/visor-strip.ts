@@ -1,32 +1,31 @@
-import { CanvasTexture, Float32BufferAttribute, Matrix4, Mesh, MeshStandardMaterial, SRGBColorSpace, Vector3, type Object3D } from "three"
+import { BufferAttribute, CanvasTexture, Matrix4, type Mesh, MeshStandardMaterial, SRGBColorSpace, Vector3, type Object3D } from "three"
 
 import type { VisorStrip } from "@/types/configurator"
 
 import { canvasFont } from "./helmet-fonts"
 
 /**
- * Step 13's printed band across the top of the visor.
+ * Step 13's printed band across the top of the visor: the model's own "VisorStrip" mesh,
+ * hidden until the customer adds a strip.
  *
- * The visor's own UVs aren't laid out for printing, so the strip is drawn on a copy of
- * the visor mesh with UVs wrapped around its curve: across goes left to right as the
- * rider sees it from the front, up goes bottom to top.
+ * The artist's UVs mirror the two sides over each other, which would print lettering
+ * backwards on one side. So the mesh gets its own: across goes left to right around the
+ * curve as seen from the front, and up keeps the artist's across-the-band direction.
  */
 
-const OVERLAY = "VisorStripOverlay"
-/** Share of the visor's height the band covers, measured from the top edge. */
-const BAND = 0.2
-const CANVAS_HEIGHT = 512
+const CANVAS_HEIGHT = 256
+const MAX_CANVAS_WIDTH = 4096
 
-interface VisorWrap {
+interface StripWrap {
   uvs: Float32Array
-  /** Width of the unwrapped visor over its height, so lettering isn't stretched. */
+  /** Width of the unwrapped band over its height, so lettering isn't stretched. */
   aspect: number
 }
 
-/** Cylindrical UVs around the visor, in the helmet's own frame (front faces +Z). */
-function wrapVisor(mesh: Mesh, root: Object3D): VisorWrap | null {
+function wrapStrip(mesh: Mesh, root: Object3D): StripWrap | null {
   const position = mesh.geometry.getAttribute("position")
-  if (!position) return null
+  const uv = mesh.geometry.getAttribute("uv")
+  if (!position || !uv) return null
   root.updateMatrixWorld(true)
   const toRoot = new Matrix4().copy(root.matrixWorld).invert().multiply(mesh.matrixWorld)
 
@@ -40,117 +39,126 @@ function wrapVisor(mesh: Mesh, root: Object3D): VisorWrap | null {
     max.max(point)
   }
 
-  // The visor curves around the front of the head: wrap it around an axis at the back of its box.
+  // The band curves around the front of the head: unroll it around an axis behind it.
   const centreX = (min.x + max.x) / 2
   const axisZ = min.z
   const angles = points.map((point) => Math.atan2(point.x - centreX, point.z - axisZ))
   const minAngle = Math.min(...angles)
-  const maxAngle = Math.max(...angles)
-  const angleSpan = Math.max(maxAngle - minAngle, 1e-3)
-  const height = Math.max(max.y - min.y, 1e-3)
+  const angleSpan = Math.max(Math.max(...angles) - minAngle, 1e-3)
   const radius = points.reduce((sum, point) => sum + Math.hypot(point.x - centreX, point.z - axisZ), 0) / points.length
 
-  const uvs = new Float32Array(position.count * 2)
+  // Across the band: the artist's U, turned so that up on the helmet is up on the canvas.
+  let minU = Infinity
+  let maxU = -Infinity
+  for (let index = 0; index < position.count; index++) {
+    minU = Math.min(minU, uv.getX(index))
+    maxU = Math.max(maxU, uv.getX(index))
+  }
+  const uSpan = Math.max(maxU - minU, 1e-3)
+  const centreU = (minU + maxU) / 2
+  let upward = 0
   points.forEach((point, index) => {
-    uvs[index * 2] = (angles[index] - minAngle) / angleSpan
-    uvs[index * 2 + 1] = (point.y - min.y) / height
+    upward += (uv.getX(index) - centreU) * (point.y - (min.y + max.y) / 2)
   })
-  return { uvs, aspect: Math.min(Math.max((radius * angleSpan) / height, 1), 8) }
+
+  const uvs = new Float32Array(position.count * 2)
+  points.forEach((_, index) => {
+    const across = (uv.getX(index) - minU) / uSpan
+    uvs[index * 2] = (angles[index] - minAngle) / angleSpan
+    uvs[index * 2 + 1] = upward >= 0 ? across : 1 - across
+  })
+
+  // How tall the band really is: its depth up the visor at the very front.
+  const front = points.filter((point) => Math.abs(point.x - centreX) < (max.x - min.x) * 0.05)
+  const frontHeight = Math.hypot(
+    Math.max(...front.map((point) => point.y)) - Math.min(...front.map((point) => point.y)),
+    Math.max(...front.map((point) => point.z)) - Math.min(...front.map((point) => point.z)),
+  )
+  return { uvs, aspect: (radius * angleSpan) / Math.max(frontHeight, 1e-3) }
 }
 
-/** The band and its lettering, on a canvas the shape of the unwrapped visor. */
+/** The band and its lettering. */
 async function drawStrip(strip: VisorStrip, aspect: number): Promise<CanvasTexture> {
   const canvas = document.createElement("canvas")
-  canvas.width = Math.round(CANVAS_HEIGHT * aspect)
+  canvas.width = Math.min(Math.round(CANVAS_HEIGHT * aspect), MAX_CANVAS_WIDTH)
   canvas.height = CANVAS_HEIGHT
   const context = canvas.getContext("2d")!
-  const bandHeight = CANVAS_HEIGHT * BAND
 
   context.fillStyle = strip.colour
-  context.fillRect(0, 0, canvas.width, bandHeight)
+  context.fillRect(0, 0, canvas.width, canvas.height)
 
   const text = strip.text.trim()
   if (text) {
-    let size = bandHeight * 0.62
-    let font = canvasFont(strip.font, size)
-    if (typeof document !== "undefined" && document.fonts) await document.fonts.load(font, text).catch(() => undefined)
+    let size = CANVAS_HEIGHT * 0.62
+    const font = canvasFont(strip.font, size)
+    if (document.fonts) await document.fonts.load(font, text).catch(() => undefined)
     context.font = font
     // Keep the lettering on the front of the visor, clear of the curve at the sides.
     const maxWidth = canvas.width * 0.5
     const width = context.measureText(text).width
     if (width > maxWidth) {
       size *= maxWidth / width
-      font = canvasFont(strip.font, size)
-      context.font = font
+      context.font = canvasFont(strip.font, size)
     }
     context.fillStyle = strip.textColour ?? "#ffffff"
     context.textAlign = "center"
     context.textBaseline = "middle"
-    context.fillText(text, canvas.width / 2, bandHeight / 2 + size * 0.04)
+    context.fillText(text, canvas.width / 2, CANVAS_HEIGHT / 2 + size * 0.04)
   }
 
   const texture = new CanvasTexture(canvas)
   texture.colorSpace = SRGBColorSpace
+  texture.flipY = true
   texture.anisotropy = 8
   return texture
 }
 
-function removeStrip(visor: Mesh) {
-  const overlay = visor.getObjectByName(OVERLAY) as Mesh | undefined
-  if (!overlay) return
-  visor.remove(overlay)
-  overlay.geometry.dispose()
-  const material = overlay.material as MeshStandardMaterial
-  material.map?.dispose()
-  material.dispose()
-}
-
-function findVisors(root: Object3D): Mesh[] {
-  const visors: Mesh[] = []
+function findStrips(root: Object3D): Mesh[] {
+  const strips: Mesh[] = []
   root.traverse((node) => {
     const mesh = node as Mesh
-    if (mesh.isMesh && mesh.name === "Visor") visors.push(mesh)
+    if (mesh.isMesh && mesh.name === "VisorStrip") strips.push(mesh)
   })
-  return visors
+  return strips
 }
 
-/** Frees the strip's canvas and geometry when the helmet goes away. */
+function clearArtwork(mesh: Mesh) {
+  const material = mesh.material as MeshStandardMaterial
+  material.map?.dispose()
+  material.map = null
+}
+
+/** Frees the strip's canvas when the helmet goes away. */
 export function removeVisorStrips(root: Object3D) {
-  findVisors(root).forEach(removeStrip)
+  findStrips(root).forEach(clearArtwork)
 }
 
-/** Prints the strip on every visor in the model, or takes it off with null. */
+/** Prints the strip on the visor, or takes it off with null. */
 export async function updateVisorStrip(root: Object3D, strip: VisorStrip | null, isCancelled: () => boolean) {
-  for (const visor of findVisors(root)) {
+  for (const mesh of findStrips(root)) {
     if (!strip?.enabled) {
-      removeStrip(visor)
+      mesh.visible = false
       continue
     }
-    const wrap = wrapVisor(visor, root)
-    if (!wrap) continue
-    const texture = await drawStrip(strip, wrap.aspect)
+    if (!mesh.userData.stripAspect) {
+      const wrap = wrapStrip(mesh, root)
+      if (!wrap) continue
+      // The geometry is shared with the loader's cache, so the new UVs go on a copy.
+      mesh.geometry = mesh.geometry.clone()
+      mesh.geometry.setAttribute("uv", new BufferAttribute(wrap.uvs, 2))
+      mesh.userData.stripAspect = wrap.aspect
+    }
+    const texture = await drawStrip(strip, mesh.userData.stripAspect as number)
     if (isCancelled()) {
       texture.dispose()
       return
     }
-    removeStrip(visor)
-    const geometry = visor.geometry.clone()
-    geometry.setAttribute("uv", new Float32BufferAttribute(wrap.uvs, 2))
-    const overlay = new Mesh(
-      geometry,
-      new MeshStandardMaterial({
-        map: texture,
-        transparent: true,
-        roughness: 0.35,
-        metalness: 0,
-        depthWrite: false,
-        polygonOffset: true,
-        polygonOffsetFactor: -2,
-        polygonOffsetUnits: -2,
-      }),
-    )
-    overlay.name = OVERLAY
-    overlay.renderOrder = visor.renderOrder + 1
-    visor.add(overlay)
+    clearArtwork(mesh)
+    const material = mesh.material as MeshStandardMaterial
+    material.map = texture
+    material.color.set("#ffffff")
+    material.roughness = 0.35
+    material.needsUpdate = true
+    mesh.visible = true
   }
 }
