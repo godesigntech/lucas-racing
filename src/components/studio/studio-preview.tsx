@@ -34,16 +34,14 @@ interface StudioPreviewProps {
   aeroMesh?: string | null
   /** Small heading above the helmet name. */
   eyebrow?: string
-  /** The "Unpaid preview" stamp customers see. Off for the workshop's own view of an order. */
-  watermark?: boolean
 }
 
 /**
- * Large live preview with an "unpaid preview" watermark. Helmets with a 3D model
+ * Large live preview. Helmets with a 3D model
  * get the 3D viewer and preset camera angles; others show the illustration.
  */
 export const StudioPreview = forwardRef<HTMLDivElement, StudioPreviewProps>(function StudioPreview(
-  { look, modelId, modelName, designLabel, design = null, visor = null, visorStrip = null, aeroMesh, eyebrow = "Live preview", watermark = true },
+  { look, modelId, modelName, designLabel, design = null, visor = null, visorStrip = null, aeroMesh, eyebrow = "Live preview" },
   ref,
 ) {
   const [view, setView] = useState<{ angle: HelmetAngle; at: number } | null>(null)
@@ -95,14 +93,6 @@ export const StudioPreview = forwardRef<HTMLDivElement, StudioPreviewProps>(func
           </>
         ) : (
           art
-        )}
-        {watermark && (
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-0 grid place-items-center overflow-hidden font-display text-3xl font-bold uppercase tracking-[0.3em] text-carbon/[0.07] sm:text-4xl"
-          >
-            <span className="-rotate-[18deg] whitespace-nowrap">Lucas Racing / Unpaid preview</span>
-          </span>
         )}
       </div>
 

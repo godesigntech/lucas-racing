@@ -91,7 +91,7 @@ function LetteringDetails({ config }: { config: HelmetConfiguration }) {
 /**
  * The customer's helmet as they designed it, for the workshop: the same 3D preview
  * the builder shows (template, colours, finishes, films, text, logos, visor and aero),
- * without the "unpaid preview" stamp, next to the full specification.
+ * next to the full specification.
  */
 export function OrderDesign({ product, config, priceBook, templates, aeroKits, visors, logoUrls, summary }: OrderDesignProps) {
   const regions = useMemo(() => resolveRegions(product, config.model, templates), [product, config.model, templates])
@@ -114,7 +114,6 @@ export function OrderDesign({ product, config, priceBook, templates, aeroKits, v
         visorStrip={config.visorStrip ?? null}
         aeroMesh={aeroMesh}
         eyebrow="Customer's design"
-        watermark={false}
       />
       <div className="space-y-5">
         <div>
