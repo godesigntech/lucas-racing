@@ -1,8 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
-import { Download, Link2, Loader2, MessageSquare } from "lucide-react"
+import { Download, Link2, Loader2 } from "lucide-react"
 import { toast } from "react-toastify"
 
 import { Button } from "@/components/ui/button"
@@ -10,15 +9,14 @@ import { downloadPreviewImage } from "@/lib/studio/export-image"
 
 interface StudioActionsProps {
   shareUrl: string
-  enquiryHref: string
   imageName: string
   imageCaption: string
   getPreviewSvg: () => SVGSVGElement | null
   imageUnavailableReason?: string
 }
 
-/** Header actions: copy a share link, download a watermarked image, ask the workshop. */
-export function StudioActions({ shareUrl, enquiryHref, imageName, imageCaption, getPreviewSvg, imageUnavailableReason }: StudioActionsProps) {
+/** Header actions: copy a share link, download a watermarked image. */
+export function StudioActions({ shareUrl, imageName, imageCaption, getPreviewSvg, imageUnavailableReason }: StudioActionsProps) {
   const [downloading, setDownloading] = useState(false)
 
   async function copyLink() {
@@ -55,11 +53,6 @@ export function StudioActions({ shareUrl, enquiryHref, imageName, imageCaption, 
         {downloading ? <Loader2 className="animate-spin" aria-hidden /> : <Download />} Social image
       </Button>
       {imageUnavailableReason && <p className="order-last w-full text-xs text-muted-foreground">{imageUnavailableReason}</p>}
-      <Button asChild variant="ghost" size="sm">
-        <Link href={enquiryHref}>
-          <MessageSquare /> Ask the workshop
-        </Link>
-      </Button>
     </div>
   )
 }

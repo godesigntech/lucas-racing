@@ -8,6 +8,7 @@ import { getCategory } from "@/lib/catalog/categories"
 import { configurationToLook } from "@/lib/configurator/helmet-configuration"
 import { resolveRegions } from "@/lib/configurator/regions"
 import { buildSceneDesign, withShellPrint } from "@/lib/configurator/scene-design"
+import { bellParts } from "@/lib/helmet-3d/parts"
 import type { PriceBook } from "@/types/catalog"
 import type { HelmetConfiguration } from "@/types/configurator"
 import type { OrderSummaryLine } from "@/types/order"
@@ -89,6 +90,42 @@ function LetteringDetails({ config }: { config: HelmetConfiguration }) {
 }
 
 /**
+ * Accessory colours and how the visor strip is printed, which the order summary
+ * doesn't record but the workshop needs to build it.
+ */
+function FittingDetails({ config, priceBook }: { config: HelmetConfiguration; priceBook: PriceBook }) {
+  const colourName = (value: string) => {
+    const label = priceBook.options.base.find((option) => option.value === value)?.label
+    return label ? `${label} (${value})` : value
+  }
+  const parts = bellParts.flatMap(({ key, label }) => (config[key] ? [{ label, value: colourName(config[key] as string) }] : []))
+  const strip = config.visorStrip?.enabled ? config.visorStrip : null
+  if (parts.length === 0 && !strip) return null
+  return (
+    <div>
+      <h3 className="mb-3 text-sm font-semibold">Exterior parts and visor strip</h3>
+      <dl className="divide-y divide-carbon/10 rounded-2xl border border-carbon/10 text-sm">
+        {parts.map((part) => (
+          <div key={part.label} className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-3 px-4 py-2">
+            <dt className="text-muted-foreground">{part.label}</dt>
+            <dd className="break-words font-medium">{part.value}</dd>
+          </div>
+        ))}
+        {strip && (
+          <div className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-3 px-4 py-2">
+            <dt className="text-muted-foreground">Visor strip</dt>
+            <dd className="break-words font-medium">
+              {strip.text.trim() || "Plain band"} · band {colourName(strip.colour)}
+              {strip.text.trim() && ` · text ${colourName(strip.textColour ?? "#ffffff")} · font ${helmetFont(strip.font).label}`}
+            </dd>
+          </div>
+        )}
+      </dl>
+    </div>
+  )
+}
+
+/**
  * The customer's helmet as they designed it, for the workshop: the same 3D preview
  * the builder shows (template, colours, finishes, films, text, logos, visor and aero),
  * next to the full specification.
@@ -127,6 +164,7 @@ export function OrderDesign({ product, config, priceBook, templates, aeroKits, v
             ))}
           </dl>
         </div>
+        <FittingDetails config={config} priceBook={priceBook} />
         <LetteringDetails config={config} />
       </div>
     </div>

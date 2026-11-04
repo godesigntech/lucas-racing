@@ -36,12 +36,10 @@ function Row({ icon: Icon, title, children }: { icon: typeof Truck; title: strin
 export function StepConfirm({
   production,
   hasBasketItem,
-  enquiryHref,
   blocked,
 }: {
   production: ProductionOptions
   hasBasketItem: boolean
-  enquiryHref: string
   blocked: boolean
 }) {
   const nextWeek = production.weeks.find((week) => week.isBookable)
@@ -94,9 +92,7 @@ export function StepConfirm({
 
       <div className="flex flex-wrap gap-2">
         {blocked ? (
-          <Button asChild size="lg">
-            <Link href={enquiryHref}>Send an enquiry instead</Link>
-          </Button>
+          <p className="text-sm text-muted-foreground">One of your choices has no price yet. Swap it at step 14 to order.</p>
         ) : hasBasketItem ? (
           <Button asChild size="lg">
             <Link href="/checkout">

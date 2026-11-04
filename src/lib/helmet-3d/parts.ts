@@ -11,7 +11,7 @@ export const bellParts = [
 export type BellPartKey = (typeof bellParts)[number]["key"]
 export type BellPartColours = Partial<Record<BellPartKey, string>>
 
-/** These custom accessory colours have no configured workshop prices yet. */
+/** True when the customer coloured an accessory. Included in the price; the illustrated image can't show them. */
 export function hasCustomBellParts(config: BellPartColours & { model: string }) {
   return config.model === "bell-kc7" && bellParts.some(({ key }) => Boolean(config[key]))
 }

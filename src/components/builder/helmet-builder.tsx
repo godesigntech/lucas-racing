@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react"
 import Link from "next/link"
-import { ArrowLeft, ArrowRight, MessageSquare, ShoppingBag } from "lucide-react"
+import { ArrowLeft, ArrowRight, ShoppingBag } from "lucide-react"
 import { toast } from "react-toastify"
 
 import { SaveDesignButton } from "@/components/studio/save-design-button"
@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button"
 import { useHelmetConfigurator } from "@/hooks/use-helmet-configurator"
 import { basket } from "@/lib/basket/basket-store"
 import { getCategory } from "@/lib/catalog/categories"
-import { configToSearchParams, configurationToText } from "@/lib/configurator/helmet-configuration"
+import { configToSearchParams } from "@/lib/configurator/helmet-configuration"
 import { pendingPrices } from "@/lib/configurator/pending-prices"
 import { requiresGloss, resolveRegions } from "@/lib/configurator/regions"
 import { buildSceneDesign, withShellPrint } from "@/lib/configurator/scene-design"
@@ -187,7 +187,6 @@ function BuilderBody({
   const previous = builderSteps[index - 1]
   const model = priceBook.models.find((item) => item.id === config.model)
   const models = priceBook.models.filter((item) => item.isActive && product.models.includes(item.id))
-  const enquiryHref = `/contact?${new URLSearchParams({ design: product.slug, build: configurationToText(product, summary) })}`
 
   const regions = useMemo(() => resolveRegions(product, config.model, templates), [product, config.model, templates])
   const glossOnly = requiresGloss(config, regions)
@@ -363,7 +362,7 @@ function BuilderBody({
           {stepId === "visor" && <StepVisor visors={visors} config={config} update={update} />}
           {stepId === "visorStrip" && <StepVisorStrip priceBook={priceBook} config={config} update={update} />}
           {stepId === "confirm" && (
-            <StepConfirm production={production} hasBasketItem={added} enquiryHref={enquiryHref} blocked={blocked} />
+            <StepConfirm production={production} hasBasketItem={added} blocked={blocked} />
           )}
           {stepId === "production" && <StepProduction />}
           {stepId === "review" && (
@@ -373,7 +372,6 @@ function BuilderBody({
                 <SaveDesignButton productSlug={product.slug} productName={product.name} config={config} />
                 <StudioActions
                   shareUrl={`/helmet-builder?${configToSearchParams(config)}`}
-                  enquiryHref={enquiryHref}
                   imageName={`lucas-racing-${product.slug}.png`}
                   imageCaption={`${product.name} · ${model?.name ?? ""}`}
                   getPreviewSvg={() => previewRef.current?.querySelector("svg") ?? null}
@@ -413,10 +411,9 @@ function BuilderBody({
               Next: {next.label} <ArrowRight />
             </Button>
           ) : blocked || !price ? (
-            <Button asChild size="lg">
-              <Link href={enquiryHref}>
-                <MessageSquare /> Send enquiry
-              </Link>
+            // Only when the workshop has left a choice unpriced; the review above says which.
+            <Button size="lg" disabled>
+              <ShoppingBag /> Choose a priced option to order
             </Button>
           ) : added ? (
             <Button asChild size="lg">

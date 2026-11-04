@@ -47,7 +47,6 @@ export function BellPartOptions({ config, priceBook, update }: {
         </label>
         <button type="button" disabled={!config[selected]} onClick={() => update({ [selected]: undefined })} className="text-sm underline underline-offset-4 disabled:opacity-40">Reset this part</button>
       </div>
-      <p className="rounded-xl bg-paper p-3 text-xs text-muted-foreground">Individual accessory colours are quoted by the workshop. You can share or save your design and send an enquiry. Reset these colours to use standard pricing.</p>
     </section>
   )
 }

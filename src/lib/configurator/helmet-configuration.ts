@@ -1,4 +1,4 @@
-import { bellParts, hasCustomBellParts } from "@/lib/helmet-3d/parts"
+import { bellParts } from "@/lib/helmet-3d/parts"
 import { colourDistance } from "@/lib/design-assistant/colour"
 import { getTreatment } from "@/lib/configurator/regions"
 import { first3dModel } from "@/lib/helmet-3d/models"
@@ -361,7 +361,7 @@ export function calculateHelmetPrice(
   priceBook: PriceBook,
   extras: BuilderExtras = {},
 ): PriceBreakdown | null {
-  if (product.startingPrice === null || hasCustomBellParts(config)) return null
+  if (product.startingPrice === null) return null
   const lines: PriceLine[] = [{ label: `${product.name} design`, amount: product.startingPrice }]
 
   // Only charge for a helmet when we're the ones supplying it.
@@ -461,7 +461,7 @@ export function summariseConfiguration(
   if (config.model === "bell-kc7") {
     for (const { key, label } of bellParts) {
       const colour = config[key]
-      if (colour) lines.push({ key, label, value: `${colourOption(priceBook, colour)?.label ?? colour.toUpperCase()} · quoted separately` })
+      if (colour) lines.push({ key, label, value: `${colourOption(priceBook, colour)?.label ?? colour.toUpperCase()}` })
     }
   }
   if (config.riderName?.trim()) {
@@ -472,11 +472,6 @@ export function summariseConfiguration(
   }
   if (config.logo) lines.push({ key: "logo", label: "Logo", value: `Uploaded · ${placementLabels[config.logoPosition ?? "back"]}` })
   return lines
-}
-
-/** Plain-text summary used to pre-fill the enquiry form. */
-export function configurationToText(product: CatalogProduct, summary: ConfigSummaryLine[]): string {
-  return [`Design: ${product.name}`, ...summary.map((line) => `${line.label}: ${line.value}`)].join("\n")
 }
 
 /**

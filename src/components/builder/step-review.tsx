@@ -63,10 +63,7 @@ export function StepReview({ summary, price, onEdit, pending = [] }: StepReviewP
               <li key={item.key}>{item.label}</li>
             ))}
           </ul>
-          <p className="mt-2">
-            Send us your design and we&apos;ll confirm the cost, usually the same day. You can also swap these for a
-            priced option and order straight away.
-          </p>
+          <p className="mt-2">Swap these for a priced option and you can order straight away.</p>
         </div>
       )}
       <dl className="divide-y divide-carbon/10 rounded-2xl border border-carbon/10">

@@ -1,7 +1,6 @@
 "use server"
 
 import { after } from "next/server"
-import { hasCustomBellParts } from "@/lib/helmet-3d/parts"
 
 import { getCurrentUser } from "@/lib/auth/session"
 import { isDemoMode } from "@/lib/demo/mode"
@@ -21,9 +20,6 @@ export async function placeOrder(input: PlaceOrderInput): Promise<ActionResult<{
   const parsed = placeOrderSchema.safeParse(input)
   if (!parsed.success) return validationError(parsed.error)
   const { items } = parsed.data
-  if (items.some((item) => item.kind === "helmet" && hasCustomBellParts(item.config))) {
-    return failure("Custom Bell KC7 accessory colours need a workshop quote. Please send your design as an enquiry.")
-  }
 
   // Helmet orders need a complete profile (phone and full address). Decided from the
   // basket here, not from the browser's flag, so the rule can't be skipped.
