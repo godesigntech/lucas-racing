@@ -55,7 +55,7 @@ export function resolveRegions(
     return template.regions.map((region) => ({
       key: region.key,
       label: region.label,
-      hint: isLegacyKey(region.key) ? legacyHints[region.key] : "",
+      hint: template.svgUrl ? "Shown as designed. Pick a colour to change this part." : isLegacyKey(region.key) ? legacyHints[region.key] : "",
       kind: region.kind,
       maskUrl: region.maskUrl,
       svgElementId: region.svgElementId,
@@ -146,4 +146,9 @@ export function allowedKinds(region: BuilderRegion): PartKind[] {
   if (region.allowsMetallic) kinds.push("metallic")
   if (region.allowsChrome) kinds.push("chrome")
   return kinds
+}
+
+/** A designer's full-colour artwork for this design on this helmet, if it has one. */
+export function templateArtworkUrl(product: CatalogProduct, modelId: string, templates: DesignTemplate[] = []): string | null {
+  return templates.find((item) => item.productSlug === product.slug && item.modelId === modelId)?.svgUrl ?? null
 }

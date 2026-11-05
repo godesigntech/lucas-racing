@@ -35,6 +35,7 @@ export interface DesignTemplate {
   id: string
   productSlug: string
   modelId: HelmetModelId
+  /** Full-colour artwork in the model's UVs. Null for templates that are only masks. */
   svgUrl: string | null
   graphicMaskUrl: string | null
   accentMaskUrl: string | null

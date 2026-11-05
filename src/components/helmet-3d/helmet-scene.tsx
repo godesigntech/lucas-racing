@@ -14,7 +14,7 @@ import type { VisorStrip } from "@/types/configurator"
 import type { HelmetFinish } from "@/types/helmet"
 
 import { buildDecalAtlas, buildRegionMap, MAX_REGIONS, type DecalInput } from "./design-textures"
-import { type FilmUniforms, loadFilmTexture } from "./film-projection"
+import { type FilmUniforms, loadArtworkTexture, loadFilmTexture } from "./film-projection"
 import { cloneHelmet, disposeHelmetMaterials, updateHelmetSurface, updateVisor, type VisorSettings } from "./model-materials"
 import { SceneLoading } from "./scene-loading"
 import { removeVisorStrips, updateVisorStrip } from "./visor-strip"
@@ -29,9 +29,13 @@ export interface SceneRegion {
   filmUrl?: string | null
   metalness: number
   roughness: number
+  /** On a full-colour template, this zone still shows the artwork untouched. */
+  asDesigned?: boolean
 }
 
 export interface SceneDesign {
+  /** A designer's full-colour artwork in the model's UVs, shown under the regions. */
+  artworkUrl?: string | null
   /** Non-shell regions, in paint order. Only the first four reach the shader. */
   regions: SceneRegion[]
   decals: DecalInput
@@ -89,6 +93,12 @@ function setArtworkEnabled(root: Object3D, enabled: boolean) {
   uniforms.templateStrength.value = enabled ? 1 : 0
 }
 
+function setArtwork(root: Object3D, texture: Texture | null) {
+  const uniforms = root.userData.film as FilmUniforms
+  uniforms.artworkMap.value = texture
+  uniforms.artworkStrength.value = texture ? 1 : 0
+}
+
 /** Colours and materials change on every click, so they're set without reloading masks. */
 function setRegionAppearance(root: Object3D, regions: SceneRegion[], paintFinish: "gloss" | "satin" | "matte") {
   const uniforms = root.userData.film as FilmUniforms
@@ -97,6 +107,7 @@ function setRegionAppearance(root: Object3D, regions: SceneRegion[], paintFinish
     uniforms.regionColour.value[index].set(region.colour)
     uniforms.regionMetalness.value[index] = region.metalness
     uniforms.regionRoughness.value[index] = region.roughness
+    uniforms.regionActive.value[index] = region.asDesigned ? 0 : 1
   })
 }
 
@@ -186,6 +197,22 @@ function HelmetModel({ url, tint = "#ffffff", finish = "gloss", paintFinish = "g
       cancelled = true
     }
   }, [root, design])
+
+  // A designer's full-colour artwork, kept off while the next one loads so two designs never mix.
+  const artworkUrl = design?.artworkUrl ?? null
+  useEffect(() => {
+    setArtwork(root, null)
+    if (!artworkUrl) return
+    let cancelled = false
+    loadArtworkTexture(artworkUrl)
+      .then((texture) => {
+        if (!cancelled) setArtwork(root, texture)
+      })
+      .catch((error) => console.error("Couldn't load the template artwork:", error))
+    return () => {
+      cancelled = true
+    }
+  }, [root, artworkUrl])
 
   useLayoutEffect(() => updateVisor(root, visor), [root, visor])
 

@@ -6,7 +6,7 @@ import { helmetFont } from "@/components/helmet-3d/helmet-fonts"
 import { StudioPreview } from "@/components/studio/studio-preview"
 import { getCategory } from "@/lib/catalog/categories"
 import { configurationToLook } from "@/lib/configurator/helmet-configuration"
-import { resolveRegions } from "@/lib/configurator/regions"
+import { resolveRegions, templateArtworkUrl } from "@/lib/configurator/regions"
 import { buildSceneDesign, withShellPrint } from "@/lib/configurator/scene-design"
 import { bellParts } from "@/lib/helmet-3d/parts"
 import type { PriceBook } from "@/types/catalog"
@@ -133,7 +133,8 @@ function FittingDetails({ config, priceBook }: { config: HelmetConfiguration; pr
 export function OrderDesign({ product, config, priceBook, templates, aeroKits, visors, logoUrls, summary }: OrderDesignProps) {
   const regions = useMemo(() => resolveRegions(product, config.model, templates), [product, config.model, templates])
   const look = useMemo(() => withShellPrint(configurationToLook(product, config, priceBook), config, logoUrls), [product, config, priceBook, logoUrls])
-  const design = useMemo(() => buildSceneDesign(config, regions, priceBook, logoUrls), [config, regions, priceBook, logoUrls])
+  const artworkUrl = useMemo(() => templateArtworkUrl(product, config.model, templates), [product, config.model, templates])
+  const design = useMemo(() => buildSceneDesign(config, regions, priceBook, logoUrls, artworkUrl), [config, regions, priceBook, logoUrls, artworkUrl])
   const visor = visors.find((item) => item.id === config.visor) ?? null
   const aeroMesh = aeroKits.find((kit) => kit.id === config.aero)?.meshName ?? null
   const model = priceBook.models.find((item) => item.id === config.model)

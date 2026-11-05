@@ -54,9 +54,12 @@ export function buildSceneDesign(
   regions: BuilderRegion[],
   priceBook: PriceBook,
   logoUrls: Record<string, string> = {},
+  /** The template's full-colour artwork, if it has one. */
+  artworkUrl: string | null = null,
 ): SceneDesign {
   const sceneRegions: SceneRegion[] = regions
-    .filter((region) => region.key !== "base")
+    // The shell is the model's own material, unless the artwork gives it a zone of its own.
+    .filter((region) => region.key !== "base" || region.maskUrl)
     .map((region) => {
       const treatment = getTreatment(config, region.key) ?? { kind: "colour" as const, value: region.defaultColour }
       const { colour, filmUrl } = appearance(priceBook, treatment, region.defaultColour, logoUrls)
@@ -66,10 +69,12 @@ export function buildSceneDesign(
         colour,
         filmUrl,
         ...materialFor(treatment.kind, config.finish),
+        asDesigned: Boolean(artworkUrl) && treatment.kind === "colour" && treatment.value === region.defaultColour,
       }
     })
 
   return {
+    artworkUrl,
     regions: sceneRegions,
     decals: {
       personalisation: config.personalisation ?? [],

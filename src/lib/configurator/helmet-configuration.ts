@@ -266,7 +266,11 @@ function carryV2Fields(
         regions[key.slice(0, 40)].print = treatment.print
       }
     }
-    if (Object.keys(regions).length > 0) config.regions = regions
+    if (Object.keys(regions).length > 0) {
+      // place_order() requires the shell in the list, even when only another part was changed.
+      regions.base ??= { kind: config.baseKind, value: config.base }
+      config.regions = regions
+    }
   }
 
   if (Array.isArray(input.personalisation)) {

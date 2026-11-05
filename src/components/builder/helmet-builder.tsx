@@ -14,7 +14,7 @@ import { basket } from "@/lib/basket/basket-store"
 import { getCategory } from "@/lib/catalog/categories"
 import { configToSearchParams } from "@/lib/configurator/helmet-configuration"
 import { pendingPrices } from "@/lib/configurator/pending-prices"
-import { requiresGloss, resolveRegions } from "@/lib/configurator/regions"
+import { requiresGloss, resolveRegions, templateArtworkUrl } from "@/lib/configurator/regions"
 import { buildSceneDesign, withShellPrint } from "@/lib/configurator/scene-design"
 import { formatMoney } from "@/lib/format"
 import { hasCustomBellParts } from "@/lib/helmet-3d/parts"
@@ -190,7 +190,8 @@ function BuilderBody({
 
   const regions = useMemo(() => resolveRegions(product, config.model, templates), [product, config.model, templates])
   const glossOnly = requiresGloss(config, regions)
-  const design = useMemo(() => buildSceneDesign(config, regions, priceBook, logoUrls), [config, regions, priceBook, logoUrls])
+  const artworkUrl = useMemo(() => templateArtworkUrl(product, config.model, templates), [product, config.model, templates])
+  const design = useMemo(() => buildSceneDesign(config, regions, priceBook, logoUrls, artworkUrl), [config, regions, priceBook, logoUrls, artworkUrl])
   const previewLook = useMemo(() => withShellPrint(look, config, logoUrls), [look, config, logoUrls])
   const visor = useMemo(() => visors.find((item) => item.id === config.visor) ?? null, [visors, config.visor])
   const aeroMesh = useMemo(() => aeroKits.find((kit) => kit.id === config.aero)?.meshName ?? null, [aeroKits, config.aero])

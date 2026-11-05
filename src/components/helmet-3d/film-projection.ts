@@ -33,6 +33,11 @@ export interface FilmUniforms {
   templateStrength: { value: number }
   paintRoughness: { value: number }
   /** Region coverage packed one per channel: red is region 1, green region 2, and so on. */
+  /** Full-colour artwork in the model's UVs, for templates drawn by the designer. */
+  artworkMap: { value: Texture | null }
+  artworkStrength: { value: number }
+  /** 0 while a region still shows the artwork as designed, 1 once the customer has changed it. */
+  regionActive: { value: number[] }
   regionMap: { value: Texture | null }
   regionCount: { value: number }
   regionColour: { value: Color[] }
@@ -59,6 +64,9 @@ export function createFilmUniforms(): FilmUniforms {
     filmScale: { value: 1 },
     templateStrength: { value: 0 },
     paintRoughness: { value: 0.35 },
+    artworkMap: { value: null },
+    artworkStrength: { value: 0 },
+    regionActive: { value: Array.from({ length: MAX_REGIONS }, () => 1) },
     regionMap: { value: null },
     regionCount: { value: 0 },
     regionColour: { value: Array.from({ length: MAX_REGIONS }, () => new Color("#ffffff")) },
@@ -94,6 +102,9 @@ varying vec3 vFilmNormal;
 varying vec2 vDesignUv;
 uniform float templateStrength;
 uniform float paintRoughness;
+uniform sampler2D artworkMap;
+uniform float artworkStrength;
+uniform float regionActive[${MAX_REGIONS}];
 uniform sampler2D regionMap;
 uniform int regionCount;
 uniform vec3 regionColour[${MAX_REGIONS}];
@@ -140,6 +151,13 @@ if (filmStrength > 0.0) {
   #endif
   diffuseColor.rgb = mix(diffuseColor.rgb, film, filmStrength * shell);
 }
+// Keeps the artwork's highlights and lines in a zone the customer has recoloured.
+float artworkShade = 1.0;
+if (artworkStrength > 0.0) {
+  vec3 artwork = texture2D(artworkMap, vDesignUv).rgb;
+  diffuseColor.rgb = artwork;
+  artworkShade = clamp(0.72 + 0.4 * max(artwork.r, max(artwork.g, artwork.b)), 0.72, 1.12);
+}
 if (templateStrength > 0.0) {
   vec4 regions = texture2D(regionMap, vDesignUv);
   // Later regions paint over earlier ones; the shell is whatever no mask covers.
@@ -147,7 +165,7 @@ if (templateStrength > 0.0) {
     (index) => `
     vec3 colour${index} = regionColour[${index}];
     if (regionFilmStrength[${index}] > 0.0) colour${index} = sampleHelmetFilm(regionFilm[${index}]);
-    diffuseColor.rgb = mix(diffuseColor.rgb, colour${index}, regions[${index}]);`,
+    diffuseColor.rgb = mix(diffuseColor.rgb, colour${index} * artworkShade, regions[${index}] * regionActive[${index}]);`,
   )}
 }
 if (decalStrength > 0.0) {
@@ -177,14 +195,14 @@ if (decalStrength > 0.0) {
 const roughnessBody = /* glsl */ `
 if (templateStrength > 0.0) {
   vec4 regions = texture2D(regionMap, vDesignUv);
-  ${perRegion((index) => `roughnessFactor = mix(roughnessFactor, regionRoughness[${index}], regions[${index}]);`)}
+  ${perRegion((index) => `roughnessFactor = mix(roughnessFactor, regionRoughness[${index}], regions[${index}] * regionActive[${index}]);`)}
 }
 `
 
 const metalnessBody = /* glsl */ `
 if (templateStrength > 0.0) {
   vec4 regions = texture2D(regionMap, vDesignUv);
-  ${perRegion((index) => `metalnessFactor = mix(metalnessFactor, regionMetalness[${index}], regions[${index}]);`)}
+  ${perRegion((index) => `metalnessFactor = mix(metalnessFactor, regionMetalness[${index}], regions[${index}] * regionActive[${index}]);`)}
 }
 `
 
@@ -202,7 +220,7 @@ export function addFilmProjection(material: MeshStandardMaterial, uniforms: Film
       .replace("#include <metalnessmap_fragment>", `#include <metalnessmap_fragment>\n${metalnessBody}`)
   }
   // One compiled program for every helmet material with the projection.
-  material.customProgramCacheKey = () => "helmet-design-projection-v3"
+  material.customProgramCacheKey = () => "helmet-design-projection-v4"
   ;(material as Material).needsUpdate = true
 }
 
@@ -220,6 +238,22 @@ export function loadTemplateMask(url: string): Promise<Texture> {
       texture.minFilter = LinearFilter
       texture.magFilter = LinearFilter
       texture.generateMipmaps = false
+      return texture
+    })
+    pending.catch(() => maskCache.delete(url))
+    maskCache.set(url, pending)
+  }
+  return pending
+}
+
+/** A designer's full-colour artwork: a colour image in the model's UVs. */
+export function loadArtworkTexture(url: string): Promise<Texture> {
+  let pending = maskCache.get(url)
+  if (!pending) {
+    pending = loader.loadAsync(url).then((texture) => {
+      texture.flipY = false
+      texture.colorSpace = SRGBColorSpace
+      texture.anisotropy = 8
       return texture
     })
     pending.catch(() => maskCache.delete(url))

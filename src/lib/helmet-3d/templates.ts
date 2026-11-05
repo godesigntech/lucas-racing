@@ -5,7 +5,7 @@ export interface HelmetTemplateArtwork {
 }
 
 const templates: Record<string, HelmetTemplateArtwork> = Object.fromEntries(
-  ["apex", "twin-stripe", "split-tone", "shard", "forged-flow", "chrome-strike"].map((slug) => {
+  ["red-carbon", "neon-carbon", "maple-racing", "apex", "twin-stripe", "split-tone", "shard", "forged-flow", "chrome-strike"].map((slug) => {
     const path = `/models/templates/bell-kc7/${slug}`
     return [slug, { graphicMask: `${path}/graphic-mask.png`, accentMask: `${path}/accent-mask.png`, thumbnail: `${path}/thumbnail.png` }]
   }),

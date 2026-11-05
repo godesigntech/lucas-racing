@@ -39,7 +39,7 @@ export const builderSteps: BuilderStep[] = [
   { id: "helmet", group: "Helmet", stage: "build", label: "Helmet", title: "Choose your helmet", description: "Pick the shell and size, and tell us whether we supply it." },
   { id: "aero", group: "Helmet", stage: "build", label: "Aero", title: "Choose your aero kit", description: "The standard shell, or a spoiler that fits your helmet." },
   { id: "template", group: "Design", stage: "build", label: "Template", title: "Choose a template", description: "The layout of stripes and shapes you'll colour in next." },
-  { id: "colours", group: "Design", stage: "build", label: "Colours", title: "Customise your colours", description: "Pick a colour for each part: the base colour and the design shapes. Want carbon? Use Make it carbon." },
+  { id: "colours", group: "Design", stage: "build", label: "Colours", title: "Customise your colours", description: "Pick a colour for each part of the design. Want carbon? Use Make it carbon." },
   { id: "materials", group: "Design", stage: "build", label: "Paint", title: "Choose paint finishes", description: "Solid, metallic or chrome — set separately for each part." },
   { id: "films", group: "Design", stage: "build", label: "Films", title: "Apply hydrographic films", description: "Dip any part in a hydro-dip film instead of paint, or upload your own print." },
   { id: "pinstripes", group: "Design", stage: "build", label: "Pinstripes", title: "Customise your pinstripes", description: "The fine racing lines that outline your design." },
