@@ -13,6 +13,8 @@ import type {
   Placement,
   PriceBreakdown,
   PriceLine,
+  RegionTreatment,
+  VisorStrip,
 } from "@/types/configurator"
 import type { HelmetLook } from "@/types/helmet"
 import type { CatalogProduct } from "@/types/product"
@@ -254,6 +256,15 @@ function carryV2Fields(
       textColour: isHex(strip.textColour) ? strip.textColour : "#ffffff",
       font: typeof strip.font === "string" ? strip.font.slice(0, 20) : "racing",
     }
+    if (strip.kind && PART_KINDS.includes(strip.kind) && strip.kind !== "colour") {
+      if (strip.kind !== "film" || typeof strip.film === "string") config.visorStrip.kind = strip.kind
+      if (strip.kind === "film") config.visorStrip.film = (strip.film as string).slice(0, 80)
+    }
+  }
+
+  const spoilerFinish = input.spoilerFinish
+  if (spoilerFinish && PART_KINDS.includes(spoilerFinish.kind) && typeof spoilerFinish.value === "string") {
+    config.spoilerFinish = { kind: spoilerFinish.kind, value: spoilerFinish.value.slice(0, 80) }
   }
 
   if (input.regions && typeof input.regions === "object") {
@@ -355,6 +366,23 @@ export function configurationToLook(product: CatalogProduct, config: HelmetConfi
   }
 }
 
+/** The strip's finish as a treatment, or null while it's a plain colour (included in its price). */
+export function stripTreatment(strip: VisorStrip): RegionTreatment | null {
+  if (!strip.kind || strip.kind === "colour") return null
+  return { kind: strip.kind, value: strip.kind === "film" ? (strip.film ?? "") : strip.colour }
+}
+
+/** A colour is included; film, chrome and metallic carry their own price. */
+function pushFinishPrice(lines: PriceLine[], label: string, finish: RegionTreatment, priceBook: PriceBook) {
+  if (finish.kind === "film") {
+    const film = priceBook.films.find((item) => item.id === finish.value)
+    if (film?.price) lines.push({ label: `${label}: ${film.name}`, amount: film.price })
+  } else if (finish.kind === "chrome" || finish.kind === "metallic") {
+    const material = priceBook.options.material.find((option) => option.value === finish.kind)
+    if (material?.price) lines.push({ label: `${label}: ${material.label.toLowerCase()}`, amount: material.price })
+  }
+}
+
 /**
  * Price of one helmet. Mirrors public.place_order(), the source of truth at checkout.
  * Null for designs priced on request.
@@ -406,7 +434,10 @@ export function calculateHelmetPrice(
   if (config.visorStrip?.enabled) {
     const strip = priceBook.options.visor_strip?.find((item) => item.value === "printed")
     if (strip?.price) lines.push({ label: "Visor strip", amount: strip.price })
+    const finish = stripTreatment(config.visorStrip)
+    if (finish) pushFinishPrice(lines, "Visor strip", finish, priceBook)
   }
+  if (config.spoilerFinish && aero?.meshName) pushFinishPrice(lines, aero.name, config.spoilerFinish, priceBook)
 
   for (const item of config.personalisation ?? []) {
     if (!item.value.trim()) continue
@@ -444,12 +475,17 @@ export function summariseConfiguration(
 
   const aero = extras.aeroKits?.find((kit) => kit.id === config.aero)
   lines.push(aero ? { key: "aero", label: "Aero kit", value: aero.name } : { key: "spoiler", label: "Rear spoiler", value: option("spoiler") })
+  if (aero?.meshName) {
+    lines.push({ key: "spoilerFinish", label: "Spoiler finish", value: config.spoilerFinish ? partLabel(priceBook, config.spoilerFinish) : "Clear" })
+  }
 
   const visor = extras.visors?.find((item) => item.id === config.visor)
   if (visor) lines.push({ key: "visor", label: "Visor", value: visor.name })
 
   if (config.visorStrip?.enabled) {
     lines.push({ key: "visorStrip", label: "Visor strip", value: config.visorStrip.text.trim() || "Plain" })
+    const finish = stripTreatment(config.visorStrip) ?? { kind: "colour" as const, value: config.visorStrip.colour }
+    lines.push({ key: "visorStripFinish", label: "Visor strip finish", value: partLabel(priceBook, finish) })
   }
 
   // Indexed keys: a build can carry several names or logos, and React needs them unique.

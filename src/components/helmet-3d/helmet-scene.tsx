@@ -15,7 +15,7 @@ import type { HelmetFinish } from "@/types/helmet"
 
 import { buildDecalAtlas, buildRegionMap, MAX_REGIONS, type DecalInput } from "./design-textures"
 import { type FilmUniforms, loadArtworkTexture, loadFilmTexture } from "./film-projection"
-import { cloneHelmet, disposeHelmetMaterials, updateHelmetSurface, updateVisor, type VisorSettings } from "./model-materials"
+import { cloneHelmet, disposeHelmetMaterials, type SpoilerFinish, updateHelmetSurface, updateSpoilerFinish, updateVisor, type VisorSettings } from "./model-materials"
 import { SceneLoading } from "./scene-loading"
 import { removeVisorStrips, updateVisorStrip } from "./visor-strip"
 
@@ -58,6 +58,10 @@ export interface HelmetSceneProps {
   visor?: VisorSettings | null
   /** Step 13's printed band across the top of the visor. */
   visorStrip?: VisorStrip | null
+  /** Photo of the film on the visor strip, when it's dipped. */
+  visorStripFilmUrl?: string | null
+  /** How the spoiler is finished; null leaves it clear. */
+  spoilerFinish?: SpoilerFinish | null
   /** Mesh of the chosen aero kit; null for the standard shell. */
   aeroMesh?: string | null
   /** Slowly spins until the customer drags it or picks an angle. */
@@ -145,7 +149,7 @@ function setRegionTextures(root: Object3D, regionMap: CanvasTexture, films: (Tex
   uniforms.templateStrength.value = 1
 }
 
-function HelmetModel({ url, tint = "#ffffff", finish = "gloss", paintFinish = "gloss", film = null, trim = "#171917", spoiler = false, accessories, design = null, visor = null, visorStrip = null, aeroMesh }: Omit<HelmetSceneProps, "autoRotate" | "view">) {
+function HelmetModel({ url, tint = "#ffffff", finish = "gloss", paintFinish = "gloss", film = null, trim = "#171917", spoiler = false, accessories, design = null, visor = null, visorStrip = null, visorStripFilmUrl = null, spoilerFinish = null, aeroMesh }: Omit<HelmetSceneProps, "autoRotate" | "view">) {
   const { scene } = useGLTF(url)
   const root = useMemo(() => cloneHelmet(scene), [scene])
 
@@ -218,15 +222,34 @@ function HelmetModel({ url, tint = "#ffffff", finish = "gloss", paintFinish = "g
 
   // The strip is redrawn when its text, colours or font change; the old one stays until the new one is ready.
   const stripKey = visorStrip?.enabled ? JSON.stringify(visorStrip) : ""
+  const spoilerKey = spoilerFinish ? JSON.stringify(spoilerFinish) : ""
   useEffect(() => {
     let cancelled = false
-    updateVisorStrip(root, stripKey ? (JSON.parse(stripKey) as VisorStrip) : null, () => cancelled).catch((error) =>
+    updateVisorStrip(root, stripKey ? (JSON.parse(stripKey) as VisorStrip) : null, visorStripFilmUrl, () => cancelled).catch((error) =>
       console.error("Couldn't draw the visor strip:", error),
     )
     return () => {
       cancelled = true
     }
-  }, [root, stripKey])
+  }, [root, stripKey, visorStripFilmUrl])
+
+  // The spoiler keeps its current look until a new film has loaded.
+  useEffect(() => {
+    const finish = spoilerKey ? (JSON.parse(spoilerKey) as SpoilerFinish) : null
+    if (!finish?.filmUrl) {
+      updateSpoilerFinish(root, finish, null)
+      return
+    }
+    let cancelled = false
+    loadFilmTexture(finish.filmUrl)
+      .then((texture) => {
+        if (!cancelled) updateSpoilerFinish(root, finish, texture)
+      })
+      .catch((error) => console.error("Couldn't load the spoiler film:", error))
+    return () => {
+      cancelled = true
+    }
+  }, [root, spoilerKey])
   useEffect(() => () => removeVisorStrips(root), [root])
 
   // Swap films without a loading flash: the current film stays on until the next one has loaded.
@@ -311,6 +334,8 @@ export default function HelmetScene({
   design = null,
   visor = null,
   visorStrip = null,
+  visorStripFilmUrl = null,
+  spoilerFinish = null,
   aeroMesh,
   spoiler = false,
   autoRotate = true,
@@ -341,7 +366,7 @@ export default function HelmetScene({
           <StudioLights />
           <Bounds fit clip observe margin={1.15}>
             <Center>
-              <HelmetModel url={url} tint={film ? "#ffffff" : tint} finish={finish} paintFinish={paintFinish} film={film} trim={trim} spoiler={spoiler} accessories={accessories} design={design} visor={visor} visorStrip={visorStrip} aeroMesh={aeroMesh} />
+              <HelmetModel url={url} tint={film ? "#ffffff" : tint} finish={finish} paintFinish={paintFinish} film={film} trim={trim} spoiler={spoiler} accessories={accessories} design={design} visor={visor} visorStrip={visorStrip} visorStripFilmUrl={visorStripFilmUrl} spoilerFinish={spoilerFinish} aeroMesh={aeroMesh} />
             </Center>
           </Bounds>
           <ContactShadows position={[0, -0.42, 0]} opacity={0.35} scale={3} blur={2.6} far={1} />

@@ -51,12 +51,22 @@ export function pendingPrices(
 
   const aero = extras.aeroKits?.find((kit) => kit.id === config.aero)
   if (aero && aero.price === null) pending.push({ key: "aero", label: aero.name })
+  const spoilerKind = aero?.meshName ? config.spoilerFinish?.kind : undefined
+  if (spoilerKind === "chrome" || spoilerKind === "metallic") {
+    const material = find("material", spoilerKind)
+    pending.push(fromOption(material, "spoilerFinish", `Spoiler: ${material?.label ?? spoilerKind}`))
+  }
 
   const visor = extras.visors?.find((item) => item.id === config.visor)
   if (visor && visor.price === null) pending.push({ key: "visor", label: `${visor.name} visor` })
 
   if (config.visorStrip?.enabled) {
     pending.push(fromOption(find("visor_strip", "printed"), "visorStrip", "Visor strip"))
+    const stripKind = config.visorStrip.kind
+    if (stripKind === "chrome" || stripKind === "metallic") {
+      const material = find("material", stripKind)
+      pending.push(fromOption(material, "visorStripFinish", `Visor strip: ${material?.label ?? stripKind}`))
+    }
   }
 
   for (const item of config.personalisation ?? []) {

@@ -77,15 +77,30 @@ function wrapStrip(mesh: Mesh, root: Object3D): StripWrap | null {
   return { uvs, aspect: (radius * angleSpan) / Math.max(frontHeight, 1e-3) }
 }
 
+/** The band itself: its colour, a brushed silver for chrome, or its film tiled along it. */
+async function paintBand(context: CanvasRenderingContext2D, width: number, strip: VisorStrip, filmUrl: string | null) {
+  context.fillStyle = strip.kind === "chrome" ? "#d6d9dc" : strip.colour
+  context.fillRect(0, 0, width, CANVAS_HEIGHT)
+  if (strip.kind !== "film" || !filmUrl) return
+  const image = new Image()
+  image.src = filmUrl
+  await image.decode()
+  const pattern = context.createPattern(image, "repeat")
+  if (!pattern) return
+  const scale = (CANVAS_HEIGHT * 2) / image.height
+  pattern.setTransform(new DOMMatrix().scale(scale, scale))
+  context.fillStyle = pattern
+  context.fillRect(0, 0, width, CANVAS_HEIGHT)
+}
+
 /** The band and its lettering. */
-async function drawStrip(strip: VisorStrip, aspect: number): Promise<CanvasTexture> {
+async function drawStrip(strip: VisorStrip, aspect: number, filmUrl: string | null): Promise<CanvasTexture> {
   const canvas = document.createElement("canvas")
   canvas.width = Math.min(Math.round(CANVAS_HEIGHT * aspect), MAX_CANVAS_WIDTH)
   canvas.height = CANVAS_HEIGHT
   const context = canvas.getContext("2d")!
 
-  context.fillStyle = strip.colour
-  context.fillRect(0, 0, canvas.width, canvas.height)
+  await paintBand(context, canvas.width, strip, filmUrl)
 
   const text = strip.text.trim()
   if (text) {
@@ -134,7 +149,7 @@ export function removeVisorStrips(root: Object3D) {
 }
 
 /** Prints the strip on the visor, or takes it off with null. */
-export async function updateVisorStrip(root: Object3D, strip: VisorStrip | null, isCancelled: () => boolean) {
+export async function updateVisorStrip(root: Object3D, strip: VisorStrip | null, filmUrl: string | null, isCancelled: () => boolean) {
   for (const mesh of findStrips(root)) {
     if (!strip?.enabled) {
       mesh.visible = false
@@ -148,7 +163,7 @@ export async function updateVisorStrip(root: Object3D, strip: VisorStrip | null,
       mesh.geometry.setAttribute("uv", new BufferAttribute(wrap.uvs, 2))
       mesh.userData.stripAspect = wrap.aspect
     }
-    const texture = await drawStrip(strip, mesh.userData.stripAspect as number)
+    const texture = await drawStrip(strip, mesh.userData.stripAspect as number, filmUrl)
     if (isCancelled()) {
       texture.dispose()
       return
@@ -157,7 +172,8 @@ export async function updateVisorStrip(root: Object3D, strip: VisorStrip | null,
     const material = mesh.material as MeshStandardMaterial
     material.map = texture
     material.color.set("#ffffff")
-    material.roughness = 0.35
+    material.metalness = strip.kind === "chrome" ? 1 : strip.kind === "metallic" ? 0.65 : 0
+    material.roughness = strip.kind === "chrome" ? 0.1 : strip.kind === "metallic" ? 0.28 : 0.35
     material.needsUpdate = true
     mesh.visible = true
   }

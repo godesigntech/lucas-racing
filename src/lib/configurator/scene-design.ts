@@ -99,3 +99,13 @@ export function withShellPrint(look: HelmetLook, config: HelmetConfiguration, up
   const print = config.regions?.base?.print
   return print && uploads[print] ? { ...look, baseTexture: uploads[print] } : look
 }
+
+/** The spoiler's and visor strip's finishes, as the 3D preview needs them. */
+export function fittingFinishes(config: HelmetConfiguration, priceBook: PriceBook, aeroMesh: string | null | undefined) {
+  const spoiler = aeroMesh ? config.spoilerFinish : undefined
+  const stripFilm = config.visorStrip?.kind === "film" ? priceBook.films.find((film) => film.id === config.visorStrip?.film) : undefined
+  return {
+    spoilerFinish: spoiler ? { ...appearance(priceBook, spoiler, "#111412"), ...materialFor(spoiler.kind, config.finish) } : null,
+    visorStripFilmUrl: stripFilm?.textureUrl ?? null,
+  }
+}

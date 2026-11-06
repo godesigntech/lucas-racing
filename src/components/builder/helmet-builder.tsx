@@ -14,8 +14,8 @@ import { basket } from "@/lib/basket/basket-store"
 import { getCategory } from "@/lib/catalog/categories"
 import { configToSearchParams } from "@/lib/configurator/helmet-configuration"
 import { pendingPrices } from "@/lib/configurator/pending-prices"
-import { requiresGloss, resolveRegions, templateArtworkUrl } from "@/lib/configurator/regions"
-import { buildSceneDesign, withShellPrint } from "@/lib/configurator/scene-design"
+import { getTreatment, requiresGloss, resolveRegions, templateArtworkUrl } from "@/lib/configurator/regions"
+import { buildSceneDesign, fittingFinishes, withShellPrint } from "@/lib/configurator/scene-design"
 import { formatMoney } from "@/lib/format"
 import { hasCustomBellParts } from "@/lib/helmet-3d/parts"
 import { createClient } from "@/lib/supabase/browser"
@@ -195,6 +195,7 @@ function BuilderBody({
   const previewLook = useMemo(() => withShellPrint(look, config, logoUrls), [look, config, logoUrls])
   const visor = useMemo(() => visors.find((item) => item.id === config.visor) ?? null, [visors, config.visor])
   const aeroMesh = useMemo(() => aeroKits.find((kit) => kit.id === config.aero)?.meshName ?? null, [aeroKits, config.aero])
+  const fittings = useMemo(() => fittingFinishes(config, priceBook, aeroMesh), [config, priceBook, aeroMesh])
 
   // Anything the workshop hasn't priced yet. The build is still previewable; checkout isn't.
   const pending = useMemo(
@@ -275,7 +276,9 @@ function BuilderBody({
   }
 
   function addToBasket() {
-    basket.add({ slug: product.slug, name: product.name, config })
+    // Every zone goes with the order, so its summary uses this template's own names for them.
+    const allRegions = Object.fromEntries(regions.map((region) => [region.key, getTreatment(config, region.key) ?? { kind: "colour" as const, value: region.defaultColour }]))
+    basket.add({ slug: product.slug, name: product.name, config: { ...config, v: "2", regions: allRegions } })
     setAddedBuild(JSON.stringify(config))
     toast.success(
       <span>
@@ -302,6 +305,8 @@ function BuilderBody({
           design={design}
           visor={visor}
           visorStrip={config.visorStrip ?? null}
+          visorStripFilmUrl={fittings.visorStripFilmUrl}
+          spoilerFinish={fittings.spoilerFinish}
           aeroMesh={aeroMesh}
         />
         {config.model === "bell-kc7" && (
@@ -346,7 +351,7 @@ function BuilderBody({
               <StepSize model={model} config={config} update={update} />
             </div>
           )}
-          {stepId === "aero" && <StepAero aeroKits={aeroKits} config={config} update={update} />}
+          {stepId === "aero" && <StepAero aeroKits={aeroKits} priceBook={priceBook} config={config} update={update} />}
           {stepId === "template" && <StepTemplate products={products} value={product.slug} modelId={config.model} onChange={chooseTemplate} />}
           {stepId === "colours" && <RegionStep mode="colour" regions={regions} priceBook={priceBook} config={config} update={update} />}
           {stepId === "materials" && <RegionStep mode="material" regions={regions} priceBook={priceBook} config={config} update={update} />}

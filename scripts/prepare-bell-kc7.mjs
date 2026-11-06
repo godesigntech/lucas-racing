@@ -4,7 +4,7 @@
 // the template masks are cut against them.
 //
 // Run again whenever the artist sends a new version:
-//   node scripts/prepare-bell-kc7.mjs "D:/downloads/KC7 helmet.glb"
+//   node scripts/prepare-bell-kc7.mjs "D:/downloads/KC7 helmet 2.glb"
 
 import { NodeIO, PropertyType } from "@gltf-transform/core"
 import { ALL_EXTENSIONS, EXTMeshoptCompression } from "@gltf-transform/extensions"
@@ -28,14 +28,14 @@ function findNode(name) {
 
 /** Artist's name → the name the code looks for. */
 const renames = {
-  "helmet shell": "Shell",
+  "helmet shell.005": "Shell",
   visor: "Visor",
   "visor tape": "VisorStrip",
   "visor washer": "VisorWasher",
-  "visor inner border": "RubberEyeport",
+  "visor inner line": "RubberEyeport",
   "rear spoiler": "Spoiler_HP7_F1_Small",
   "top spoiler": "Spoiler_Top",
-  "helmet shell.001": "ShellRivets",
+  nuts: "ShellRivets",
 }
 for (const [from, to] of Object.entries(renames)) findNode(from).setName(to)
 
@@ -78,7 +78,7 @@ function splitNode(name, groupOf) {
 const leftOrRight = (left, right) => ([x]) => (x > 0 ? left : right)
 
 // Foam and the rubber base trim came as one mesh with two materials.
-const inner = findNode("inner part helmet")
+const inner = findNode("inner foam")
 const [foam, rubber] = inner.getMesh().listPrimitives()
 inner.setName("Interior")
 inner.getMesh().removePrimitive(rubber)
@@ -87,10 +87,15 @@ base.setTranslation(inner.getTranslation()).setRotation(inner.getRotation()).set
 root.listScenes()[0].addChild(base)
 void foam
 
-splitNode("front ventilation", leftOrRight("GrillZ_01", "GrillZ_02"))
-splitNode("nut bolt top", leftOrRight("VisorScrew_Left", "VisorScrew_Right"))
+splitNode("ventilation", leftOrRight("GrillZ_01", "GrillZ_02"))
+// The top pair of bolts are the visor pivots customers can colour; the lower pair stay as they are.
+splitNode("nut bolts", ([x, y]) => (y < -0.03 ? "LowerBolts" : x > 0 ? "VisorScrew_Left" : "VisorScrew_Right"))
 // Each spoiler brings its own bolts, so hiding a spoiler leaves the shell clean.
-splitNode("spoiler connectors.001", ([, , z]) => (z < -0.4 ? "Spoiler_HP7_F1_Small_Bolts" : "Spoiler_Top_Bolts"))
+splitNode("top nutbolts", ([, , z]) => (z < -0.4 ? "Spoiler_HP7_F1_Small_Bolts" : "Spoiler_Top_Bolts"))
+
+// The artist baked one design into the shell; the website paints its own, so these go.
+const shellMaterial = findNode("Shell").getMesh().listPrimitives()[0].getMaterial()
+shellMaterial.setBaseColorTexture(null).setNormalTexture(null).setMetallicRoughnessTexture(null).setMetallicFactor(0).setRoughnessFactor(0.35).setBaseColorFactor([1, 1, 1, 1])
 
 // The rivets on the sides were left a stray pale pink.
 findNode("ShellRivets").getMesh().listPrimitives()[0].getMaterial().setBaseColorFactor([0.3, 0.3, 0.3, 1])
@@ -98,7 +103,7 @@ findNode("ShellRivets").getMesh().listPrimitives()[0].getMaterial().setBaseColor
 await document.transform(weld())
 
 // Most of the file's weight is in two small parts the camera barely sees up close.
-const simplify = { GrillZ_01: 0.06, GrillZ_02: 0.06, RubberEyeport: 0.2, Spoiler_HP7_F1_Small: 0.5, Spoiler_Top_Bolts: 0.4, Spoiler_HP7_F1_Small_Bolts: 0.4, "nut bolt  middle": 0.3, "nut bolt  middle.001": 0.3 }
+const simplify = { GrillZ_01: 0.06, GrillZ_02: 0.06, RubberEyeport: 0.2, Spoiler_HP7_F1_Small: 0.5, Spoiler_Top_Bolts: 0.2, Spoiler_HP7_F1_Small_Bolts: 0.2, "nut bolt  middle": 0.3, "nut bolt  middle.001": 0.3 }
 for (const [name, ratio] of Object.entries(simplify)) {
   const mesh = root.listNodes().find((item) => item.getName() === name)?.getMesh()
   for (const primitive of mesh?.listPrimitives() ?? []) simplifyPrimitive(primitive, { simplifier: MeshoptSimplifier, ratio, error: 0.002 })

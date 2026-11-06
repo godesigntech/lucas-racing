@@ -1,47 +1,56 @@
-// Turns the designer's full-colour UV artwork (SVG, drawn on the Bell KC7's shell UVs) into
-// what the 3D builder loads, in public/models/templates/bell-kc7/<slug>/:
-//   artwork.webp        the design itself, with its UV islands grown so seams stay clean
+// Turns the designers' full-colour SVG artwork into what the 3D builder loads, in
+// public/models/templates/bell-kc7/<slug>/:
+//   artwork.webp        the design itself, in the shell's UVs, with edges grown so seams stay clean
 //   <zone>-mask.png     one mask per colour zone, so customers can still recolour each zone
 //
-//   node scripts/prepare-artwork-templates.mjs "D:/downloads/lucasHelmentTemp"
+//   node scripts/prepare-artwork-templates.mjs "<folder with the SVGs>"
 //
-// To add a design: add it to `templates` below, run this, and add its rows in a migration.
+// To add a design, add it to `templates` and add its rows in a migration.
 
 import { mkdir } from "node:fs/promises"
 import path from "node:path"
 
 import sharp from "sharp"
 
-const sourceDir = process.argv[2]
-if (!sourceDir) throw new Error('Usage: node scripts/prepare-artwork-templates.mjs "<folder with the SVGs>"')
+const [svgDir] = process.argv.slice(2)
+if (!svgDir) throw new Error('Usage: node scripts/prepare-artwork-templates.mjs "<folder with the SVGs>"')
 
-const SIZE = 2048
-/** How far each UV island is grown, so filtering at its edge never picks up black. */
-const GUTTER = 12
+const SIZE = 4096
+/** The builder packs masks at this size, so they needn't be larger. */
+const MASK_SIZE = 2048
+/** How far the artwork is grown past its edge, so filtering never picks up black. */
+const GUTTER = 16
 
+const between = (low, high) => (h) => h >= low && h <= high
 const isRed = (h) => h < 25 || h > 335
-const isLime = (h) => h >= 50 && h <= 95
-const isTeal = (h) => h >= 165 && h <= 200
+const isCardinal = (h, s, v) => s >= 0.25 && v > 0.08
+const isLight = (s, v) => s < 0.25 && v > 0.42
 
 /** Sorts a pixel into a zone. Anything undecided stays with the dark base. */
 const templates = [
   {
-    slug: "red-carbon",
-    file: "Red-Carbon-UV.svg",
-    zones: ["base", "graphic", "accent"],
-    zoneOf: (h, s, v) => (s >= 0.25 && v > 0.08 ? (isRed(h) ? "graphic" : "base") : s < 0.25 && v > 0.42 ? "accent" : "base"),
-  },
-  {
-    slug: "neon-carbon",
-    file: "Neon-Carbon-UV.svg",
+    slug: "emilio",
+    file: "NewUV-01-Emilio.svg",
     zones: ["base", "graphic", "accent", "detail"],
-    zoneOf: (h, s, v) => (s >= 0.25 && v > 0.08 ? (isLime(h) ? "graphic" : isTeal(h) ? "detail" : "base") : s < 0.25 && v > 0.42 ? "accent" : "base"),
+    // Navy shades are the base; the brighter blue panels, gold and teal lines are zones.
+    zoneOf: (h, s, v) => {
+      if (between(30, 65)(h) && s > 0.25 && v > 0.35) return "accent"
+      if (between(180, 212)(h) && s > 0.25 && v > 0.4) return "detail"
+      if (between(205, 245)(h) && v > 0.28) return "graphic"
+      return "base"
+    },
   },
   {
-    slug: "maple-racing",
-    file: "Maple-Racing-UV.svg",
+    slug: "nygel",
+    file: "NewUV-02-Nygel.svg",
     zones: ["base", "graphic", "accent"],
-    zoneOf: (h, s, v) => (s >= 0.25 && v > 0.08 ? (isRed(h) ? "graphic" : "base") : s < 0.25 && v > 0.42 ? "accent" : "base"),
+    zoneOf: (h, s, v) => (isCardinal(h, s, v) && isRed(h) ? "graphic" : isLight(s, v) ? "accent" : "base"),
+  },
+  {
+    slug: "rusinov",
+    file: "NewUV-03-Rusinov.svg",
+    zones: ["base", "graphic", "accent"],
+    zoneOf: (h, s, v) => (isCardinal(h, s, v) && isRed(h) ? "graphic" : isLight(s, v) ? "accent" : "base"),
   },
 ]
 
@@ -58,16 +67,10 @@ function hsv(r, g, b) {
   return [hue * 60, max === 0 ? 0 : delta / max, max / 255]
 }
 
-for (const template of templates) {
-  const { data } = await sharp(path.join(sourceDir, template.file), { density: (72 * SIZE) / 1024 })
-    .resize(SIZE, SIZE)
-    .ensureAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true })
-
-  // Which pixel each texel takes its colour from; -1 is outside every UV island.
+/** Copies each pixel just outside the artwork from its nearest neighbour inside it. */
+function growEdges(rgba) {
   let source = new Int32Array(SIZE * SIZE).fill(-1)
-  for (let index = 0; index < SIZE * SIZE; index++) if (data[index * 4 + 3] >= 200) source[index] = index
+  for (let index = 0; index < SIZE * SIZE; index++) if (rgba[index * 4 + 3] >= 200) source[index] = index
   for (let pass = 0; pass < GUTTER; pass++) {
     const grown = source.slice()
     for (let y = 1; y < SIZE - 1; y++) {
@@ -84,13 +87,30 @@ for (const template of templates) {
     }
     source = grown
   }
+  const out = Buffer.alloc(rgba.length)
+  for (let index = 0; index < SIZE * SIZE; index++) {
+    const from = source[index]
+    if (from === -1) continue
+    out[index * 4] = rgba[from * 4]
+    out[index * 4 + 1] = rgba[from * 4 + 1]
+    out[index * 4 + 2] = rgba[from * 4 + 2]
+    out[index * 4 + 3] = 255
+  }
+  return out
+}
+
+const renderSvg = async (file) =>
+  (await sharp(file, { density: 300 }).resize(SIZE, SIZE).ensureAlpha().raw().toBuffer({ resolveWithObject: true })).data
+
+for (const template of templates) {
+  const raster = await renderSvg(path.join(svgDir, template.file))
+  const rgba = growEdges(raster)
 
   const artwork = Buffer.alloc(SIZE * SIZE * 3)
   const masks = Object.fromEntries(template.zones.map((zone) => [zone, Buffer.alloc(SIZE * SIZE)]))
   for (let index = 0; index < SIZE * SIZE; index++) {
-    const from = source[index]
-    if (from === -1) continue
-    const [r, g, b] = [data[from * 4], data[from * 4 + 1], data[from * 4 + 2]]
+    if (rgba[index * 4 + 3] === 0) continue
+    const [r, g, b] = [rgba[index * 4], rgba[index * 4 + 1], rgba[index * 4 + 2]]
     artwork[index * 3] = r
     artwork[index * 3 + 1] = g
     artwork[index * 3 + 2] = b
@@ -99,10 +119,9 @@ for (const template of templates) {
 
   const out = path.join("public/models/templates/bell-kc7", template.slug)
   await mkdir(out, { recursive: true })
-  await sharp(artwork, { raw: { width: SIZE, height: SIZE, channels: 3 } }).webp({ quality: 92, smartSubsample: true }).toFile(path.join(out, "artwork.webp"))
+  await sharp(artwork, { raw: { width: SIZE, height: SIZE, channels: 3 } }).webp({ quality: 90, smartSubsample: true }).toFile(path.join(out, "artwork.webp"))
   for (const [zone, mask] of Object.entries(masks)) {
-    // A touch of blur, so a recoloured zone has a soft edge like the artwork does.
-    await sharp(mask, { raw: { width: SIZE, height: SIZE, channels: 1 } }).blur(0.8).png({ compressionLevel: 9 }).toFile(path.join(out, `${zone}-mask.png`))
+    await sharp(mask, { raw: { width: SIZE, height: SIZE, channels: 1 } }).resize(MASK_SIZE, MASK_SIZE).png({ compressionLevel: 9 }).toFile(path.join(out, `${zone}-mask.png`))
   }
   console.log(`${template.slug}: artwork and ${template.zones.length} zone masks`)
 }

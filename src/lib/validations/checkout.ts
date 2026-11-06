@@ -68,7 +68,7 @@ const hex = z.string().regex(/^#[0-9a-f]{6}$/i)
 const logoPath = z.string().regex(/^[0-9a-f-]{36}\/[0-9a-f-]{36}\.(png|jpg|webp)$/, "That logo isn't valid")
 
 /** A treatment on one editable region. The server re-checks it against the template. */
-const regionTreatment = z.object({ kind: partKind, value: z.string().trim().min(1).max(80) })
+const regionTreatment = z.object({ kind: partKind, value: z.string().trim().min(1).max(80), print: logoPath.optional() })
 
 const personalItem = z.object({
   kind: z.enum(["name", "number", "initials", "flag", "text"]),
@@ -123,9 +123,12 @@ export const helmetItemSchema = z.object({
         colour: hex,
         text: z.string().trim().max(40, "Visor strip text can be up to 40 characters"),
         textColour: hex.optional(),
+        kind: partKind.optional(),
+        film: z.string().trim().max(80).optional(),
         font: z.string().trim().max(20).optional(),
       })
       .optional(),
+    spoilerFinish: regionTreatment.optional(),
     regions: z.record(z.string().max(40), regionTreatment).optional(),
     personalisation: z.array(personalItem).max(6, "You can add up to 6 pieces of personalisation").optional(),
     logos: z.array(logoItem).max(4, "You can add up to 4 logos").optional(),

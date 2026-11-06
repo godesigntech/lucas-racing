@@ -68,6 +68,10 @@ export interface VisorStrip {
   enabled: boolean
   /** Background colour of the strip. */
   colour: string
+  /** What the band is finished in; colour unless the customer chose otherwise. */
+  kind?: PartKind
+  /** Film id, when the band is dipped. */
+  film?: string
   text: string
   textColour?: string
   font?: string
@@ -122,6 +126,8 @@ export interface HelmetConfiguration extends BellPartColours {
   aero?: string
   /** Visor id. */
   visor?: string
+  /** How the chosen spoiler is finished. Left out, it stays clear. */
+  spoilerFinish?: RegionTreatment
   visorStrip?: VisorStrip
 
   /** Treatment per editable region of the template, keyed by region key. */

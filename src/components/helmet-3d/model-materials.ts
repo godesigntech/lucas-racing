@@ -1,10 +1,10 @@
-import { Box3, type Material, type Mesh, MeshPhysicalMaterial, MeshStandardMaterial, type Object3D, Vector3 } from "three"
+import { Box3, type Material, type Mesh, MeshPhysicalMaterial, MeshStandardMaterial, type Object3D, type Texture, Vector3 } from "three"
 
 import { bellParts, type BellPartColours } from "@/lib/helmet-3d/parts"
 
 import type { HelmetFinish } from "@/types/helmet"
 
-import { addFilmProjection, createFilmUniforms } from "./film-projection"
+import { addFilmProjection, createFilmUniforms, type FilmUniforms } from "./film-projection"
 
 const finishes: Record<HelmetFinish, { roughness: number; metalness: number; envMapIntensity: number }> = {
   gloss: { roughness: 0.35, metalness: 0, envMapIntensity: 1.1 },
@@ -24,6 +24,11 @@ export function cloneHelmet(scene: Object3D): Object3D {
     const clone = (source: Material) => {
       const material = source.clone()
       if (mesh.name === "Shell" && material instanceof MeshStandardMaterial) addFilmProjection(material, film)
+      if (aeroMeshNames.includes(mesh.name) && material instanceof MeshStandardMaterial) {
+        // A spoiler gets its own film settings: the shell's film is a different choice.
+        mesh.userData.film = createFilmUniforms()
+        addFilmProjection(material, mesh.userData.film as FilmUniforms)
+      }
       return material
     }
     mesh.material = Array.isArray(mesh.material) ? mesh.material.map(clone) : clone(mesh.material)
@@ -35,6 +40,10 @@ export function cloneHelmet(scene: Object3D): Object3D {
   copy.updateMatrixWorld(true)
   const displaySize = new Box3().setFromObject(copy).getSize(new Vector3())
   film.filmScale.value = 2.4 / Math.max(displaySize.x, displaySize.y, displaySize.z, 0.001)
+  copy.traverse((node) => {
+    const uniforms = node.userData.film as FilmUniforms | undefined
+    if (uniforms && node !== copy) uniforms.filmScale.value = film.filmScale.value
+  })
   return copy
 }
 
@@ -60,6 +69,56 @@ export interface VisorSettings {
  * The visor mesh ships with its own material and nothing has ever driven it. Tint,
  * transparency and the mirrored look of an iridium visor all come from here.
  */
+/** How a spoiler is finished, as the 3D preview needs it. */
+export interface SpoilerFinish {
+  colour: string
+  filmUrl: string | null
+  metalness: number
+  roughness: number
+}
+
+/** Paints or dips the spoilers, or puts them back to the artist's clear plastic with null. */
+export function updateSpoilerFinish(root: Object3D, finish: SpoilerFinish | null, filmTexture: Texture | null) {
+  root.traverse((node) => {
+    const mesh = node as Mesh
+    if (!mesh.isMesh || !aeroMeshNames.includes(mesh.name)) return
+    const material = mesh.material as MeshStandardMaterial
+    if (!(material instanceof MeshStandardMaterial)) return
+    const physical = material instanceof MeshPhysicalMaterial ? material : null
+    mesh.userData.clear ??= {
+      colour: material.color.clone(),
+      opacity: material.opacity,
+      transparent: material.transparent,
+      depthWrite: material.depthWrite,
+      metalness: material.metalness,
+      roughness: material.roughness,
+      transmission: physical?.transmission ?? 0,
+    }
+    const clear = mesh.userData.clear
+    const film = mesh.userData.film as FilmUniforms
+    film.filmMap.value = finish ? filmTexture : null
+    film.filmStrength.value = finish && filmTexture ? 1 : 0
+    if (finish) {
+      material.color.set(finish.colour)
+      material.opacity = 1
+      material.transparent = false
+      material.depthWrite = true
+      material.metalness = finish.metalness
+      material.roughness = finish.roughness
+      if (physical) physical.transmission = 0
+    } else {
+      material.color.copy(clear.colour)
+      material.opacity = clear.opacity
+      material.transparent = clear.transparent
+      material.depthWrite = clear.depthWrite
+      material.metalness = clear.metalness
+      material.roughness = clear.roughness
+      if (physical) physical.transmission = clear.transmission
+    }
+    material.needsUpdate = true
+  })
+}
+
 export function updateVisor(root: Object3D, visor: VisorSettings | null) {
   root.traverse((node) => {
     const mesh = node as Mesh

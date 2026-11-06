@@ -7,7 +7,7 @@ import { StudioPreview } from "@/components/studio/studio-preview"
 import { getCategory } from "@/lib/catalog/categories"
 import { configurationToLook } from "@/lib/configurator/helmet-configuration"
 import { resolveRegions, templateArtworkUrl } from "@/lib/configurator/regions"
-import { buildSceneDesign, withShellPrint } from "@/lib/configurator/scene-design"
+import { buildSceneDesign, fittingFinishes, withShellPrint } from "@/lib/configurator/scene-design"
 import { bellParts } from "@/lib/helmet-3d/parts"
 import type { PriceBook } from "@/types/catalog"
 import type { HelmetConfiguration } from "@/types/configurator"
@@ -115,7 +115,8 @@ function FittingDetails({ config, priceBook }: { config: HelmetConfiguration; pr
           <div className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-3 px-4 py-2">
             <dt className="text-muted-foreground">Visor strip</dt>
             <dd className="break-words font-medium">
-              {strip.text.trim() || "Plain band"} · band {colourName(strip.colour)}
+              {strip.text.trim() || "Plain band"}
+              {(!strip.kind || strip.kind === "colour" || strip.kind === "metallic") && ` · band ${colourName(strip.colour)}`}
               {strip.text.trim() && ` · text ${colourName(strip.textColour ?? "#ffffff")} · font ${helmetFont(strip.font).label}`}
             </dd>
           </div>
@@ -137,6 +138,7 @@ export function OrderDesign({ product, config, priceBook, templates, aeroKits, v
   const design = useMemo(() => buildSceneDesign(config, regions, priceBook, logoUrls, artworkUrl), [config, regions, priceBook, logoUrls, artworkUrl])
   const visor = visors.find((item) => item.id === config.visor) ?? null
   const aeroMesh = aeroKits.find((kit) => kit.id === config.aero)?.meshName ?? null
+  const fittings = fittingFinishes(config, priceBook, aeroMesh)
   const model = priceBook.models.find((item) => item.id === config.model)
 
   return (
@@ -150,6 +152,8 @@ export function OrderDesign({ product, config, priceBook, templates, aeroKits, v
         design={design}
         visor={visor}
         visorStrip={config.visorStrip ?? null}
+        visorStripFilmUrl={fittings.visorStripFilmUrl}
+        spoilerFinish={fittings.spoilerFinish}
         aeroMesh={aeroMesh}
         eyebrow="Customer's design"
       />

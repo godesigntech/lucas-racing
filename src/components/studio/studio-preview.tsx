@@ -5,7 +5,7 @@ import { Box, RotateCcw } from "lucide-react"
 
 import { HelmetArt } from "@/components/helmet/helmet-art"
 import type { HelmetAngle, SceneDesign } from "@/components/helmet-3d/helmet-scene"
-import type { VisorSettings } from "@/components/helmet-3d/model-materials"
+import type { SpoilerFinish, VisorSettings } from "@/components/helmet-3d/model-materials"
 import { HelmetViewer } from "@/components/helmet-3d/helmet-viewer"
 import { get3dModel } from "@/lib/helmet-3d/models"
 import { shellTint } from "@/lib/helmet-3d/tint"
@@ -31,6 +31,8 @@ interface StudioPreviewProps {
   design?: SceneDesign | null
   visor?: VisorSettings | null
   visorStrip?: VisorStrip | null
+  visorStripFilmUrl?: string | null
+  spoilerFinish?: SpoilerFinish | null
   aeroMesh?: string | null
   /** Small heading above the helmet name. */
   eyebrow?: string
@@ -41,7 +43,7 @@ interface StudioPreviewProps {
  * get the 3D viewer and preset camera angles; others show the illustration.
  */
 export const StudioPreview = forwardRef<HTMLDivElement, StudioPreviewProps>(function StudioPreview(
-  { look, modelId, modelName, designLabel, design = null, visor = null, visorStrip = null, aeroMesh, eyebrow = "Live preview" },
+  { look, modelId, modelName, designLabel, design = null, visor = null, visorStrip = null, visorStripFilmUrl = null, spoilerFinish = null, aeroMesh, eyebrow = "Live preview" },
   ref,
 ) {
   const [view, setView] = useState<{ angle: HelmetAngle; at: number } | null>(null)
@@ -84,6 +86,8 @@ export const StudioPreview = forwardRef<HTMLDivElement, StudioPreviewProps>(func
               design={design}
               visor={visor}
               visorStrip={visorStrip}
+              visorStripFilmUrl={visorStripFilmUrl}
+              spoilerFinish={spoilerFinish}
               aeroMesh={aeroMesh}
               view={view}
               label={`${modelName} in 3D with your shell colour, film, finish, accessories and spoiler`}

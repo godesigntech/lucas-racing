@@ -4,6 +4,7 @@ import { Check } from "lucide-react"
 
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
+import { stripTreatment } from "@/lib/configurator/helmet-configuration"
 import { optionPriceLabel } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { PriceBook } from "@/types/catalog"
@@ -11,6 +12,7 @@ import type { HelmetConfiguration, VisorStrip } from "@/types/configurator"
 import { helmetFontStyles } from "@/components/helmet-3d/helmet-fonts"
 import type { AeroKit, Visor } from "@/types/templates"
 
+import { FinishPicker } from "./finish-picker"
 import { SwatchGrid } from "./swatch-grid"
 
 interface UpdateProps {
@@ -58,7 +60,7 @@ function ChoiceCard({
 }
 
 /** Step 2: the standard shell, or a spoiler that fits this helmet. */
-export function StepAero({ aeroKits, config, update }: UpdateProps & { aeroKits: AeroKit[] }) {
+export function StepAero({ aeroKits, priceBook, config, update }: UpdateProps & { aeroKits: AeroKit[]; priceBook: PriceBook }) {
   const kits = aeroKits.filter((kit) => kit.modelId === config.model)
   if (kits.length === 0) {
     return (
@@ -68,18 +70,30 @@ export function StepAero({ aeroKits, config, update }: UpdateProps & { aeroKits:
     )
   }
   const current = config.aero ?? kits.find((kit) => !kit.meshName)?.id
+  const hasSpoiler = Boolean(kits.find((kit) => kit.id === current)?.meshName)
   return (
-    <div className="grid gap-2 sm:grid-cols-2">
-      {kits.map((kit) => (
-        <ChoiceCard
-          key={kit.id}
-          selected={current === kit.id}
-          title={kit.name}
-          summary={kit.summary}
-          price={kit.price}
-          onSelect={() => update({ v: "2", aero: kit.id, spoiler: kit.meshName ? "yes" : "no" })}
+    <div className="space-y-5">
+      <div className="grid gap-2 sm:grid-cols-2">
+        {kits.map((kit) => (
+          <ChoiceCard
+            key={kit.id}
+            selected={current === kit.id}
+            title={kit.name}
+            summary={kit.summary}
+            price={kit.price}
+            onSelect={() => update({ v: "2", aero: kit.id, spoiler: kit.meshName ? "yes" : "no" })}
+          />
+        ))}
+      </div>
+      {hasSpoiler && (
+        <FinishPicker
+          label="Spoiler"
+          asSupplied="Clear"
+          priceBook={priceBook}
+          value={config.spoilerFinish ?? null}
+          onChange={(spoilerFinish) => update({ spoilerFinish: spoilerFinish ?? undefined })}
         />
-      ))}
+      )}
     </div>
   )
 }
@@ -149,7 +163,17 @@ export function StepVisorStrip({ priceBook, config, update }: UpdateProps & { pr
             <p className="text-xs text-muted-foreground">Up to 40 characters. Leave it blank for a plain band.</p>
           </div>
 
-          <SwatchGrid label="Strip colour" options={colours} value={strip.colour} onChange={(colour) => set({ colour })} />
+          <FinishPicker
+            label="Strip"
+            priceBook={priceBook}
+            value={stripTreatment(strip) ?? { kind: "colour", value: strip.colour }}
+            onChange={(finish) => {
+              if (!finish) return
+              if (finish.kind === "film") set({ kind: "film", film: finish.value })
+              else if (finish.kind === "chrome") set({ kind: "chrome", film: undefined })
+              else set({ kind: finish.kind, colour: finish.value, film: undefined })
+            }}
+          />
           <SwatchGrid label="Text colour" options={colours} value={strip.textColour} onChange={(textColour) => set({ textColour })} />
 
           <fieldset className="space-y-2">
