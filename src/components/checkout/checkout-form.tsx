@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { placeOrder } from "@/lib/actions/checkout"
+import { buildUsesChrome } from "@/lib/configurator/helmet-configuration"
 import { basket } from "@/lib/basket/basket-store"
 import { basketSubtotal, toOrderItems, type AvailableLine } from "@/lib/basket/resolve-basket"
 import { useResolvedBasket } from "@/lib/basket/use-resolved-basket"
@@ -49,6 +50,7 @@ export function CheckoutForm({ profile, deliveryMethods, products, priceBook, pr
   const lines = basketState.lines.filter((line): line is AvailableLine => line.available)
   const subtotal = basketSubtotal(lines)
   const hasHelmets = lines.some((line) => line.kind === "helmet")
+  const hasChrome = lines.some((line) => line.kind === "helmet" && buildUsesChrome(line.item.config))
 
   const firstMethod = deliveryMethods[0]
   const {
@@ -241,6 +243,7 @@ export function CheckoutForm({ profile, deliveryMethods, products, priceBook, pr
               weeks={production.weeks}
               tiers={production.tiers}
               standardLeadWeeks={production.standardLeadWeeks}
+              hasChrome={hasChrome}
               startDate={startDate}
               rushTier={rushTier}
               error={errors.productionStartDate?.message}

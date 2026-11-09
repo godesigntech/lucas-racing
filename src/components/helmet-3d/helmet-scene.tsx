@@ -1,7 +1,7 @@
 "use client"
 
 import { type RefObject, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
-import { Canvas, useFrame, useThree } from "@react-three/fiber"
+import { Canvas, type ThreeEvent, useFrame, useThree } from "@react-three/fiber"
 import { Bounds, Center, ContactShadows, Environment, Lightformer, OrbitControls, useGLTF, useProgress } from "@react-three/drei"
 import { type Object3D, type Texture } from "three"
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib"
@@ -13,9 +13,11 @@ import type { BellPartColours } from "@/lib/helmet-3d/parts"
 import type { VisorStrip } from "@/types/configurator"
 import type { HelmetFinish } from "@/types/helmet"
 
-import { buildDecalAtlas, buildRegionMap, MAX_REGIONS, type DecalInput } from "./design-textures"
+import { buildDecalAtlas, buildRegionMap, MAX_REGION_FILMS, MAX_REGIONS, type DecalInput } from "./design-textures"
 import { type FilmUniforms, loadArtworkTexture, loadFilmTexture } from "./film-projection"
 import { cloneHelmet, disposeHelmetMaterials, type SpoilerFinish, updateHelmetSurface, updateSpoilerFinish, updateVisor, type VisorSettings } from "./model-materials"
+import type { HelmetSpot } from "@/lib/helmet-3d/decal-layout"
+
 import { SceneLoading } from "./scene-loading"
 import { removeVisorStrips, updateVisorStrip } from "./visor-strip"
 
@@ -63,7 +65,13 @@ export interface HelmetSceneProps {
   /** How the spoiler is finished; null leaves it clear. */
   spoilerFinish?: SpoilerFinish | null
   /** Mesh of the chosen aero kit; null for the standard shell. */
-  aeroMesh?: string | null
+  aeroMesh?: string | string[] | null
+  /** Told which part of the design was tapped: a region key, or "base" for the shell around them. */
+  onPickRegion?: (key: string) => void
+  /** While true, pressing and dragging on the helmet places an item instead of turning it. */
+  placing?: boolean
+  /** Told where on the helmet the item is being dragged to. */
+  onPlace?: (spot: HelmetSpot) => void
   /** Slowly spins until the customer drags it or picks an angle. */
   autoRotate?: boolean
   /** Turns the camera to a preset angle. `at` changes on every request, so picking the same angle again re-centres it. */
@@ -82,6 +90,11 @@ const angles: Record<HelmetAngle, { azimuth: number; polar: number }> = {
   side: { azimuth: FRONT + Math.PI / 2, polar: Math.PI * 0.47 },
   back: { azimuth: FRONT + Math.PI, polar: Math.PI * 0.44 },
   top: { azimuth: FRONT + Math.PI / 6, polar: Math.PI * 0.17 },
+}
+
+/** Where a pointer meets the painted shell, looking past the visor and any hidden parts in front of it. */
+function shellHit(event: ThreeEvent<MouseEvent | PointerEvent>) {
+  return event.intersections.find((intersection) => intersection.object.name === "Shell")
 }
 
 /** Puts a film on the helmet, or takes it off with null. */
@@ -137,19 +150,34 @@ function setDecals(root: Object3D, texture: CanvasTexture | null) {
   if (texture) setDecalProjection(root)
 }
 
-/** The template's masks and films, once they've loaded. */
-function setRegionTextures(root: Object3D, regionMap: CanvasTexture, films: (Texture | null)[], count: number) {
+/**
+ * The template's masks and films, once they've loaded. Regions using the same film share
+ * a slot; past the shader's film limit a region falls back to its colour.
+ */
+function setRegionTextures(root: Object3D, regionMaps: CanvasTexture[], films: (Texture | null)[], count: number) {
   const uniforms = root.userData.film as FilmUniforms
-  uniforms.regionMap.value = regionMap
+  uniforms.regionMap.value = regionMaps[0]
+  uniforms.regionMap2.value = regionMaps[1] ?? null
   uniforms.regionCount.value = count
+  const slots: Texture[] = []
+  uniforms.regionFilm.value.fill(null)
   films.forEach((texture, index) => {
-    uniforms.regionFilm.value[index] = texture
-    uniforms.regionFilmStrength.value[index] = texture ? 1 : 0
+    let slot = texture ? slots.indexOf(texture) : -1
+    if (texture && slot === -1 && slots.length < MAX_REGION_FILMS) slot = slots.push(texture) - 1
+    uniforms.regionFilmSlot.value[index] = slot
   })
+  slots.forEach((texture, slot) => (uniforms.regionFilm.value[slot] = texture))
   uniforms.templateStrength.value = 1
 }
 
-function HelmetModel({ url, tint = "#ffffff", finish = "gloss", paintFinish = "gloss", film = null, trim = "#171917", spoiler = false, accessories, design = null, visor = null, visorStrip = null, visorStripFilmUrl = null, spoilerFinish = null, aeroMesh }: Omit<HelmetSceneProps, "autoRotate" | "view">) {
+function HelmetModel({ url, tint = "#ffffff", finish = "gloss", paintFinish = "gloss", film = null, trim = "#171917", spoiler = false, accessories, design = null, visor = null, visorStrip = null, visorStripFilmUrl = null, spoilerFinish = null, aeroMesh, onPickRegion, placing = false, onPlace }: Omit<HelmetSceneProps, "autoRotate" | "view">) {
+  // Read when a drag starts, not during render: the drag turns the orbit controls off for its duration.
+  const getThree = useThree((state) => state.get)
+  const setOrbit = (enabled: boolean) => {
+    const controls = getThree().controls as unknown as OrbitControlsImpl | null
+    if (controls) controls.enabled = enabled
+  }
+  const dragging = useRef(false)
   const { scene } = useGLTF(url)
   const root = useMemo(() => cloneHelmet(scene), [scene])
 
@@ -174,9 +202,9 @@ function HelmetModel({ url, tint = "#ffffff", finish = "gloss", paintFinish = "g
       buildRegionMap(regions.map((region) => region.maskUrl)),
       ...regions.map((region) => (region.filmUrl ? loadFilmTexture(region.filmUrl) : Promise.resolve(null))),
     ])
-      .then(([regionMap, ...films]) => {
-        if (cancelled || !regionMap) return
-        setRegionTextures(root, regionMap, films, regions.length)
+      .then(([regionMaps, ...films]) => {
+        if (cancelled || !regionMaps) return
+        setRegionTextures(root, regionMaps as CanvasTexture[], films as (Texture | null)[], regions.length)
       })
       .catch((error) => console.error("Couldn't load helmet template artwork:", error))
     return () => {
@@ -276,7 +304,70 @@ function HelmetModel({ url, tint = "#ffffff", finish = "gloss", paintFinish = "g
   )
   useEffect(() => () => disposeHelmetMaterials(root), [root])
 
-  return <primitive object={root} dispose={null} />
+  // A tap (not a drag) on the shell finds the part of the design under it from the packed masks.
+  const pick = (event: ThreeEvent<MouseEvent>) => {
+    // The visor and hidden parts can sit in front of the shell, so look for the shell itself.
+    const hit = shellHit(event)
+    if (!onPickRegion || !design || event.delta > 6 || !hit?.uv) return
+    event.stopPropagation()
+    const uniforms = root.userData.film as FilmUniforms
+    let key = "base"
+    if (uniforms.templateStrength.value > 0) {
+      // Later regions are painted over earlier ones, so the last one covering this spot wins.
+      const maps = [uniforms.regionMap.value, uniforms.regionMap2.value]
+      design.regions.slice(0, MAX_REGIONS).forEach((region, index) => {
+        const canvas = maps[Math.floor(index / 3)]?.image as HTMLCanvasElement | undefined
+        const context = canvas?.getContext?.("2d", { willReadFrequently: true })
+        if (!canvas || !context) return
+        const x = Math.min(canvas.width - 1, Math.max(0, Math.floor(hit.uv!.x * canvas.width)))
+        const y = Math.min(canvas.height - 1, Math.max(0, Math.floor(hit.uv!.y * canvas.height)))
+        if (context.getImageData(x, y, 1, 1).data[index % 3] > 127) key = region.key
+      })
+    }
+    onPickRegion(key)
+  }
+
+  /** Where on the face of the helmet a pointer is, in the same terms the decal shader uses. */
+  const spotFrom = (event: ThreeEvent<PointerEvent>): HelmetSpot | null => {
+    const hit = shellHit(event)
+    if (!hit?.face) return null
+    setDecalProjection(root)
+    const uniforms = root.userData.film as FilmUniforms
+    const normal = hit.face.normal.clone().transformDirection(hit.object.matrixWorld)
+    const p = hit.point.clone().sub(uniforms.decalCentre.value).multiplyScalar(uniforms.decalScale.value)
+    const side = normal.x > 0 ? "left" : "right"
+    if (normal.y > Math.max(Math.abs(normal.x), Math.abs(normal.z))) return { face: "top", x: p.x + 0.5, y: p.z + 0.5, side }
+    if (Math.abs(normal.x) > Math.abs(normal.z)) return { face: "sides", x: -Math.sign(normal.x) * p.z + 0.5, y: 0.5 - p.y, side }
+    return normal.z > 0 ? { face: "front", x: p.x + 0.5, y: 0.5 - p.y, side } : { face: "back", x: 0.5 - p.x, y: 0.5 - p.y, side }
+  }
+  const place = (event: ThreeEvent<PointerEvent>, start: boolean) => {
+    if (!placing || !onPlace || (!start && !dragging.current)) return
+    const spot = spotFrom(event)
+    if (!spot) return
+    event.stopPropagation()
+    if (start) {
+      dragging.current = true
+      setOrbit(false)
+      ;(event.target as Element | null)?.setPointerCapture?.(event.pointerId)
+    }
+    onPlace(spot)
+  }
+  const stopPlacing = () => {
+    dragging.current = false
+    setOrbit(true)
+  }
+
+  return (
+    <primitive
+      object={root}
+      dispose={null}
+      onClick={pick}
+      onPointerDown={(event: ThreeEvent<PointerEvent>) => place(event, true)}
+      onPointerMove={(event: ThreeEvent<PointerEvent>) => place(event, false)}
+      onPointerUp={stopPlacing}
+      onPointerCancel={stopPlacing}
+    />
+  )
 }
 
 /** Studio lighting built from soft light panels, so no HDR file has to be downloaded. */
@@ -337,6 +428,9 @@ export default function HelmetScene({
   visorStripFilmUrl = null,
   spoilerFinish = null,
   aeroMesh,
+  onPickRegion,
+  placing,
+  onPlace,
   spoiler = false,
   autoRotate = true,
   view = null,
@@ -366,7 +460,7 @@ export default function HelmetScene({
           <StudioLights />
           <Bounds fit clip observe margin={1.15}>
             <Center>
-              <HelmetModel url={url} tint={film ? "#ffffff" : tint} finish={finish} paintFinish={paintFinish} film={film} trim={trim} spoiler={spoiler} accessories={accessories} design={design} visor={visor} visorStrip={visorStrip} visorStripFilmUrl={visorStripFilmUrl} spoilerFinish={spoilerFinish} aeroMesh={aeroMesh} />
+              <HelmetModel url={url} tint={tint} finish={finish} paintFinish={paintFinish} film={film} trim={trim} spoiler={spoiler} accessories={accessories} design={design} visor={visor} visorStrip={visorStrip} visorStripFilmUrl={visorStripFilmUrl} spoilerFinish={spoilerFinish} aeroMesh={aeroMesh} onPickRegion={onPickRegion} placing={placing} onPlace={onPlace} />
             </Center>
           </Bounds>
           <ContactShadows position={[0, -0.42, 0]} opacity={0.35} scale={3} blur={2.6} far={1} />

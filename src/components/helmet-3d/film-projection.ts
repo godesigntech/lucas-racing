@@ -11,7 +11,7 @@ import {
   Vector3,
 } from "three"
 
-import { MAX_REGIONS } from "./design-textures"
+import { MAX_REGION_FILMS, MAX_REGIONS } from "./design-textures"
 
 /**
  * The customer's design on the 3D helmet.
@@ -39,10 +39,14 @@ export interface FilmUniforms {
   /** 0 while a region still shows the artwork as designed, 1 once the customer has changed it. */
   regionActive: { value: number[] }
   regionMap: { value: Texture | null }
+  /** Regions four to six, when a template has that many. */
+  regionMap2: { value: Texture | null }
   regionCount: { value: number }
   regionColour: { value: Color[] }
+  /** The films in use, shared by every region that has one. */
   regionFilm: { value: (Texture | null)[] }
-  regionFilmStrength: { value: number[] }
+  /** Which film each region takes, or -1 for paint. */
+  regionFilmSlot: { value: number[] }
   regionMetalness: { value: number[] }
   regionRoughness: { value: number[] }
   filmMap: { value: Texture | null }
@@ -68,10 +72,11 @@ export function createFilmUniforms(): FilmUniforms {
     artworkStrength: { value: 0 },
     regionActive: { value: Array.from({ length: MAX_REGIONS }, () => 1) },
     regionMap: { value: null },
+    regionMap2: { value: null },
     regionCount: { value: 0 },
     regionColour: { value: Array.from({ length: MAX_REGIONS }, () => new Color("#ffffff")) },
-    regionFilm: { value: Array.from({ length: MAX_REGIONS }, () => null) },
-    regionFilmStrength: { value: Array.from({ length: MAX_REGIONS }, () => 0) },
+    regionFilm: { value: Array.from({ length: MAX_REGION_FILMS }, () => null) },
+    regionFilmSlot: { value: Array.from({ length: MAX_REGIONS }, () => -1) },
     regionMetalness: { value: Array.from({ length: MAX_REGIONS }, () => 0) },
     regionRoughness: { value: Array.from({ length: MAX_REGIONS }, () => 0.35) },
     decalMap: { value: null },
@@ -106,10 +111,11 @@ uniform sampler2D artworkMap;
 uniform float artworkStrength;
 uniform float regionActive[${MAX_REGIONS}];
 uniform sampler2D regionMap;
+uniform sampler2D regionMap2;
 uniform int regionCount;
 uniform vec3 regionColour[${MAX_REGIONS}];
-uniform sampler2D regionFilm[${MAX_REGIONS}];
-uniform float regionFilmStrength[${MAX_REGIONS}];
+uniform sampler2D regionFilm[${MAX_REGION_FILMS}];
+uniform int regionFilmSlot[${MAX_REGIONS}];
 uniform float regionMetalness[${MAX_REGIONS}];
 uniform float regionRoughness[${MAX_REGIONS}];
 uniform sampler2D decalMap;
@@ -136,6 +142,11 @@ vec4 sampleDecal(vec2 local, vec2 origin) {
 }
 `
 
+/** Both region textures, read once. Regions one to three are in the first, four to six in the second. */
+const readRegions = `vec4 regions = texture2D(regionMap, vDesignUv);
+  vec4 regions2 = regionCount > 3 ? texture2D(regionMap2, vDesignUv) : vec4(0.0);`
+const coverage = (index: number) => (index < 3 ? `regions[${index}]` : `regions2[${index - 3}]`)
+
 /** Written out per region: GLSL can only index sampler arrays with a constant. */
 const perRegion = (body: (index: number) => string): string =>
   Array.from({ length: MAX_REGIONS }, (_, index) => `if (regionCount > ${index}) {\n${body(index)}\n}`).join("\n")
@@ -149,7 +160,8 @@ if (filmStrength > 0.0) {
   #else
     float shell = 1.0;
   #endif
-  diffuseColor.rgb = mix(diffuseColor.rgb, film, filmStrength * shell);
+  // A hydro-dip film is printed on a clear sheet, so the paint underneath tints it.
+  diffuseColor.rgb = mix(diffuseColor.rgb, film * diffuseColor.rgb, filmStrength * shell);
 }
 // Keeps the artwork's highlights and lines in a zone the customer has recoloured.
 float artworkShade = 1.0;
@@ -159,13 +171,13 @@ if (artworkStrength > 0.0) {
   artworkShade = clamp(0.72 + 0.4 * max(artwork.r, max(artwork.g, artwork.b)), 0.72, 1.12);
 }
 if (templateStrength > 0.0) {
-  vec4 regions = texture2D(regionMap, vDesignUv);
+  ${readRegions}
   // Later regions paint over earlier ones; the shell is whatever no mask covers.
   ${perRegion(
     (index) => `
     vec3 colour${index} = regionColour[${index}];
-    if (regionFilmStrength[${index}] > 0.0) colour${index} = sampleHelmetFilm(regionFilm[${index}]);
-    diffuseColor.rgb = mix(diffuseColor.rgb, colour${index} * artworkShade, regions[${index}] * regionActive[${index}]);`,
+    ${Array.from({ length: MAX_REGION_FILMS }, (_, slot) => `if (regionFilmSlot[${index}] == ${slot}) colour${index} = sampleHelmetFilm(regionFilm[${slot}]) * regionColour[${index}];`).join("\n    ")}
+    diffuseColor.rgb = mix(diffuseColor.rgb, colour${index} * artworkShade, ${coverage(index)} * regionActive[${index}]);`,
   )}
 }
 if (decalStrength > 0.0) {
@@ -194,15 +206,15 @@ if (decalStrength > 0.0) {
 
 const roughnessBody = /* glsl */ `
 if (templateStrength > 0.0) {
-  vec4 regions = texture2D(regionMap, vDesignUv);
-  ${perRegion((index) => `roughnessFactor = mix(roughnessFactor, regionRoughness[${index}], regions[${index}] * regionActive[${index}]);`)}
+  ${readRegions}
+  ${perRegion((index) => `roughnessFactor = mix(roughnessFactor, regionRoughness[${index}], ${coverage(index)} * regionActive[${index}]);`)}
 }
 `
 
 const metalnessBody = /* glsl */ `
 if (templateStrength > 0.0) {
-  vec4 regions = texture2D(regionMap, vDesignUv);
-  ${perRegion((index) => `metalnessFactor = mix(metalnessFactor, regionMetalness[${index}], regions[${index}] * regionActive[${index}]);`)}
+  ${readRegions}
+  ${perRegion((index) => `metalnessFactor = mix(metalnessFactor, regionMetalness[${index}], ${coverage(index)} * regionActive[${index}]);`)}
 }
 `
 
@@ -220,7 +232,7 @@ export function addFilmProjection(material: MeshStandardMaterial, uniforms: Film
       .replace("#include <metalnessmap_fragment>", `#include <metalnessmap_fragment>\n${metalnessBody}`)
   }
   // One compiled program for every helmet material with the projection.
-  material.customProgramCacheKey = () => "helmet-design-projection-v4"
+  material.customProgramCacheKey = () => "helmet-design-projection-v6"
   ;(material as Material).needsUpdate = true
 }
 

@@ -99,6 +99,85 @@ function growEdges(rgba) {
   return out
 }
 
+/** Grid the zones are compared on: coarse enough that dots and speckles don't get lines. */
+const LINE_GRID = 1024
+/** Racing tape width, as a share of the texture: about 5 mm on the helmet. */
+const LINE_WIDTH = 0.0035
+
+/**
+ * Racing lines: tape along the borders between the design's colour zones, where the
+ * workshop would run a pinstripe. Found on a coarse grid, so only real section edges count.
+ */
+async function racingLines(masks, zones, rgba) {
+  const block = SIZE / LINE_GRID
+  const zoneAt = new Int8Array(LINE_GRID * LINE_GRID).fill(-1)
+  for (let y = 0; y < LINE_GRID; y++) {
+    for (let x = 0; x < LINE_GRID; x++) {
+      const votes = new Array(zones.length).fill(0)
+      let inside = 0
+      for (let dy = 0; dy < block; dy += 2) {
+        for (let dx = 0; dx < block; dx += 2) {
+          const index = (y * block + dy) * SIZE + x * block + dx
+          if (rgba[index * 4 + 3] === 0) continue
+          inside++
+          zones.forEach((zone, z) => {
+            if (masks[zone][index]) votes[z]++
+          })
+        }
+      }
+      if (inside > 0) zoneAt[y * LINE_GRID + x] = votes.indexOf(Math.max(...votes))
+    }
+  }
+  // Two passes of a majority filter remove what's left of small dots.
+  let smooth = zoneAt
+  for (let pass = 0; pass < 2; pass++) {
+    const next = smooth.slice()
+    for (let y = 1; y < LINE_GRID - 1; y++) {
+      for (let x = 1; x < LINE_GRID - 1; x++) {
+        if (smooth[y * LINE_GRID + x] === -1) continue
+        const counts = new Map()
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const zone = smooth[(y + dy) * LINE_GRID + x + dx]
+            if (zone !== -1) counts.set(zone, (counts.get(zone) ?? 0) + 1)
+          }
+        }
+        next[y * LINE_GRID + x] = [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0]
+      }
+    }
+    smooth = next
+  }
+
+  // Each zone is scaled up as a soft mask; a border is where two zones overlap, which
+  // gives smooth lines rather than the grid's steps.
+  const soft = await Promise.all(
+    zones.map((_, z) => {
+      const grid = Buffer.alloc(LINE_GRID * LINE_GRID)
+      for (let index = 0; index < grid.length; index++) grid[index] = smooth[index] === z ? 255 : 0
+      return sharp(grid, { raw: { width: LINE_GRID, height: LINE_GRID, channels: 1 } })
+        .resize(MASK_SIZE, MASK_SIZE, { kernel: "cubic" })
+        .blur(LINE_WIDTH * MASK_SIZE * 0.6)
+        .extractChannel(0)
+        .raw()
+        .toBuffer()
+    }),
+  )
+  const out = Buffer.alloc(MASK_SIZE * MASK_SIZE)
+  for (let index = 0; index < out.length; index++) {
+    let first = 0
+    let second = 0
+    for (const mask of soft) {
+      const value = mask[index]
+      if (value > first) [first, second] = [value, first]
+      else if (value > second) second = value
+    }
+    // Two zones both present here: full tape where they're even, fading out either side.
+    const t = Math.min(1, Math.max(0, (second / 255 - 0.22) / 0.16))
+    out[index] = Math.round(t * t * (3 - 2 * t) * 255)
+  }
+  return out
+}
+
 const renderSvg = async (file) =>
   (await sharp(file, { density: 300 }).resize(SIZE, SIZE).ensureAlpha().raw().toBuffer({ resolveWithObject: true })).data
 
@@ -123,5 +202,6 @@ for (const template of templates) {
   for (const [zone, mask] of Object.entries(masks)) {
     await sharp(mask, { raw: { width: SIZE, height: SIZE, channels: 1 } }).resize(MASK_SIZE, MASK_SIZE).png({ compressionLevel: 9 }).toFile(path.join(out, `${zone}-mask.png`))
   }
-  console.log(`${template.slug}: artwork and ${template.zones.length} zone masks`)
+  await sharp(await racingLines(masks, template.zones, rgba), { raw: { width: MASK_SIZE, height: MASK_SIZE, channels: 1 } }).png({ compressionLevel: 9 }).toFile(path.join(out, "lines-mask.png"))
+  console.log(`${template.slug}: artwork, ${template.zones.length} zone masks and racing lines`)
 }

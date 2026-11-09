@@ -3,6 +3,7 @@
 import { CalendarDays, Check, Zap } from "lucide-react"
 
 import { addWeeks, formatUkDate, formatWeek } from "@/lib/dates/uk"
+import { CHROME_EXTRA_WEEKS } from "@/lib/configurator/helmet-configuration"
 import { formatMoney } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { ProductionWeek, RushTier } from "@/types/production"
@@ -11,6 +12,8 @@ interface ProductionDatesProps {
   weeks: ProductionWeek[]
   tiers: RushTier[]
   standardLeadWeeks: number
+  /** Chrome takes longer in the workshop. */
+  hasChrome?: boolean
   startDate: string
   rushTier: string
   onChange: (next: { startDate: string; rushTier: string }) => void
@@ -31,6 +34,7 @@ export function ProductionDates({
   weeks,
   tiers,
   standardLeadWeeks,
+  hasChrome = false,
   startDate,
   rushTier,
   onChange,
@@ -38,7 +42,7 @@ export function ProductionDates({
 }: ProductionDatesProps) {
   const bookable = weeks.filter((week) => week.isBookable)
   const tier = tiers.find((item) => item.key === rushTier) ?? tiers[0]
-  const leadWeeks = tier?.leadWeeks ?? standardLeadWeeks
+  const leadWeeks = (tier?.leadWeeks ?? standardLeadWeeks) + (hasChrome ? CHROME_EXTRA_WEEKS : 0)
   const completion = startDate ? addWeeks(startDate, leadWeeks) : null
 
   if (weeks.length === 0) {
@@ -139,10 +143,11 @@ export function ProductionDates({
 
       {startDate && completion && (
         <div className="rounded-2xl bg-accent p-4 text-sm text-accent-foreground">
-          <p className="font-semibold">Estimated completion: {formatUkDate(completion)}</p>
+          <p className="font-semibold">Estimated start: week of {formatWeek(startDate)}</p>
           <p className="mt-0.5">
-            Starting the week of {formatWeek(startDate)}, {leadWeeks} {leadWeeks === 1 ? "week" : "weeks"} in the
-            workshop. We confirm the exact date with your proof.
+            Your helmet takes about {leadWeeks} {leadWeeks === 1 ? "week" : "weeks"} in the workshop
+            {hasChrome ? " (chrome adds about three weeks)" : ""}, so it should be ready around {formatUkDate(completion)}.
+            We confirm the exact dates with your proof.
           </p>
         </div>
       )}

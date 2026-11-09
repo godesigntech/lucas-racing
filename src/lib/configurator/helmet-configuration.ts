@@ -1,3 +1,4 @@
+import { findFlag } from "@/lib/helmet-3d/flags"
 import { bellParts } from "@/lib/helmet-3d/parts"
 import { colourDistance } from "@/lib/design-assistant/colour"
 import { getTreatment } from "@/lib/configurator/regions"
@@ -14,6 +15,7 @@ import type {
   PriceBreakdown,
   PriceLine,
   RegionTreatment,
+  SpoilerFinish,
   VisorStrip,
 } from "@/types/configurator"
 import type { HelmetLook } from "@/types/helmet"
@@ -83,7 +85,13 @@ export const BESPOKE_PRINT_FILM = "bespoke-print"
 
 /** The film library, without the bespoke print (that one is offered as an upload). */
 export function pickableFilms(priceBook: PriceBook): Film[] {
-  return priceBook.films.filter((film) => film.textureUrl && film.id !== BESPOKE_PRINT_FILM)
+  return priceBook.films.filter((film) => film.textureUrl && film.id !== BESPOKE_PRINT_FILM && film.category !== HOLOGRAPHIC_TAPE)
+}
+
+/** Holographic racing tape, offered for racing lines rather than in the film library. */
+export const HOLOGRAPHIC_TAPE = "Holographic tape"
+export function holographicTapes(priceBook: PriceBook): Film[] {
+  return priceBook.films.filter((film) => film.textureUrl && film.category === HOLOGRAPHIC_TAPE)
 }
 
 /** The carbon fibre film behind the "Make it carbon" shortcut: the first in the library. */
@@ -141,7 +149,8 @@ export function getInitialConfiguration(product: CatalogProduct, priceBook: Pric
 type LegacyConfiguration = Omit<Partial<HelmetConfiguration>, "finish"> & { film?: string; route?: string; finish?: string }
 
 function validPart(part: PartId, kind: unknown, value: unknown, priceBook: PriceBook): { kind: PartKind; value: string } | null {
-  if (kind === "colour" && typeof value === "string" && activeOptions(priceBook, "base").some((option) => option.value === value)) {
+  // Any colour can be matched, so a colour from outside the range is kept too.
+  if (kind === "colour" && typeof value === "string" && (isHex(value) || activeOptions(priceBook, "base").some((option) => option.value === value))) {
     return { kind, value }
   }
   if (kind === "film" && typeof value === "string" && pickableFilms(priceBook).some((film) => film.id === value)) {
@@ -225,6 +234,34 @@ export function normaliseConfiguration(
 
 const LOGO_PATH = /^[0-9a-f-]{36}\/[0-9a-f-]{36}\.(png|jpg|webp)$/
 const PART_KINDS: PartKind[] = ["colour", "film", "chrome", "metallic"]
+const SPOILER_FINISHES: SpoilerFinish["kind"][] = ["colour", "metallic", "film", "matched"]
+
+/** The spoiler kits on this build: the `spoilers` list, or the single kit older builds chose as their aero. */
+export function selectedSpoilers(config: HelmetConfiguration, aeroKits: AeroKit[] = []): AeroKit[] {
+  const ids = config.spoilers ?? (aeroKits.find((kit) => kit.id === config.aero)?.meshName && config.aero ? [config.aero] : [])
+  return aeroKits.filter((kit) => ids.includes(kit.id) && kit.meshName && kit.modelId === config.model)
+}
+
+/** What one spoiler's finish costs: the finish, plus the chrome base coat under it. Null while either is unpriced. */
+export function spoilerFinishPrice(finish: SpoilerFinish, priceBook: PriceBook): number | null {
+  const options = priceBook.options.spoiler_finish ?? []
+  const own = options.find((option) => option.value === finish.kind && option.isActive)
+  const chrome = finish.chrome ? options.find((option) => option.value === "chrome" && option.isActive) : undefined
+  if (!own || own.price === null || (finish.chrome && (!chrome || chrome.price === null))) return null
+  return own.price + (chrome?.price ?? 0)
+}
+
+/** "Film Carbon fibre over chrome", "Design matched"… */
+export function spoilerFinishLabel(finish: SpoilerFinish | undefined, priceBook: PriceBook): string {
+  if (!finish) return "Clear"
+  const name =
+    finish.kind === "matched"
+      ? "Matched to the helmet design"
+      : finish.kind === "film"
+        ? `Film ${priceBook.films.find((film) => film.id === finish.value)?.name ?? finish.value}`
+        : `${finish.kind === "metallic" ? "Metallic " : ""}${colourName(priceBook, finish.value)}`
+  return finish.chrome ? `${name} over chrome` : name
+}
 
 /**
  * The fields the 16-step builder added. They're checked for shape here; what can
@@ -255,6 +292,7 @@ function carryV2Fields(
       text: strip.text.slice(0, 40),
       textColour: isHex(strip.textColour) ? strip.textColour : "#ffffff",
       font: typeof strip.font === "string" ? strip.font.slice(0, 20) : "racing",
+      ...(strip.holographic ? { holographic: true } : {}),
     }
     if (strip.kind && PART_KINDS.includes(strip.kind) && strip.kind !== "colour") {
       if (strip.kind !== "film" || typeof strip.film === "string") config.visorStrip.kind = strip.kind
@@ -262,9 +300,18 @@ function carryV2Fields(
     }
   }
 
-  const spoilerFinish = input.spoilerFinish
-  if (spoilerFinish && PART_KINDS.includes(spoilerFinish.kind) && typeof spoilerFinish.value === "string") {
-    config.spoilerFinish = { kind: spoilerFinish.kind, value: spoilerFinish.value.slice(0, 80) }
+  if (input.baseCoat === "chrome" && activeOptions(priceBook, "material").some((option) => option.value === "chrome")) config.baseCoat = "chrome"
+
+  if (Array.isArray(input.spoilers)) {
+    config.spoilers = [...new Set(input.spoilers.filter((id): id is string => typeof id === "string" && id.length > 0).map((id) => id.slice(0, 60)))].slice(0, 6)
+  }
+  const spoilerFinish = input.spoilerFinish as SpoilerFinish | { kind: "chrome"; value: string } | undefined
+  if (spoilerFinish && typeof spoilerFinish.value === "string") {
+    // Builds from before chrome became a base coat had chrome as a finish of its own.
+    if (spoilerFinish.kind === "chrome") config.spoilerFinish = { kind: "colour", value: "#c4c7c9", chrome: true }
+    else if (SPOILER_FINISHES.includes(spoilerFinish.kind)) {
+      config.spoilerFinish = { kind: spoilerFinish.kind, value: spoilerFinish.value.slice(0, 80), ...(spoilerFinish.chrome ? { chrome: true } : {}) }
+    }
   }
 
   if (input.regions && typeof input.regions === "object") {
@@ -276,6 +323,7 @@ function carryV2Fields(
       if (treatment.kind === "film" && treatment.value === BESPOKE_PRINT_FILM && typeof treatment.print === "string" && LOGO_PATH.test(treatment.print)) {
         regions[key.slice(0, 40)].print = treatment.print
       }
+      if (treatment.kind === "film" && isHex(treatment.under)) regions[key.slice(0, 40)].under = treatment.under
     }
     if (Object.keys(regions).length > 0) {
       // place_order() requires the shell in the list, even when only another part was changed.
@@ -299,8 +347,8 @@ function carryV2Fields(
   if (Array.isArray(input.logos)) {
     const logos = input.logos
       .filter((logo) => logo && typeof logo.path === "string" && LOGO_PATH.test(logo.path))
-      .slice(0, 4)
-      .map((logo) => ({ ...logo, position: validPlacement(logo.position, logoPlacements, "back") }))
+      .slice(0, 16)
+      .map((logo) => ({ ...logo, kind: logo.kind === "image" ? ("image" as const) : undefined, position: validPlacement(logo.position, logoPlacements, "back") }))
     if (logos.length > 0) config.logos = logos
   }
 
@@ -317,17 +365,27 @@ function colourOption(priceBook: PriceBook, value: string) {
   return priceBook.options.base.find((option) => option.value === value)
 }
 
-function partLabel(priceBook: PriceBook, paint: { kind: PartKind; value: string }): string {
+function partLabel(priceBook: PriceBook, paint: RegionTreatment): string {
   if (paint.kind === "chrome") return priceBook.options.material.find((option) => option.value === "chrome")?.label ?? "Chrome"
-  if (paint.kind === "film") return `Film ${priceBook.films.find((film) => film.id === paint.value)?.name ?? paint.value}`
-  return colourOption(priceBook, paint.value)?.label ?? paint.value
+  if (paint.kind === "film") {
+    const name = `Film ${priceBook.films.find((film) => film.id === paint.value)?.name ?? paint.value}`
+    return paint.under ? `${name} over ${colourName(priceBook, paint.under)}` : name
+  }
+  const colour = colourName(priceBook, paint.value)
+  return paint.kind === "metallic" ? `Metallic ${colour}` : colour
 }
 
-function partSwatch(priceBook: PriceBook, paint: { kind: PartKind; value: string }): { colour: string; texture?: string } {
+/** A colour's name in the range, or "Custom #ABCDEF" for one matched to order. */
+export function colourName(priceBook: PriceBook, value: string): string {
+  return colourOption(priceBook, value)?.label ?? (isHex(value) ? `Custom ${value.toUpperCase()}` : value)
+}
+
+function partSwatch(priceBook: PriceBook, paint: RegionTreatment): { colour: string; texture?: string } {
   if (paint.kind === "chrome") return { colour: CHROME_SWATCH }
   if (paint.kind === "film") {
+    // The film is drawn over this colour, which shows through its pattern.
     const film = priceBook.films.find((item) => item.id === paint.value)
-    return { colour: "#8a8d8b", texture: film?.textureUrl ?? undefined }
+    return { colour: paint.under ?? "#ffffff", texture: film?.textureUrl ?? undefined }
   }
   return { colour: colourOption(priceBook, paint.value)?.swatch ?? paint.value }
 }
@@ -340,7 +398,7 @@ export function describePart(priceBook: PriceBook, config: HelmetConfiguration, 
 
 /** The build drawn as the helmet illustration and the 3D shell. */
 export function configurationToLook(product: CatalogProduct, config: HelmetConfiguration, priceBook: PriceBook): HelmetLook {
-  const base = partSwatch(priceBook, { kind: config.baseKind, value: config.base })
+  const base = partSwatch(priceBook, config.regions?.base ?? { kind: config.baseKind, value: config.base })
   const graphicPaint = partOf(config, "graphic")
   const accentPaint = partOf(config, "accent")
   const graphic = graphicPaint ? partSwatch(priceBook, graphicPaint) : null
@@ -349,7 +407,7 @@ export function configurationToLook(product: CatalogProduct, config: HelmetConfi
 
   return {
     ...product.look,
-    finish: config.baseKind === "chrome" ? "chrome" : config.finish,
+    finish: config.baseKind === "chrome" || config.baseCoat === "chrome" ? "chrome" : config.finish,
     paintFinish: config.finish,
     base: base.colour,
     baseTexture: base.texture,
@@ -381,6 +439,41 @@ function pushFinishPrice(lines: PriceLine[], label: string, finish: RegionTreatm
     const material = priceBook.options.material.find((option) => option.value === finish.kind)
     if (material?.price) lines.push({ label: `${label}: ${material.label.toLowerCase()}`, amount: material.price })
   }
+}
+
+const trimKeys: string[] = ["eyeportTrim", "baseTrim"]
+
+/** Chrome adds about three weeks in the workshop; place_order() adds them to the completion date. */
+export const CHROME_EXTRA_WEEKS = 3
+
+/** True when any part of the build is chrome, the same test place_order() uses. */
+export function buildUsesChrome(config: HelmetConfiguration): boolean {
+  const kinds = [config.baseKind, config.graphicKind, config.accentKind, config.visorStrip?.kind]
+  return config.baseCoat === "chrome" || Boolean(config.spoilerFinish?.chrome) || kinds.includes("chrome") || Object.values(config.regions ?? {}).some((treatment) => treatment.kind === "chrome")
+}
+
+/**
+ * The eyeport and base trims, each priced on its own like place_order() does: a colour
+ * from the trim list costs its price (black, as supplied, is free); any other colour is
+ * a bespoke match at the "bespoke" option's price.
+ */
+export function trimParts(config: HelmetConfiguration, priceBook: PriceBook) {
+  const bespoke = priceBook.options.trim.find((option) => option.value === "bespoke" && option.isActive)
+  return ([
+    ["eyeportTrim", "Eyeport trim"],
+    ["baseTrim", "Base trim"],
+  ] as const).map(([key, label]) => {
+    const colour = config[key] ?? config.trim
+    const option = priceBook.options.trim.find((item) => item.value === colour && item.value !== "bespoke" && item.isActive)
+    return {
+      key,
+      label,
+      colour,
+      bespoke: !option,
+      name: option?.label ?? `Bespoke ${colour.toUpperCase()}`,
+      price: option ? option.price : (bespoke?.price ?? null),
+    }
+  })
 }
 
 /**
@@ -417,8 +510,13 @@ export function calculateHelmetPrice(
 
   const finish = priceBook.options.finish.find((item) => item.value === config.finish)
   if (finish?.price) lines.push({ label: `${finish.label} finish`, amount: finish.price })
-  const trim = priceBook.options.trim.find((item) => item.value === config.trim)
-  if (trim?.price) lines.push({ label: `${trim.label} rubber trim`, amount: trim.price })
+  if (config.baseCoat === "chrome") {
+    const chrome = priceBook.options.material.find((option) => option.value === "chrome")
+    if (chrome?.price) lines.push({ label: "Chrome base coat", amount: chrome.price })
+  }
+  for (const part of trimParts(config, priceBook)) {
+    if (part.price) lines.push({ label: `${part.label}: ${part.name}`, amount: part.price })
+  }
 
   const aero = extras.aeroKits?.find((kit) => kit.id === config.aero)
   if (aero) {
@@ -433,11 +531,23 @@ export function calculateHelmetPrice(
 
   if (config.visorStrip?.enabled) {
     const strip = priceBook.options.visor_strip?.find((item) => item.value === "printed")
-    if (strip?.price) lines.push({ label: "Visor strip", amount: strip.price })
+    if (strip?.price) lines.push({ label: "Bespoke visor sticker", amount: strip.price })
+    const holographic = priceBook.options.visor_strip?.find((item) => item.value === "holographic")
+    if (config.visorStrip.holographic && holographic?.price) lines.push({ label: "Holographic visor sticker", amount: holographic.price })
     const finish = stripTreatment(config.visorStrip)
     if (finish) pushFinishPrice(lines, "Visor strip", finish, priceBook)
   }
-  if (config.spoilerFinish && aero?.meshName) pushFinishPrice(lines, aero.name, config.spoilerFinish, priceBook)
+  const spoilers = selectedSpoilers(config, extras.aeroKits)
+  for (const kit of spoilers) if (kit.id !== aero?.id && kit.price) lines.push({ label: kit.name, amount: kit.price })
+  if (config.spoilerFinish && spoilers.length > 0) {
+    const each = spoilerFinishPrice(config.spoilerFinish, priceBook)
+    if (each) lines.push({ label: `Spoiler finish: ${spoilerFinishLabel(config.spoilerFinish, priceBook)} × ${spoilers.length}`, amount: each * spoilers.length })
+  }
+
+  // The first printed image has a set price; any more are priced with the proof.
+  const images = (config.logos ?? []).filter((logo) => logo.kind === "image").length
+  const imageOption = priceBook.options.personalisation?.find((option) => option.value === "image" && option.isActive)
+  if (images > 0 && imageOption?.price) lines.push({ label: images > 1 ? `Printed image (${images - 1} more priced with your proof)` : "Printed image", amount: imageOption.price })
 
   for (const item of config.personalisation ?? []) {
     if (!item.value.trim()) continue
@@ -470,36 +580,47 @@ export function summariseConfiguration(
     priceBook.options[group].find((item) => item.value === config[group])?.label ?? config[group]
   lines.push(
     { key: "finish", label: "Finish", value: option("finish") },
-    { key: "trim", label: config.eyeportTrim || config.baseTrim ? "Default trim colour" : "Rubber trim", value: option("trim") },
+    { key: "baseCoat", label: "Base coat", value: config.baseCoat === "chrome" ? "Chrome" : "Standard" },
   )
+  for (const part of trimParts(config, priceBook)) lines.push({ key: part.key, label: part.label, value: part.name })
 
   const aero = extras.aeroKits?.find((kit) => kit.id === config.aero)
   lines.push(aero ? { key: "aero", label: "Aero kit", value: aero.name } : { key: "spoiler", label: "Rear spoiler", value: option("spoiler") })
-  if (aero?.meshName) {
-    lines.push({ key: "spoilerFinish", label: "Spoiler finish", value: config.spoilerFinish ? partLabel(priceBook, config.spoilerFinish) : "Clear" })
+  const spoilers = selectedSpoilers(config, extras.aeroKits)
+  if (spoilers.length > 0) {
+    lines.push({ key: "spoilers", label: "Spoilers", value: spoilers.map((kit) => kit.name).join(", ") })
+    lines.push({ key: "spoilerFinish", label: "Spoiler finish", value: spoilerFinishLabel(config.spoilerFinish, priceBook) })
   }
 
   const visor = extras.visors?.find((item) => item.id === config.visor)
   if (visor) lines.push({ key: "visor", label: "Visor", value: visor.name })
 
   if (config.visorStrip?.enabled) {
-    lines.push({ key: "visorStrip", label: "Visor strip", value: config.visorStrip.text.trim() || "Plain" })
+    lines.push({ key: "visorStrip", label: "Visor sticker", value: `Bespoke · ${config.visorStrip.text.trim() || "no text"}` })
     const finish = stripTreatment(config.visorStrip) ?? { kind: "colour" as const, value: config.visorStrip.colour }
-    lines.push({ key: "visorStripFinish", label: "Visor strip finish", value: partLabel(priceBook, finish) })
+    lines.push({ key: "visorStripFinish", label: "Visor sticker finish", value: `${partLabel(priceBook, finish)}${config.visorStrip.holographic ? ", holographic" : ""}` })
+  } else {
+    lines.push({ key: "visorStrip", label: "Visor sticker", value: "Lucas Racing holographic, free" })
   }
 
   // Indexed keys: a build can carry several names or logos, and React needs them unique.
   ;(config.personalisation ?? []).forEach((item, index) => {
     if (!item.value.trim()) return
     const label = priceBook.options.personalisation?.find((entry) => entry.value === item.kind)?.label ?? item.kind
-    lines.push({ key: `personalisation-${index}`, label, value: `${item.value.trim()} · ${placementLabels[item.position]}` })
+    lines.push({ key: `personalisation-${index}`, label, value: `${item.kind === "flag" ? (findFlag(item.value)?.name ?? item.value.trim()) : item.value.trim()} · ${placementLabels[item.position]}` })
   })
 
   ;(config.logos ?? []).forEach((logo, index) => {
-    lines.push({ key: `logos-${index}`, label: "Logo", value: `Uploaded · ${placementLabels[logo.position]}` })
+    const image = logo.kind === "image"
+    const quoted = image && (config.logos ?? []).slice(0, index).some((item) => item.kind === "image")
+    lines.push({
+      key: `logos-${index}`,
+      label: image ? "Image" : "Logo",
+      value: `Uploaded · ${placementLabels[logo.position]}${quoted ? " · priced with your proof" : ""}`,
+    })
   })
   if (config.model === "bell-kc7") {
-    for (const { key, label } of bellParts) {
+    for (const { key, label } of bellParts.filter((part) => !trimKeys.includes(part.key))) {
       const colour = config[key]
       if (colour) lines.push({ key, label, value: `${colourOption(priceBook, colour)?.label ?? colour.toUpperCase()}` })
     }

@@ -5,9 +5,10 @@ import { useMemo } from "react"
 import { helmetFont } from "@/components/helmet-3d/helmet-fonts"
 import { StudioPreview } from "@/components/studio/studio-preview"
 import { getCategory } from "@/lib/catalog/categories"
-import { configurationToLook } from "@/lib/configurator/helmet-configuration"
+import { configurationToLook, selectedSpoilers } from "@/lib/configurator/helmet-configuration"
 import { resolveRegions, templateArtworkUrl } from "@/lib/configurator/regions"
-import { buildSceneDesign, fittingFinishes, withShellPrint } from "@/lib/configurator/scene-design"
+import { buildSceneDesign, designMainColour, fittingFinishes, withShellPrint } from "@/lib/configurator/scene-design"
+import { findFlag } from "@/lib/helmet-3d/flags"
 import { bellParts } from "@/lib/helmet-3d/parts"
 import type { PriceBook } from "@/types/catalog"
 import type { HelmetConfiguration } from "@/types/configurator"
@@ -57,7 +58,7 @@ function LetteringDetails({ config }: { config: HelmetConfiguration }) {
           return (
             <li key={`text-${index}`} className="space-y-0.5 px-4 py-2">
               <p className="font-medium">
-                {item.value} <span className="font-normal text-muted-foreground">({item.kind})</span>
+                {item.kind === "flag" ? (findFlag(item.value)?.name ?? item.value) : item.value} <span className="font-normal text-muted-foreground">({item.kind})</span>
               </p>
               <p className="text-xs text-muted-foreground">
                 {line(
@@ -137,8 +138,8 @@ export function OrderDesign({ product, config, priceBook, templates, aeroKits, v
   const artworkUrl = useMemo(() => templateArtworkUrl(product, config.model, templates), [product, config.model, templates])
   const design = useMemo(() => buildSceneDesign(config, regions, priceBook, logoUrls, artworkUrl), [config, regions, priceBook, logoUrls, artworkUrl])
   const visor = visors.find((item) => item.id === config.visor) ?? null
-  const aeroMesh = aeroKits.find((kit) => kit.id === config.aero)?.meshName ?? null
-  const fittings = fittingFinishes(config, priceBook, aeroMesh)
+  const aeroMesh = selectedSpoilers(config, aeroKits).map((kit) => kit.meshName as string)
+  const fittings = fittingFinishes(config, priceBook, aeroMesh.length > 0, designMainColour(config, regions))
   const model = priceBook.models.find((item) => item.id === config.model)
 
   return (
@@ -151,7 +152,7 @@ export function OrderDesign({ product, config, priceBook, templates, aeroKits, v
         designLabel={`${getCategory(product.category).label} · ${product.name}`}
         design={design}
         visor={visor}
-        visorStrip={config.visorStrip ?? null}
+        visorStrip={fittings.visorStrip}
         visorStripFilmUrl={fittings.visorStripFilmUrl}
         spoilerFinish={fittings.spoilerFinish}
         aeroMesh={aeroMesh}

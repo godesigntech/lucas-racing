@@ -4,15 +4,16 @@ import { Check } from "lucide-react"
 
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
-import { stripTreatment } from "@/lib/configurator/helmet-configuration"
+import { pickableFilms, selectedSpoilers } from "@/lib/configurator/helmet-configuration"
+import { FilmPicker } from "@/components/studio/film-picker"
 import { optionPriceLabel } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { PriceBook } from "@/types/catalog"
-import type { HelmetConfiguration, VisorStrip } from "@/types/configurator"
+import type { HelmetConfiguration, SpoilerFinish, VisorStrip } from "@/types/configurator"
 import { helmetFontStyles } from "@/components/helmet-3d/helmet-fonts"
 import type { AeroKit, Visor } from "@/types/templates"
 
-import { FinishPicker } from "./finish-picker"
+import { ColourChooser } from "./region-step"
 import { SwatchGrid } from "./swatch-grid"
 
 interface UpdateProps {
@@ -69,32 +70,100 @@ export function StepAero({ aeroKits, priceBook, config, update }: UpdateProps & 
       </p>
     )
   }
-  const current = config.aero ?? kits.find((kit) => !kit.meshName)?.id
-  const hasSpoiler = Boolean(kits.find((kit) => kit.id === current)?.meshName)
+  const standard = kits.find((kit) => !kit.meshName)
+  const spoilerKits = kits.filter((kit) => kit.meshName)
+  const chosen = selectedSpoilers(config, aeroKits).map((kit) => kit.id)
+  // The standard aero stays the base kit; spoilers are fitted on top of it, any number together.
+  const setSpoilers = (ids: string[]) =>
+    update({ v: "2", aero: standard?.id ?? config.aero, spoilers: ids, spoiler: ids.length > 0 ? "yes" : "no" })
+
   return (
     <div className="space-y-5">
       <div className="grid gap-2 sm:grid-cols-2">
-        {kits.map((kit) => (
+        {standard && (
+          <ChoiceCard selected={chosen.length === 0} title="No spoilers" summary={standard.summary} price={standard.price} onSelect={() => setSpoilers([])} />
+        )}
+        {spoilerKits.map((kit) => (
           <ChoiceCard
             key={kit.id}
-            selected={current === kit.id}
+            selected={chosen.includes(kit.id)}
             title={kit.name}
             summary={kit.summary}
             price={kit.price}
-            onSelect={() => update({ v: "2", aero: kit.id, spoiler: kit.meshName ? "yes" : "no" })}
+            onSelect={() => setSpoilers(chosen.includes(kit.id) ? chosen.filter((id) => id !== kit.id) : [...chosen, kit.id])}
           />
         ))}
       </div>
-      {hasSpoiler && (
-        <FinishPicker
-          label="Spoiler"
-          asSupplied="Clear"
-          priceBook={priceBook}
-          value={config.spoilerFinish ?? null}
-          onChange={(spoilerFinish) => update({ spoilerFinish: spoilerFinish ?? undefined })}
-        />
+      {spoilerKits.length > 1 && <p className="text-xs text-muted-foreground">Choose as many spoilers as you like; they can be fitted together.</p>}
+      {chosen.length > 0 && (
+        <SpoilerFinishPicker priceBook={priceBook} value={config.spoilerFinish} count={chosen.length} onChange={(spoilerFinish) => update({ spoilerFinish })} />
       )}
     </div>
+  )
+}
+
+/** The spoilers' finish, priced per spoiler, with an optional chrome base coat under it. */
+function SpoilerFinishPicker({
+  priceBook,
+  value,
+  count,
+  onChange,
+}: {
+  priceBook: PriceBook
+  value: SpoilerFinish | undefined
+  count: number
+  onChange: (value: SpoilerFinish | undefined) => void
+}) {
+  const options = (priceBook.options.spoiler_finish ?? []).filter((option) => option.isActive)
+  const price = (kind: string) => options.find((option) => option.value === kind)?.price ?? null
+  const colours = priceBook.options.base.filter((option) => option.isActive)
+  const films = pickableFilms(priceBook)
+  const kinds: { kind: SpoilerFinish["kind"]; label: string }[] = [
+    { kind: "matched", label: "Matched to the helmet design" },
+    { kind: "colour", label: "Colour" },
+    { kind: "metallic", label: "Metallic colour" },
+    { kind: "film", label: "Film" },
+  ]
+  const choose = (kind: SpoilerFinish["kind"]) =>
+    onChange({
+      kind,
+      value: kind === "film" ? (films.find((film) => film.id === value?.value)?.id ?? films[0]?.id ?? "") : value?.value?.startsWith("#") ? value.value : (colours[0]?.value ?? "#ffffff"),
+      ...(value?.chrome ? { chrome: true } : {}),
+    })
+  const chromePrice = price("chrome")
+
+  return (
+    <fieldset className="space-y-3">
+      <legend className="text-sm font-semibold">Spoiler finish{count > 1 ? `, for all ${count} spoilers` : ""}</legend>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <ChoiceCard selected={!value} title="Clear" summary="As supplied." price={0} onSelect={() => onChange(undefined)} />
+        {kinds
+          .filter((item) => options.some((option) => option.value === item.kind))
+          .map((item) => (
+            <ChoiceCard
+              key={item.kind}
+              selected={value?.kind === item.kind}
+              title={item.label}
+              summary={item.kind === "matched" ? "We carry your helmet's lines and colours onto the spoiler. Our most popular choice." : count > 1 ? "Price per spoiler." : null}
+              price={price(item.kind)}
+              onSelect={() => choose(item.kind)}
+            />
+          ))}
+      </div>
+      {(value?.kind === "colour" || value?.kind === "metallic") && (
+        <ColourChooser label="Spoiler colour" options={colours} value={value.value} onChange={(colour) => onChange({ ...value, value: colour })} priceBook={priceBook} />
+      )}
+      {value?.kind === "film" && <FilmPicker films={films} value={value.value} onChange={(film) => onChange({ ...value, value: film })} />}
+      {value && chromePrice !== null && (
+        <label className="flex items-start justify-between gap-4 rounded-2xl border border-carbon/15 p-3">
+          <span className="text-sm">
+            <span className="block font-semibold">Chrome base coat</span>
+            <span className="block text-xs text-muted-foreground">Chrome under the finish, so it shines through. {optionPriceLabel(chromePrice)} per spoiler.</span>
+          </span>
+          <Switch checked={Boolean(value.chrome)} onCheckedChange={(chrome) => onChange({ ...value, chrome: chrome || undefined })} aria-label="Chrome base coat" />
+        </label>
+      )}
+    </fieldset>
   )
 }
 
@@ -127,25 +196,34 @@ export function StepVisor({ visors, config, update }: UpdateProps & { visors: Vi
 
 const defaultStrip: VisorStrip = { enabled: false, colour: "#101114", text: "", textColour: "#ffffff", font: "racing" }
 
-/** Step 13: the printed band across the top of the visor. */
+/** Step 13: the free Lucas Racing visor sticker, or a bespoke one matched to the design. */
 export function StepVisorStrip({ priceBook, config, update }: UpdateProps & { priceBook: PriceBook }) {
   const strip = config.visorStrip ?? defaultStrip
   const option = priceBook.options.visor_strip?.find((item) => item.value === "printed" && item.isActive)
+  const holographic = priceBook.options.visor_strip?.find((item) => item.value === "holographic" && item.isActive)
   const colours = priceBook.options.base.filter((item) => item.isActive)
   const set = (changes: Partial<VisorStrip>) => update({ v: "2", visorStrip: { ...strip, ...changes } })
 
   return (
     <div className="space-y-5">
-      <label className="flex items-start justify-between gap-4 rounded-2xl border border-carbon/15 p-4">
-        <span className="min-w-0">
-          <span className="block text-sm font-semibold">Add a visor strip</span>
-          <span className="mt-0.5 block text-xs text-muted-foreground">
-            A printed band across the top of the visor, with your name, number or a sponsor.
-          </span>
-          {option && option.price !== null && <span className="mt-1 block text-xs font-semibold text-brand-ink">{optionPriceLabel(option.price)}</span>}
-        </span>
-        <Switch checked={strip.enabled} onCheckedChange={(enabled) => set({ enabled })} aria-label="Add a visor strip" />
-      </label>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <ChoiceCard
+          selected={!strip.enabled}
+          title="Lucas Racing sticker"
+          summary="Our holographic visor sticker, free with every helmet we make."
+          price={0}
+          onSelect={() => set({ enabled: false })}
+        />
+        {option && (
+          <ChoiceCard
+            selected={strip.enabled}
+            title="Bespoke sticker"
+            summary={`Designed to match your helmet, with your name, number or sponsor.${holographic?.price ? ` Holographic ${optionPriceLabel((option.price ?? 0) + holographic.price).replace("+", "")}.` : ""}`}
+            price={option.price}
+            onSelect={() => set({ enabled: true })}
+          />
+        )}
+      </div>
 
       {strip.enabled && (
         <div className="space-y-5">
@@ -163,17 +241,16 @@ export function StepVisorStrip({ priceBook, config, update }: UpdateProps & { pr
             <p className="text-xs text-muted-foreground">Up to 40 characters. Leave it blank for a plain band.</p>
           </div>
 
-          <FinishPicker
-            label="Strip"
-            priceBook={priceBook}
-            value={stripTreatment(strip) ?? { kind: "colour", value: strip.colour }}
-            onChange={(finish) => {
-              if (!finish) return
-              if (finish.kind === "film") set({ kind: "film", film: finish.value })
-              else if (finish.kind === "chrome") set({ kind: "chrome", film: undefined })
-              else set({ kind: finish.kind, colour: finish.value, film: undefined })
-            }}
-          />
+          <ColourChooser label="Sticker colour" options={colours} value={strip.colour} onChange={(colour) => set({ colour, kind: undefined, film: undefined })} priceBook={priceBook} />
+          {holographic && (
+            <label className="flex items-start justify-between gap-4 rounded-2xl border border-carbon/15 p-3">
+              <span className="text-sm">
+                <span className="block font-semibold">Holographic</span>
+                <span className="block text-xs text-muted-foreground">Printed on holographic film, tinted by your colour. {optionPriceLabel(holographic.price)}</span>
+              </span>
+              <Switch checked={Boolean(strip.holographic)} onCheckedChange={(on) => set({ holographic: on || undefined })} aria-label="Holographic sticker" />
+            </label>
+          )}
           <SwatchGrid label="Text colour" options={colours} value={strip.textColour} onChange={(textColour) => set({ textColour })} />
 
           <fieldset className="space-y-2">

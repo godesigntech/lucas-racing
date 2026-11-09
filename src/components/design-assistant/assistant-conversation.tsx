@@ -78,10 +78,10 @@ export function AssistantConversation({ onNavigate }: AssistantConversationProps
     <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-paper px-4 py-5">
       <div className="flex min-h-full flex-col justify-end gap-4" aria-live="polite">
         <AssistantBubble>
-          <p className="font-semibold">Let&apos;s design your helmet</p>
+          <p className="font-semibold">Let&apos;s design something just for you</p>
           <p className="mt-1 text-carbon/80">
-            Add a photo of your helmet or a design you like, and tell me anything you have in mind. I&apos;ll sketch a
-            concept in your colours and show you our closest designs.
+            Please upload a picture of a helmet you like, or describe what you want. I&apos;ll create a design in your
+            colours, change it as often as you like, and you can ask for a quote whenever you&apos;re happy.
           </p>
         </AssistantBubble>
 

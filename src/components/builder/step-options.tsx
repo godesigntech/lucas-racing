@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation"
 import { Box, Check, Ruler } from "lucide-react"
 
-import { finishLabels } from "@/lib/configurator/helmet-configuration"
+import { finishLabels, trimParts } from "@/lib/configurator/helmet-configuration"
 import { formatMoney, formatSurcharge } from "@/lib/format"
 import { get3dModel } from "@/lib/helmet-3d/models"
 import { cn } from "@/lib/utils"
@@ -169,8 +169,8 @@ export function StepFinish({
     <div className="space-y-4">
       {glossOnly && (
         <p className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-200">
-          Part of your design uses metallic or chrome paint, which we finish in gloss to protect the flake and the
-          mirror. Matte and satin become available again if you change those parts back to solid colour or film.
+          Your design uses metallic paint or a chrome base coat, which we finish in gloss to protect the flake and the
+          mirror. Matte becomes available again with a standard base coat and no metallic parts.
         </p>
       )}
       <fieldset className="grid gap-3 sm:grid-cols-3">
@@ -201,17 +201,81 @@ export function StepFinish({
       {config.baseKind === "chrome" && (
         <p className="text-xs text-muted-foreground">Your chrome shell keeps its mirror shine; the finish applies to the other parts.</p>
       )}
+      <BaseCoat priceBook={priceBook} config={config} update={update} />
     </div>
+  )
+}
+
+/**
+ * What goes on the shell before the design. Over chrome, colours become candy colours with
+ * a mirror behind them, and the clear parts of a film show the chrome.
+ */
+function BaseCoat({ priceBook, config, update }: { priceBook: PriceBook; config: HelmetConfiguration; update: Update }) {
+  const chrome = priceBook.options.material.find((option) => option.value === "chrome" && option.isActive)
+  if (!chrome) return null
+  const coats = [
+    { value: undefined, label: "Standard", hint: "A white base, so colours and films show exactly as chosen.", price: "Included" },
+    {
+      value: "chrome" as const,
+      label: "Chrome",
+      hint: "A mirror chrome base under your colours and films. Colours shine like candy and films show the chrome through their clear parts. Always gloss, and about three weeks longer in the workshop.",
+      price: formatSurcharge(chrome.price) || "Included",
+    },
+  ]
+  return (
+    <fieldset className="space-y-3 border-t border-carbon/10 pt-4">
+      <legend className="pt-4 text-sm font-semibold">Base coat</legend>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {coats.map((coat) => (
+          <ChoiceCard key={coat.label} name="base-coat" checked={config.baseCoat === coat.value} onSelect={() => update({ baseCoat: coat.value })}>
+            <span
+              aria-hidden
+              className={cn(
+                "mb-2 h-14 rounded-xl",
+                coat.value ? "bg-[linear-gradient(135deg,#f4f6f8,#8d939b_45%,#eef1f4_55%,#6b7178)]" : "bg-[linear-gradient(135deg,#ffffff,#e9e8e2)] ring-1 ring-carbon/10",
+              )}
+            />
+            <span className="font-semibold">{coat.label}</span>
+            <span className="text-xs text-muted-foreground">{coat.hint}</span>
+            <span className="mt-auto pt-1 text-sm font-semibold text-brand-ink">{coat.price}</span>
+          </ChoiceCard>
+        ))}
+      </div>
+    </fieldset>
   )
 }
 
 /** Step 11: rubber trims and, on the Bell KC7, its accessory colours. Spoilers are aero kits (step 2). */
 export function StepTrims({ priceBook, config, update }: { priceBook: PriceBook; config: HelmetConfiguration; update: Update }) {
-  const trims = priceBook.options.trim.filter((option) => option.isActive)
+  const trims = priceBook.options.trim.filter((option) => option.isActive && option.value !== "bespoke")
+  const bespoke = priceBook.options.trim.find((option) => option.value === "bespoke" && option.isActive)
   return (
     <div className="space-y-6">
+      {trimParts(config, priceBook).map((part) => (
+        <div key={part.key} className="space-y-3">
+          <SwatchGrid
+            label={part.key === "eyeportTrim" ? "Eyeport trim (around the visor opening)" : "Base trim (around the lower edge)"}
+            options={trims}
+            value={part.bespoke ? undefined : part.colour}
+            onChange={(colour) => update({ [part.key]: colour })}
+          />
+          {bespoke && (
+            <label className="flex flex-wrap items-center gap-3 text-sm">
+              Any other colour
+              <input
+                type="color"
+                aria-label={`${part.label} bespoke colour`}
+                value={part.colour.startsWith("#") ? part.colour : "#111412"}
+                onChange={(event) => update({ [part.key]: event.target.value })}
+                className="h-9 w-12 cursor-pointer rounded border border-carbon/20"
+              />
+              {part.bespoke && <span className="font-mono text-xs">{part.colour.toUpperCase()}</span>}
+              <span className="text-xs text-muted-foreground">Colour matched for {formatSurcharge(bespoke.price) || "a quote"} fitted</span>
+            </label>
+          )}
+        </div>
+      ))}
       {config.model === "bell-kc7" && <BellPartOptions config={config} priceBook={priceBook} update={update} />}
-      <SwatchGrid label="Rubber trim (eye-port and base)" options={trims} value={config.trim} onChange={(trim) => update({ trim, eyeportTrim: undefined, baseTrim: undefined })} size="lg" />
     </div>
   )
 }

@@ -61,7 +61,9 @@ export async function signIn(values: LoginFormValues, next?: string): Promise<Ac
   redirect(safeNext(next, isAdmin ? "/admin" : isTeamwear ? "/admin/shop" : "/account"))
 }
 
-export async function signUp(values: SignupFormValues): Promise<ActionResult<{ needsConfirmation: boolean }>> {
+/** `next` is where to go once the account exists, e.g. back to a form the customer was filling in. */
+export async function signUp(values: SignupFormValues, next?: string): Promise<ActionResult<{ needsConfirmation: boolean }>> {
+  const destination = safeNext(next, "/account")
   if (isDemoMode()) return DEMO_READ_ONLY
   const parsed = signupSchema.safeParse(values)
   if (!parsed.success) return validationError(parsed.error)
@@ -73,7 +75,7 @@ export async function signUp(values: SignupFormValues): Promise<ActionResult<{ n
     password: parsed.data.password,
     options: {
       data: { full_name: parsed.data.fullName },
-      emailRedirectTo: `${origin}/auth/confirm?next=/account`,
+      emailRedirectTo: `${origin}/auth/confirm?next=${encodeURIComponent(destination)}`,
     },
   })
 
@@ -92,7 +94,7 @@ export async function signUp(values: SignupFormValues): Promise<ActionResult<{ n
     }
   }
 
-  redirect("/account")
+  redirect(destination)
 }
 
 export async function signOut(): Promise<void> {

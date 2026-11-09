@@ -1,6 +1,9 @@
 import { CanvasTexture, LinearFilter, NoColorSpace, SRGBColorSpace } from "three"
 
-import type { LogoPlacementItem, PersonalItem, Placement } from "@/types/configurator"
+import type { LogoPlacementItem, PersonalItem } from "@/types/configurator"
+
+import { DECAL_SIZE, type DecalFace, faceFor, itemCentre, QUADRANT } from "@/lib/helmet-3d/decal-layout"
+import { findFlag } from "@/lib/helmet-3d/flags"
 
 import { canvasFont } from "./helmet-fonts"
 
@@ -23,20 +26,18 @@ import { canvasFont } from "./helmet-fonts"
 /**
  * Non-shell regions the shader can carry: one per colour channel of the region map.
  *
- * Three, not four: a 2D canvas stores premultiplied alpha, so packing a mask into the
- * alpha channel would wipe out the colour channels wherever that mask is empty. Red,
- * green and blue are safe, and no template we have uses more than three areas beyond
- * the shell. A fourth would need a second texture.
+ * Three per texture, not four: a 2D canvas stores premultiplied alpha, so packing a mask
+ * into the alpha channel would wipe out the colour channels wherever that mask is empty.
+ * Two textures give six areas beyond the shell: a designer's colour zones plus racing lines.
  */
-export const MAX_REGIONS = 3
+export const MAX_REGIONS = 6
+const REGIONS_PER_TEXTURE = 3
 
-/** Where each placement is drawn in the decal atlas, and which way it faces. */
-export const DECAL_FACES = ["sides", "front", "back", "top"] as const
-export type DecalFace = (typeof DECAL_FACES)[number]
+/** Films are shared between regions, so the shader only ever needs this many film textures. */
+export const MAX_REGION_FILMS = 4
 
-const REGION_SIZE = 1024
-const DECAL_SIZE = 1024
-const QUADRANT = DECAL_SIZE / 2
+
+const REGION_SIZE = 2048
 
 const maskCache = new Map<string, Promise<HTMLImageElement>>()
 
@@ -70,12 +71,22 @@ function canvas2d(size: number): { canvas: HTMLCanvasElement; ctx: CanvasRenderi
  * Masks are authored against the model's UVs, so this texture is sampled in UV space,
  * exactly as the two old masks were.
  */
-export async function buildRegionMap(maskUrls: (string | null)[]): Promise<CanvasTexture | null> {
+export async function buildRegionMap(maskUrls: (string | null)[]): Promise<CanvasTexture[] | null> {
   const urls = maskUrls.slice(0, MAX_REGIONS)
   if (!urls.some(Boolean)) return null
 
   const images = await Promise.all(urls.map((url) => (url ? loadImage(url).catch(() => null) : null)))
   if (!images.some(Boolean)) return null
+
+  const textures: CanvasTexture[] = []
+  for (let start = 0; start < images.length; start += REGIONS_PER_TEXTURE) {
+    textures.push(packRegions(images.slice(start, start + REGIONS_PER_TEXTURE)))
+  }
+  return textures
+}
+
+/** Up to three masks in one texture's red, green and blue channels. */
+function packRegions(images: (HTMLImageElement | null)[]): CanvasTexture {
 
   const { canvas, ctx } = canvas2d(REGION_SIZE)
   const packed = ctx.createImageData(REGION_SIZE, REGION_SIZE)
@@ -105,14 +116,6 @@ export async function buildRegionMap(maskUrls: (string | null)[]): Promise<Canva
   return texture
 }
 
-/** How far an item can be moved from its spot, as a share of the face it's drawn on. */
-const OFFSET_RANGE = QUADRANT * 0.4
-
-/** Where an item lands: its spot on the face (stacked under earlier items), plus the customer's nudge. */
-function itemCentre(face: DecalFace, slot: number, offsetX = 0, offsetY = 0): [number, number] {
-  const [originX, originY] = quadrantOrigin[face]
-  return [originX + QUADRANT / 2 + offsetX * OFFSET_RANGE, originY + QUADRANT * (0.42 + slot * 0.2) + offsetY * OFFSET_RANGE]
-}
 
 /** Web fonts load on demand: wait for this one so the helmet never shows a stand-in font. */
 async function ensureFont(font: string, text: string) {
@@ -120,20 +123,7 @@ async function ensureFont(font: string, text: string) {
   await document.fonts.load(font, text).catch(() => undefined)
 }
 
-/** Where a placement lands in the atlas. Left and right share the "sides" quadrant. */
-function faceFor(placement: Placement): DecalFace {
-  if (placement === "front") return "front"
-  if (placement === "back") return "back"
-  if (placement === "top") return "top"
-  return "sides"
-}
 
-const quadrantOrigin: Record<DecalFace, [number, number]> = {
-  sides: [0, 0],
-  front: [QUADRANT, 0],
-  back: [0, QUADRANT],
-  top: [QUADRANT, QUADRANT],
-}
 
 export interface DecalInput {
   personalisation: PersonalItem[]
@@ -164,7 +154,22 @@ export async function buildDecalAtlas(input: DecalInput): Promise<CanvasTexture 
     const face = faceFor(item.position)
     const [centreX, centreY] = itemCentre(face, used[face]++, item.offsetX, item.offsetY)
     const size = QUADRANT * 0.14 * (item.scale ?? 1)
-    const text = item.kind === "flag" ? item.value.toUpperCase() : item.value
+
+    if (item.kind === "flag") {
+      const country = findFlag(item.value)
+      const image = country ? await loadImage(country.url).catch(() => null) : null
+      if (!image) continue
+      // Flags are drawn at 4:3, about as tall as a line of lettering.
+      const height = size * 1.1
+      ctx.save()
+      ctx.translate(centreX, centreY)
+      ctx.rotate(((item.rotation ?? 0) * Math.PI) / 180)
+      ctx.drawImage(image, (-height * 4) / 6, -height / 2, (height * 4) / 3, height)
+      ctx.restore()
+      continue
+    }
+
+    const text = item.value
     const font = canvasFont(item.font, size, { bold: item.bold, italic: item.italic })
     await ensureFont(font, text)
 

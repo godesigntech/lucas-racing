@@ -13,6 +13,8 @@ const finishes: Record<HelmetFinish, { roughness: number; metalness: number; env
   chrome: { roughness: 0.12, metalness: 1, envMapIntensity: 1.6 },
 }
 
+const FILM_TILES_PER_HELMET = 6
+
 /** Clone materials, retaining the artist's glass, rubber and metal properties. */
 export function cloneHelmet(scene: Object3D): Object3D {
   const copy = scene.clone(true)
@@ -39,7 +41,8 @@ export function cloneHelmet(scene: Object3D): Object3D {
   copy.scale.multiplyScalar(0.8 / Math.max(size.y, 0.001))
   copy.updateMatrixWorld(true)
   const displaySize = new Box3().setFromObject(copy).getSize(new Vector3())
-  film.filmScale.value = 2.4 / Math.max(displaySize.x, displaySize.y, displaySize.z, 0.001)
+  // A film tile is about 6 cm of the real sheet, so it repeats about six times along a helmet.
+  film.filmScale.value = FILM_TILES_PER_HELMET / Math.max(displaySize.x, displaySize.y, displaySize.z, 0.001)
   copy.traverse((node) => {
     const uniforms = node.userData.film as FilmUniforms | undefined
     if (uniforms && node !== copy) uniforms.filmScale.value = film.filmScale.value
@@ -51,7 +54,7 @@ export function cloneHelmet(scene: Object3D): Object3D {
  * The aero kits a model carries, so one can be shown and the others hidden. A kit's own
  * parts share its name as a prefix, e.g. "Spoiler_Top" and "Spoiler_Top_Bolts".
  */
-export const aeroMeshNames = ["Spoiler_HP7_F1_Small", "Spoiler_Top"]
+export const aeroMeshNames = ["Spoiler_HP7_F1_Small", "Spoiler_Top", "Spoiler_Rear", "Spoiler_Chin"]
 
 function isAeroPart(meshName: string) {
   return aeroMeshNames.some((name) => meshName.startsWith(name))
@@ -146,14 +149,15 @@ export function updateHelmetSurface(
   spoiler: boolean,
   accessories?: BellPartColours,
   /** Mesh of the chosen aero kit; null for the standard shell. Falls back to `spoiler`. */
-  aeroMesh?: string | null,
+  aeroMesh?: string | string[] | null,
 ) {
   root.traverse((node) => {
     const mesh = node as Mesh
     if (!mesh.isMesh) return
     if (isAeroPart(mesh.name)) {
       // Builds from before aero kits only know "spoiler or not", which meant the rear one.
-      mesh.visible = aeroMesh === undefined ? spoiler && mesh.name.startsWith(aeroMeshNames[0]) : Boolean(aeroMesh) && mesh.name.startsWith(aeroMesh as string)
+      const shown = aeroMesh === undefined ? (spoiler ? [aeroMeshNames[0]] : []) : [aeroMesh ?? []].flat()
+      mesh.visible = shown.some((name) => mesh.name.startsWith(name))
     }
     const part = bellParts.find((item) => item.mesh === mesh.name)
     const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]

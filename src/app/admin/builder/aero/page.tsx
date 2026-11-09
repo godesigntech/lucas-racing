@@ -1,6 +1,7 @@
 import { Suspense } from "react"
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header"
+import { BuilderOptionGroups } from "@/components/admin/builder/builder-option-groups"
 import { AeroKitTable } from "@/components/admin/builder/fittings-table"
 import { MigrationNotice } from "@/components/admin/builder/migration-notice"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -26,5 +27,18 @@ export default function AdminBuilderAeroPage() {
 async function AeroKits() {
   const [{ ready, aeroKits }, models] = await Promise.all([getAdminBuilderCatalog(), listAdminHelmetModels()])
   if (!ready) return <MigrationNotice area="Aero kits" />
-  return <AeroKitTable kits={aeroKits} models={models} />
+  return (
+    <div className="space-y-6">
+      <AeroKitTable kits={aeroKits} models={models} />
+      <BuilderOptionGroups
+        groups={[
+          {
+            key: "spoiler_finish",
+            title: "Spoiler finishes",
+            description: "Charged per spoiler. \"chrome\" is the chrome base coat, added on top of any finish except clear.",
+          },
+        ]}
+      />
+    </div>
+  )
 }

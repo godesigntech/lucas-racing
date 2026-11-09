@@ -1,14 +1,19 @@
 "use client"
 
-import { Check } from "lucide-react"
+import { Check, Sparkles } from "lucide-react"
 import Image from "next/image"
 
+import { OPEN_ASSISTANT_EVENT } from "@/components/design-assistant/design-assistant"
 import { HelmetArt } from "@/components/helmet/helmet-art"
 import { getCategory } from "@/lib/catalog/categories"
 import { formatPrice } from "@/lib/format"
 import { getTemplateArtwork } from "@/lib/helmet-3d/templates"
 import { cn } from "@/lib/utils"
+import type { HelmetLook } from "@/types/helmet"
 import type { CatalogProduct } from "@/types/product"
+
+/** A plain white helmet, for the AI design tile. */
+const blankLook: HelmetLook = { layout: "blank", finish: "gloss", base: "#f4f3ee", graphic: "#f4f3ee", accent: "#d9d8d2", film: "none", trim: "#111412", spoiler: false }
 
 interface StepTemplateProps {
   products: CatalogProduct[]
@@ -23,6 +28,23 @@ export function StepTemplate({ products, value, modelId, onChange }: StepTemplat
   return (
     <fieldset className="grid grid-cols-2 gap-3 sm:grid-cols-3">
       <legend className="sr-only">Template</legend>
+      {/* A blank helmet first: the AI designs something unique instead of starting from a template. */}
+      <button
+        type="button"
+        onClick={() => window.dispatchEvent(new Event(OPEN_ASSISTANT_EVENT))}
+        className="flex h-full flex-col overflow-hidden rounded-2xl border border-dashed border-brand-ink/50 text-left transition-colors hover:border-brand-ink"
+      >
+        <span className="grid aspect-[4/3] place-items-center bg-[radial-gradient(circle_at_50%_35%,#ffffff,#e8e7e0_80%)] p-3">
+          <HelmetArt look={blankLook} className="max-h-full" />
+        </span>
+        <span className="flex flex-1 flex-col gap-0.5 bg-card p-3">
+          <span className="flex items-center gap-1 text-[0.68rem] font-semibold text-brand-ink">
+            <Sparkles className="size-3" aria-hidden /> AI design
+          </span>
+          <span className="font-display text-lg font-bold uppercase leading-tight">Design it with AI</span>
+          <span className="text-xs text-muted-foreground">Let AI design a helmet unique to you. Free, with unlimited changes.</span>
+        </span>
+      </button>
       {products.map((product) => {
         const checked = product.slug === value
         const fits = product.models.includes(modelId)

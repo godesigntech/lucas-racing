@@ -12,15 +12,16 @@ import { Button } from "@/components/ui/button"
 import { useHelmetConfigurator } from "@/hooks/use-helmet-configurator"
 import { basket } from "@/lib/basket/basket-store"
 import { getCategory } from "@/lib/catalog/categories"
-import { configToSearchParams } from "@/lib/configurator/helmet-configuration"
+import { configToSearchParams, logoPlacements, namePlacements, numberPlacements, selectedSpoilers } from "@/lib/configurator/helmet-configuration"
+import { decalSlot, faceFor, type HelmetSpot, offsetsForSpot, placementForSpot } from "@/lib/helmet-3d/decal-layout"
 import { pendingPrices } from "@/lib/configurator/pending-prices"
-import { getTreatment, requiresGloss, resolveRegions, templateArtworkUrl } from "@/lib/configurator/regions"
-import { buildSceneDesign, fittingFinishes, withShellPrint } from "@/lib/configurator/scene-design"
+import { getTreatment, requiresGloss, resolveRegions, setTreatment, templateArtworkUrl } from "@/lib/configurator/regions"
+import { buildSceneDesign, designMainColour, fittingFinishes, withShellPrint } from "@/lib/configurator/scene-design"
 import { formatMoney } from "@/lib/format"
 import { hasCustomBellParts } from "@/lib/helmet-3d/parts"
 import { createClient } from "@/lib/supabase/browser"
 import type { PriceBook } from "@/types/catalog"
-import type { HelmetConfiguration } from "@/types/configurator"
+import type { HelmetConfiguration, RegionTreatment } from "@/types/configurator"
 import type { CatalogProduct } from "@/types/product"
 import type { AeroKit, DesignTemplate, Visor } from "@/types/templates"
 import type { ProductionOptions } from "@/lib/data/production"
@@ -30,7 +31,7 @@ import { BuilderStepper } from "./builder-stepper"
 import { RegionStep } from "./region-step"
 import { StepFinish, StepHelmet, StepRoute, StepSize, StepTrims } from "./step-options"
 import { StepAero, StepVisor, StepVisorStrip } from "./step-fittings"
-import { StepLogos, StepPersonalisation } from "./step-personal"
+import { type PlacingTarget, StepLogos, StepPersonalisation } from "./step-personal"
 import { StepConfirm, StepProduction } from "./step-next-stages"
 import { StepReview } from "./step-review"
 import { StepTemplate } from "./step-template"
@@ -170,6 +171,12 @@ function BuilderBody({
   )
   const { product, config, update, chooseTemplate, look, price, summary } = useHelmetConfigurator(products, priceBook, start, getExtras)
   const [stepId, setStepId] = useState<BuilderStepId>("helmet")
+  // The part being coloured in steps 4 and 6, and the last colour or film applied, which a tap on the helmet repeats.
+  const [activeZone, setActiveZone] = useState("")
+  const [brush, setBrush] = useState<RegionTreatment | null>(null)
+  // The name, flag, logo or image being dragged into place on the helmet, if any.
+  const [placing, setPlacing] = useState<PlacingTarget | null>(null)
+  const placingHere = placing && ((placing.list === "personalisation" && stepId === "details") || (placing.list === "logos" && stepId === "logos")) ? placing : null
   const [visited, setVisited] = useState<Set<BuilderStepId>>(() => new Set(["helmet"]))
   // Signed URLs for the customer's logos, so the 3D preview can draw them.
   const [logoUrls, setLogoUrls] = useState<Record<string, string>>({})
@@ -193,9 +200,15 @@ function BuilderBody({
   const artworkUrl = useMemo(() => templateArtworkUrl(product, config.model, templates), [product, config.model, templates])
   const design = useMemo(() => buildSceneDesign(config, regions, priceBook, logoUrls, artworkUrl), [config, regions, priceBook, logoUrls, artworkUrl])
   const previewLook = useMemo(() => withShellPrint(look, config, logoUrls), [look, config, logoUrls])
+  // Until a template is chosen the helmet is shown as it arrives: plain white.
+  const plain = builderSteps.findIndex((item) => item.id === stepId) < builderSteps.findIndex((item) => item.id === "template")
+  const shownLook = useMemo(() => (plain ? { ...previewLook, base: "#f4f3ee", baseTexture: undefined, finish: "gloss" as const } : previewLook), [plain, previewLook])
   const visor = useMemo(() => visors.find((item) => item.id === config.visor) ?? null, [visors, config.visor])
-  const aeroMesh = useMemo(() => aeroKits.find((kit) => kit.id === config.aero)?.meshName ?? null, [aeroKits, config.aero])
-  const fittings = useMemo(() => fittingFinishes(config, priceBook, aeroMesh), [config, priceBook, aeroMesh])
+  const aeroMesh = useMemo(() => selectedSpoilers(config, aeroKits).map((kit) => kit.meshName as string), [config, aeroKits])
+  const fittings = useMemo(
+    () => fittingFinishes(config, priceBook, aeroMesh.length > 0, designMainColour(config, regions)),
+    [config, priceBook, aeroMesh, regions],
+  )
 
   // Anything the workshop hasn't priced yet. The build is still previewable; checkout isn't.
   const pending = useMemo(
@@ -275,6 +288,40 @@ function BuilderBody({
     if (window.matchMedia("(max-width: 1023px)").matches) panelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
 
+  // Tapping the helmet in steps 4 and 6 selects that part and, once a colour or film has been chosen, fills it.
+  function pickRegion(key: string) {
+    if (stepId !== "colours" && stepId !== "pinstripes") return
+    const region = regions.find((item) => item.key === key)
+    if (!region || (stepId === "pinstripes") !== (region.kind === "pinstripe")) return
+    setActiveZone(key)
+    if (brush && (brush.kind !== "film" || region.allowsFilm)) update(setTreatment(config, key, brush))
+  }
+
+  // Dragging on the helmet moves the chosen item to that spot, if it's allowed there.
+  function placeItem(spot: HelmetSpot) {
+    if (!placingHere) return
+    const { list, index } = placingHere
+    if (list === "personalisation") {
+      const items = config.personalisation ?? []
+      const item = items[index]
+      if (!item) return
+      const position = placementForSpot(spot, item.kind === "number" ? numberPlacements : namePlacements, item.position)
+      if (!position) return
+      const moved = { ...item, position }
+      const slot = decalSlot({ ...config, personalisation: items.map((entry, p) => (p === index ? moved : entry)) }, list, index, faceFor(position))
+      update({ v: "2", personalisation: items.map((entry, p) => (p === index ? { ...moved, ...offsetsForSpot(slot, spot) } : entry)) })
+    } else {
+      const logos = config.logos ?? []
+      const logo = logos[index]
+      if (!logo) return
+      const position = placementForSpot(spot, logoPlacements, logo.position)
+      if (!position) return
+      const moved = { ...logo, position }
+      const slot = decalSlot({ ...config, logos: logos.map((entry, p) => (p === index ? moved : entry)) }, list, index, faceFor(position))
+      update({ v: "2", logos: logos.map((entry, p) => (p === index ? { ...moved, ...offsetsForSpot(slot, spot) } : entry)) })
+    }
+  }
+
   function addToBasket() {
     // Every zone goes with the order, so its summary uses this template's own names for them.
     const allRegions = Object.fromEntries(regions.map((region) => [region.key, getTreatment(config, region.key) ?? { kind: "colour" as const, value: region.defaultColour }]))
@@ -297,14 +344,17 @@ function BuilderBody({
       <div className="lg:sticky lg:top-24">
         <StudioPreview
           ref={previewRef}
-          look={previewLook}
+          look={shownLook}
           modelId={config.model}
           templateSlug={product.slug}
           modelName={model?.name ?? "Helmet"}
           designLabel={`${getCategory(product.category).label} · ${product.name}`}
-          design={design}
+          design={plain ? null : design}
           visor={visor}
-          visorStrip={config.visorStrip ?? null}
+          onPickRegion={pickRegion}
+          placing={Boolean(placingHere)}
+          onPlace={placeItem}
+          visorStrip={fittings.visorStrip}
           visorStripFilmUrl={fittings.visorStripFilmUrl}
           spoilerFinish={fittings.spoilerFinish}
           aeroMesh={aeroMesh}
@@ -353,16 +403,25 @@ function BuilderBody({
           )}
           {stepId === "aero" && <StepAero aeroKits={aeroKits} priceBook={priceBook} config={config} update={update} />}
           {stepId === "template" && <StepTemplate products={products} value={product.slug} modelId={config.model} onChange={chooseTemplate} />}
-          {stepId === "colours" && <RegionStep mode="colour" regions={regions} priceBook={priceBook} config={config} update={update} />}
-          {stepId === "materials" && <RegionStep mode="material" regions={regions} priceBook={priceBook} config={config} update={update} />}
-          {stepId === "films" && (
-            <RegionStep mode="film" regions={regions} priceBook={priceBook} config={config} update={update} returnTo={`/helmet-builder?template=${product.slug}`} onImageUrl={onLogoUrl} />
+          {(stepId === "colours" || stepId === "pinstripes") && (
+            <RegionStep
+              mode={stepId === "colours" ? "zones" : "pinstripe"}
+              regions={regions}
+              priceBook={priceBook}
+              config={config}
+              update={update}
+              activeKey={activeZone}
+              onActiveKey={setActiveZone}
+              onBrush={setBrush}
+              hasArtwork={Boolean(artworkUrl)}
+              returnTo={`/helmet-builder?template=${product.slug}`}
+              onImageUrl={onLogoUrl}
+            />
           )}
-          {stepId === "pinstripes" && <RegionStep mode="pinstripe" regions={regions} priceBook={priceBook} config={config} update={update} />}
           {stepId === "finish" && <StepFinish priceBook={priceBook} config={config} update={update} glossOnly={glossOnly} />}
-          {stepId === "details" && <StepPersonalisation priceBook={priceBook} config={config} update={update} />}
+          {stepId === "details" && <StepPersonalisation priceBook={priceBook} config={config} update={update} placing={placing} onPlace={setPlacing} />}
           {stepId === "logos" && (
-            <StepLogos config={config} update={update} returnTo={`/helmet-builder?template=${product.slug}`} onLogoUrl={onLogoUrl} />
+            <StepLogos config={config} update={update} priceBook={priceBook} returnTo={`/helmet-builder?template=${product.slug}`} onLogoUrl={onLogoUrl} placing={placing} onPlace={setPlacing} />
           )}
           {stepId === "exterior" && <StepTrims priceBook={priceBook} config={config} update={update} />}
           {stepId === "visor" && <StepVisor visors={visors} config={config} update={update} />}

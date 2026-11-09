@@ -81,16 +81,20 @@ function wrapStrip(mesh: Mesh, root: Object3D): StripWrap | null {
 async function paintBand(context: CanvasRenderingContext2D, width: number, strip: VisorStrip, filmUrl: string | null) {
   context.fillStyle = strip.kind === "chrome" ? "#d6d9dc" : strip.colour
   context.fillRect(0, 0, width, CANVAS_HEIGHT)
-  if (strip.kind !== "film" || !filmUrl) return
+  if ((strip.kind !== "film" && !strip.holographic) || !filmUrl) return
+  // Holographic film is tinted by the sticker's colour underneath it.
+  if (strip.holographic && strip.kind !== "film") context.globalCompositeOperation = "multiply"
   const image = new Image()
   image.src = filmUrl
   await image.decode()
   const pattern = context.createPattern(image, "repeat")
   if (!pattern) return
-  const scale = (CANVAS_HEIGHT * 2) / image.height
+  // One tile per band height, the same scale as films on the shell.
+  const scale = CANVAS_HEIGHT / image.height
   pattern.setTransform(new DOMMatrix().scale(scale, scale))
   context.fillStyle = pattern
   context.fillRect(0, 0, width, CANVAS_HEIGHT)
+  context.globalCompositeOperation = "source-over"
 }
 
 /** The band and its lettering. */
@@ -172,7 +176,7 @@ export async function updateVisorStrip(root: Object3D, strip: VisorStrip | null,
     const material = mesh.material as MeshStandardMaterial
     material.map = texture
     material.color.set("#ffffff")
-    material.metalness = strip.kind === "chrome" ? 1 : strip.kind === "metallic" ? 0.65 : 0
+    material.metalness = strip.kind === "chrome" ? 1 : strip.kind === "metallic" || strip.holographic ? 0.65 : 0
     material.roughness = strip.kind === "chrome" ? 0.1 : strip.kind === "metallic" ? 0.28 : 0.35
     material.needsUpdate = true
     mesh.visible = true

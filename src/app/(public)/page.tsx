@@ -1,4 +1,5 @@
 import { TeamGrid } from "@/components/about/team-grid"
+import { HomeAiDesign } from "@/components/home/home-ai-design"
 import { HomeContact } from "@/components/home/home-contact"
 import { HomeCustomisation } from "@/components/home/home-customisation"
 import { HomeNews } from "@/components/home/home-news"
@@ -24,6 +25,7 @@ export default function HomePage() {
       <HomeServices />
       <HomePaddock />
       <ShopCategories />
+      <HomeAiDesign />
       <HomeCustomisation />
       <PartnerShops />
       <HomeNews />

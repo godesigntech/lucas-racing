@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { Controller, useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Check, Loader2, MailCheck } from "lucide-react"
@@ -20,6 +21,9 @@ import { fieldA11y, FormField } from "./form-field"
 import { PasswordInput } from "./password-input"
 
 export function SignupForm() {
+  // Set when the customer was sent here from a page that needs an account, so they go straight back.
+  const next = useSearchParams().get("next") ?? undefined
+  const loginHref = next ? `/login?next=${encodeURIComponent(next)}` : "/login"
   const [confirmEmail, setConfirmEmail] = useState<string | null>(null)
   const {
     register,
@@ -35,7 +39,7 @@ export function SignupForm() {
 
   async function onSubmit(values: SignupFormValues) {
     try {
-      const result = await signUp(values)
+      const result = await signUp(values, next)
       if (!result.ok) {
         for (const [field, message] of Object.entries(result.fieldErrors ?? {})) {
           setError(field as keyof SignupFormValues, { message })
@@ -62,7 +66,7 @@ export function SignupForm() {
           your account, then log in.
         </p>
         <Button asChild variant="outline">
-          <Link href="/login">Go to login</Link>
+          <Link href={loginHref}>Go to login</Link>
         </Button>
       </div>
     )
@@ -161,7 +165,7 @@ export function SignupForm() {
 
       <p className="text-center text-sm text-muted-foreground">
         Already have an account?{" "}
-        <Link href="/login" className="font-semibold text-carbon underline-offset-4 hover:underline">
+        <Link href={loginHref} className="font-semibold text-carbon underline-offset-4 hover:underline">
           Login
         </Link>
       </p>

@@ -133,6 +133,7 @@ export function setTreatment(
 
 /** True when any region uses a material that can only be lacquered gloss. */
 export function requiresGloss(config: HelmetConfiguration, regions: BuilderRegion[]): boolean {
+  if (config.baseCoat === "chrome") return true
   return regions.some((region) => {
     const treatment = getTreatment(config, region.key)
     return treatment?.kind === "chrome" || treatment?.kind === "metallic"

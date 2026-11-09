@@ -4,7 +4,8 @@ import Link from "next/link"
 import { ArrowRight, CalendarCheck, Camera, CreditCard, PencilLine, ShieldCheck, Truck } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { addWeeks, formatUkDate, formatWeek } from "@/lib/dates/uk"
+import { CHROME_EXTRA_WEEKS } from "@/lib/configurator/helmet-configuration"
+import { formatWeek } from "@/lib/dates/uk"
 import { formatMoney } from "@/lib/format"
 import { orderStatusMeta } from "@/lib/orders/status"
 import { cn } from "@/lib/utils"
@@ -59,15 +60,12 @@ export function StepConfirm({
           {production.ready && nextWeek ? (
             <>
               You pick when your helmet goes into the workshop. The soonest we could start is the week of{" "}
-              <strong className="font-semibold text-carbon">{formatWeek(nextWeek.weekStart)}</strong>, which would be
-              finished around{" "}
-              <strong className="font-semibold text-carbon">
-                {formatUkDate(addWeeks(nextWeek.weekStart, production.standardLeadWeeks))}
-              </strong>
-              .
+              <strong className="font-semibold text-carbon">{formatWeek(nextWeek.weekStart)}</strong>. It then takes
+              about {production.standardLeadWeeks} weeks, or {production.standardLeadWeeks + CHROME_EXTRA_WEEKS} with
+              chrome. We confirm the exact dates with your proof.
             </>
           ) : (
-            "You pick when your helmet goes into the workshop, and we show the completion date that follows from it."
+            `You pick when your helmet goes into the workshop. It then takes about ${production.standardLeadWeeks} weeks, or ${production.standardLeadWeeks + CHROME_EXTRA_WEEKS} with chrome.`
           )}
         </Row>
         {rushTiers.length > 0 && (

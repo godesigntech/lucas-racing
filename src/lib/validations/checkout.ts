@@ -89,8 +89,9 @@ const personalItem = z.object({
 
 const logoItem = z.object({
   path: logoPath,
+  kind: z.enum(["logo", "image"]).optional(),
   position: placement,
-  scale: z.number().min(0.2).max(2).optional(),
+  scale: z.number().min(0.2).max(3).optional(),
   rotation: z.number().min(-180).max(180).optional(),
   offsetX: z.number().min(-1).max(1).optional(),
   offsetY: z.number().min(-1).max(1).optional(),
@@ -125,13 +126,17 @@ export const helmetItemSchema = z.object({
         textColour: hex.optional(),
         kind: partKind.optional(),
         film: z.string().trim().max(80).optional(),
+        holographic: z.boolean().optional(),
         font: z.string().trim().max(20).optional(),
       })
       .optional(),
-    spoilerFinish: regionTreatment.optional(),
+    spoilers: z.array(z.string().trim().max(60)).max(6).optional(),
+    spoilerFinish: z
+      .object({ kind: z.enum(["colour", "metallic", "film", "matched"]), value: z.string().trim().max(80), chrome: z.boolean().optional() })
+      .optional(),
     regions: z.record(z.string().max(40), regionTreatment).optional(),
     personalisation: z.array(personalItem).max(6, "You can add up to 6 pieces of personalisation").optional(),
-    logos: z.array(logoItem).max(4, "You can add up to 4 logos").optional(),
+    logos: z.array(logoItem).max(16, "You can add up to 16 logos and images").optional(),
     eyeportTrim: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),
     baseTrim: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),
     grille1: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),

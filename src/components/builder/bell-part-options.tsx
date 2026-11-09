@@ -12,7 +12,9 @@ export function BellPartOptions({ config, priceBook, update }: {
   priceBook: PriceBook
   update: (changes: Partial<HelmetConfiguration>) => void
 }) {
-  const [selected, setSelected] = useState<BellPartKey>("eyeportTrim")
+  // The trims are chosen above, with their own colour range and prices.
+  const parts = bellParts.filter(({ key }) => key !== "eyeportTrim" && key !== "baseTrim")
+  const [selected, setSelected] = useState<BellPartKey>("grille1")
   const part = bellParts.find(({ key }) => key === selected)!
   const colour = config[selected] ?? part.defaultColour ?? config.trim
   const palette = priceBook.options.base.filter((option) => option.isActive).map((option) => ({ ...option, price: 0 }))
@@ -27,7 +29,7 @@ export function BellPartOptions({ config, priceBook, update }: {
         <p className="text-sm text-muted-foreground">Choose a part, then its colour. Each part changes independently in 3D.</p>
       </div>
       <div role="group" aria-label="Accessory part" className="grid grid-cols-2 gap-2">
-        {bellParts.map((item) => (
+        {parts.map((item) => (
           <button type="button" key={item.key} aria-pressed={selected === item.key} onClick={() => setSelected(item.key)}
             className={`flex items-center gap-2 rounded-xl border p-3 text-left text-sm font-medium ${selected === item.key ? "border-brand-ink bg-accent" : "border-carbon/15"}`}>
             <span aria-hidden className="size-4 shrink-0 rounded-full border border-carbon/20" style={{ backgroundColor: config[item.key] ?? item.defaultColour ?? config.trim }} />

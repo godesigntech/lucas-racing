@@ -1,3 +1,4 @@
+import { selectedSpoilers, spoilerFinishLabel, spoilerFinishPrice, trimParts } from "@/lib/configurator/helmet-configuration"
 import type { BuilderRegion } from "@/lib/configurator/regions"
 import { getTreatment } from "@/lib/configurator/regions"
 import type { ConfiguratorOption, PriceBook } from "@/types/catalog"
@@ -34,7 +35,10 @@ export function pendingPrices(
 
   pending.push(fromOption(find("route", config.route ?? "new"), "route"))
   pending.push(fromOption(find("finish", config.finish), "finish", `${find("finish", config.finish)?.label ?? ""} finish`))
-  pending.push(fromOption(find("trim", config.trim), "trim"))
+  if (config.baseCoat === "chrome") pending.push(fromOption(find("material", "chrome"), "baseCoat", "Chrome base coat"))
+  for (const part of trimParts(config, priceBook)) {
+    if (part.price === null) pending.push({ key: part.key, label: `${part.label}: ${part.name}` })
+  }
   if (!config.aero) pending.push(fromOption(find("spoiler", config.spoiler), "spoiler"))
 
   for (const region of regions) {
@@ -51,23 +55,26 @@ export function pendingPrices(
 
   const aero = extras.aeroKits?.find((kit) => kit.id === config.aero)
   if (aero && aero.price === null) pending.push({ key: "aero", label: aero.name })
-  const spoilerKind = aero?.meshName ? config.spoilerFinish?.kind : undefined
-  if (spoilerKind === "chrome" || spoilerKind === "metallic") {
-    const material = find("material", spoilerKind)
-    pending.push(fromOption(material, "spoilerFinish", `Spoiler: ${material?.label ?? spoilerKind}`))
+  const spoilers = selectedSpoilers(config, extras.aeroKits)
+  for (const kit of spoilers) if (kit.price === null) pending.push({ key: `spoiler-${kit.id}`, label: kit.name })
+  if (config.spoilerFinish && spoilers.length > 0 && spoilerFinishPrice(config.spoilerFinish, priceBook) === null) {
+    pending.push({ key: "spoilerFinish", label: `Spoiler finish: ${spoilerFinishLabel(config.spoilerFinish, priceBook)}` })
   }
 
   const visor = extras.visors?.find((item) => item.id === config.visor)
   if (visor && visor.price === null) pending.push({ key: "visor", label: `${visor.name} visor` })
 
   if (config.visorStrip?.enabled) {
-    pending.push(fromOption(find("visor_strip", "printed"), "visorStrip", "Visor strip"))
+    pending.push(fromOption(find("visor_strip", "printed"), "visorStrip", "Bespoke visor sticker"))
+    if (config.visorStrip.holographic) pending.push(fromOption(find("visor_strip", "holographic"), "visorStripHolographic", "Holographic visor sticker"))
     const stripKind = config.visorStrip.kind
     if (stripKind === "chrome" || stripKind === "metallic") {
       const material = find("material", stripKind)
       pending.push(fromOption(material, "visorStripFinish", `Visor strip: ${material?.label ?? stripKind}`))
     }
   }
+
+  if ((config.logos ?? []).some((logo) => logo.kind === "image")) pending.push(fromOption(find("personalisation", "image"), "image", "Printed image"))
 
   for (const item of config.personalisation ?? []) {
     if (item.value.trim() === "") continue

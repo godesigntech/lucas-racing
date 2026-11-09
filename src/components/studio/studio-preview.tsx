@@ -6,6 +6,7 @@ import { Box, RotateCcw } from "lucide-react"
 import { HelmetArt } from "@/components/helmet/helmet-art"
 import type { HelmetAngle, SceneDesign } from "@/components/helmet-3d/helmet-scene"
 import type { SpoilerFinish, VisorSettings } from "@/components/helmet-3d/model-materials"
+import type { HelmetSpot } from "@/lib/helmet-3d/decal-layout"
 import { HelmetViewer } from "@/components/helmet-3d/helmet-viewer"
 import { get3dModel } from "@/lib/helmet-3d/models"
 import { shellTint } from "@/lib/helmet-3d/tint"
@@ -33,7 +34,12 @@ interface StudioPreviewProps {
   visorStrip?: VisorStrip | null
   visorStripFilmUrl?: string | null
   spoilerFinish?: SpoilerFinish | null
-  aeroMesh?: string | null
+  aeroMesh?: string | string[] | null
+  /** Told which part of the design was tapped on the 3D helmet. */
+  onPickRegion?: (key: string) => void
+  /** While true, dragging on the helmet places an item; `onPlace` is told where. */
+  placing?: boolean
+  onPlace?: (spot: HelmetSpot) => void
   /** Small heading above the helmet name. */
   eyebrow?: string
 }
@@ -43,7 +49,7 @@ interface StudioPreviewProps {
  * get the 3D viewer and preset camera angles; others show the illustration.
  */
 export const StudioPreview = forwardRef<HTMLDivElement, StudioPreviewProps>(function StudioPreview(
-  { look, modelId, modelName, designLabel, design = null, visor = null, visorStrip = null, visorStripFilmUrl = null, spoilerFinish = null, aeroMesh, eyebrow = "Live preview" },
+  { look, modelId, modelName, designLabel, design = null, visor = null, visorStrip = null, visorStripFilmUrl = null, spoilerFinish = null, aeroMesh, onPickRegion, placing, onPlace, eyebrow = "Live preview" },
   ref,
 ) {
   const [view, setView] = useState<{ angle: HelmetAngle; at: number } | null>(null)
@@ -89,6 +95,9 @@ export const StudioPreview = forwardRef<HTMLDivElement, StudioPreviewProps>(func
               visorStripFilmUrl={visorStripFilmUrl}
               spoilerFinish={spoilerFinish}
               aeroMesh={aeroMesh}
+              onPickRegion={onPickRegion}
+              placing={placing}
+              onPlace={onPlace}
               view={view}
               label={`${modelName} in 3D with your shell colour, film, finish, accessories and spoiler`}
               fallback={art}
@@ -103,7 +112,7 @@ export const StudioPreview = forwardRef<HTMLDivElement, StudioPreviewProps>(func
       <div className="flex min-w-0 flex-col gap-3 px-4 pb-4 sm:flex-row sm:items-center sm:justify-between sm:px-7 sm:pb-5">
         <p className="flex items-center gap-2 text-xs text-muted-foreground max-sm:hidden">
           <Box className="size-3.5 text-brand-ink" aria-hidden />
-          {model3d ? artwork ? "3D shows your racing lines, colours, films and accessories" : "3D shows shell and accessories; this template’s racing artwork is not available in 3D yet" : `Illustrated preview · 3D for the ${modelName} is coming soon`}
+          {model3d ? !design ? "Your helmet as it arrives, before your design goes on" : artwork ? "3D shows your racing lines, colours, films and accessories" : "3D shows shell and accessories; this template’s racing artwork is not available in 3D yet" : `Illustrated preview · 3D for the ${modelName} is coming soon`}
         </p>
         {model3d && (
           <div

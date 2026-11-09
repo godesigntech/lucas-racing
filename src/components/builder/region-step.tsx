@@ -1,33 +1,33 @@
 "use client"
 
 import { useState } from "react"
-import { Droplets, ImagePlus, Palette, Sparkles } from "lucide-react"
+import { Hand } from "lucide-react"
 
 import { FilmPicker } from "@/components/studio/film-picker"
 import { cn } from "@/lib/utils"
-import { allowedKinds, getTreatment, setTreatment, type BuilderRegion } from "@/lib/configurator/regions"
-import { BESPOKE_PRINT_FILM, defaultCarbonFilm, pickableFilms } from "@/lib/configurator/helmet-configuration"
-import { formatSurcharge, optionPriceLabel } from "@/lib/format"
+import { getTreatment, setTreatment, type BuilderRegion } from "@/lib/configurator/regions"
+import { BESPOKE_PRINT_FILM, colourName, holographicTapes, pickableFilms } from "@/lib/configurator/helmet-configuration"
+import { formatSurcharge } from "@/lib/format"
 import type { PriceBook } from "@/types/catalog"
-import type { HelmetConfiguration, PartKind, RegionTreatment } from "@/types/configurator"
+import type { HelmetConfiguration, RegionTreatment } from "@/types/configurator"
 
 import { LogoUpload, type UploadCopy } from "./logo-upload"
 import { SwatchGrid } from "./swatch-grid"
 
 const printCopy: UploadCopy = {
-  title: "Your artwork",
-  action: "Upload your print",
-  hint: "A high-resolution PNG or JPG works best. Up to 5 MB.",
+  title: "Your pattern",
+  action: "Upload your pattern",
+  hint: "It repeats across this part like a film. A high-resolution PNG or JPG works best. Up to 5 MB.",
   note: "We'll check the artwork and show it on your proof before printing.",
-  noun: "print",
+  noun: "pattern",
 }
 
 /**
- * Steps 4 to 7 are the same job on different parts of the design: choose a region, then
- * give it a treatment. Keeping them one component means a template with eight editable
- * areas works exactly as well as one with two, and the steps can't drift apart.
+ * Step 4 ("zones": colour, metallic, film or the customer's own pattern for each part of the
+ * design) and step 6 ("pinstripe": the racing lines). Customers pick a part from the list or
+ * by tapping it on the 3D helmet; whatever they chose last is the "brush" a tap applies.
  */
-export type RegionMode = "colour" | "material" | "film" | "pinstripe"
+export type RegionMode = "zones" | "pinstripe"
 
 interface RegionStepProps {
   mode: RegionMode
@@ -35,33 +35,43 @@ interface RegionStepProps {
   priceBook: PriceBook
   config: HelmetConfiguration
   update: (changes: Partial<HelmetConfiguration>) => void
-  /** Where to come back to after logging in to upload a print. */
+  /** The part being edited, shared with the 3D preview so tapping the helmet can change it. */
+  activeKey: string
+  onActiveKey: (key: string) => void
+  /** Told each treatment the customer applies, so a tap on the helmet can apply it again. */
+  onBrush?: (treatment: RegionTreatment) => void
+  /** True when the template is a designer's full-colour artwork, which each part can go back to. */
+  hasArtwork?: boolean
+  /** Where to come back to after logging in to upload a pattern. */
   returnTo?: string
-  /** Told an uploaded print's link, so the 3D preview can show it. */
+  /** Told an uploaded pattern's link, so the 3D preview can show it. */
   onImageUrl?: (path: string, url: string) => void
 }
 
-const materialMeta: Record<Exclude<PartKind, "film">, { label: string; hint: string; icon: typeof Palette }> = {
-  colour: { label: "Solid", hint: "A single flat colour.", icon: Palette },
-  metallic: { label: "Metallic", hint: "Metal flake through the colour.", icon: Sparkles },
-  chrome: { label: "Chrome", hint: "Polished in-house chrome.", icon: Sparkles },
-}
+type Tab = "designed" | "colour" | "metallic" | "film" | "pattern" | "holographic"
 
-export function RegionStep({ mode, regions, priceBook, config, update, returnTo = "/helmet-builder", onImageUrl }: RegionStepProps) {
-  const list = mode === "pinstripe" ? regions.filter((r) => r.kind === "pinstripe") : regions.filter((r) => r.kind !== "pinstripe")
-  const usable = mode === "film" ? list.filter((region) => region.allowsFilm) : list
-  const [activeKey, setActiveKey] = useState(usable[0]?.key ?? "")
-
-  // Falls back rather than syncing state: a template change can retire the chosen region.
+export function RegionStep({
+  mode,
+  regions,
+  priceBook,
+  config,
+  update,
+  activeKey,
+  onActiveKey,
+  onBrush,
+  hasArtwork = false,
+  returnTo = "/helmet-builder",
+  onImageUrl,
+}: RegionStepProps) {
+  // "Your own pattern" shows its upload before anything is uploaded, so it's remembered here.
+  const [patternFor, setPatternFor] = useState<string | null>(null)
+  const usable = mode === "pinstripe" ? regions.filter((region) => region.kind === "pinstripe") : regions.filter((region) => region.kind !== "pinstripe")
+  // Falls back rather than syncing state: a template change can retire the chosen part.
   const region = usable.find((item) => item.key === activeKey) ?? usable[0]
   if (!region) {
     return (
       <p className="rounded-2xl border border-carbon/10 bg-paddock/40 p-4 text-sm text-muted-foreground">
-        {mode === "pinstripe"
-          ? "This template has no pinstripes to colour."
-          : mode === "film"
-            ? "No part of this template can take a hydro-dip film."
-            : "This template has no editable areas yet."}
+        {mode === "pinstripe" ? "This template has no racing lines to colour." : "This template has no editable areas yet."}
       </p>
     )
   }
@@ -69,21 +79,51 @@ export function RegionStep({ mode, regions, priceBook, config, update, returnTo 
   const treatment = getTreatment(config, region.key)
   const colours = priceBook.options.base.filter((option) => option.isActive)
   const films = pickableFilms(priceBook)
-  const carbon = defaultCarbonFilm(priceBook)
+  const tapes = holographicTapes(priceBook)
+  const metallic = priceBook.options.material.find((option) => option.value === "metallic" && option.isActive)
   const bespoke = region.allowsFilm ? priceBook.films.find((film) => film.id === BESPOKE_PRINT_FILM && film.textureUrl) : undefined
-  // Only offer a material the workshop has actually set up. Without a row in the price
-  // list there's nothing to charge and checkout would reject the build.
-  const kinds = allowedKinds(region)
-    .filter((kind): kind is Exclude<PartKind, "film"> => kind !== "film")
-    .filter((kind) => kind === "colour" || priceBook.options.material.some((item) => item.value === kind && item.isActive))
+  const asDesigned = hasArtwork && (!treatment || (treatment.kind === "colour" && treatment.value === region.defaultColour))
 
-  const apply = (changes: RegionTreatment) => update(setTreatment(config, region.key, changes))
+  const derivedTab: Tab = asDesigned
+    ? "designed"
+    : treatment?.kind === "film"
+      ? treatment.value === BESPOKE_PRINT_FILM
+        ? "pattern"
+        : tapes.some((tape) => tape.id === treatment.value)
+          ? "holographic"
+          : "film"
+      : treatment?.kind === "metallic"
+        ? "metallic"
+        : "colour"
+  const tab: Tab = patternFor === region.key ? "pattern" : derivedTab
+
+  const apply = (next: RegionTreatment) => {
+    if (!(next.kind === "film" && next.value === BESPOKE_PRINT_FILM)) setPatternFor(null)
+    update(setTreatment(config, region.key, next))
+    onBrush?.(next)
+  }
+  const currentColour = treatment?.value?.startsWith("#") ? treatment.value : region.defaultColour
+
+  const tabs: { id: Tab; label: string; price?: string; show: boolean; select: () => void }[] = [
+    { id: "designed", label: "As designed", show: hasArtwork, select: () => apply({ kind: "colour", value: region.defaultColour }) },
+    { id: "colour", label: mode === "pinstripe" ? "Tape colour" : "Colour", show: true, select: () => apply({ kind: "colour", value: asDesigned ? (colours.find((option) => option.value !== region.defaultColour)?.value ?? currentColour) : currentColour }) },
+    { id: "metallic", label: "Metallic", price: formatSurcharge(metallic?.price), show: Boolean(metallic) && region.allowsMetallic, select: () => apply({ kind: "metallic", value: currentColour }) },
+    { id: "film", label: "Film", show: region.allowsFilm && mode === "zones", select: () => apply({ kind: "film", value: films[0]?.id ?? "", under: undefined }) },
+    {
+      id: "holographic",
+      label: "Holographic tape",
+      price: formatSurcharge(tapes[0]?.price),
+      show: mode === "pinstripe" && tapes.length > 0 && region.allowsFilm,
+      select: () => apply({ kind: "film", value: tapes[0].id }),
+    },
+    { id: "pattern", label: "Your own pattern", price: formatSurcharge(bespoke?.price), show: Boolean(bespoke) && mode === "zones", select: () => setPatternFor(region.key) },
+  ]
 
   return (
     <div className="space-y-5">
       {usable.length > 1 && (
-        <fieldset>
-          <legend className="sr-only">Choose a part of the design</legend>
+        <fieldset className="space-y-2">
+          <legend className="text-sm font-semibold">Choose a part</legend>
           <div className="flex flex-wrap gap-2">
             {usable.map((item) => {
               const itemTreatment = getTreatment(config, item.key)
@@ -92,7 +132,7 @@ export function RegionStep({ mode, regions, priceBook, config, update, returnTo 
                 <button
                   key={item.key}
                   type="button"
-                  onClick={() => setActiveKey(item.key)}
+                  onClick={() => onActiveKey(item.key)}
                   aria-pressed={selected}
                   className={cn(
                     "flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition",
@@ -102,156 +142,135 @@ export function RegionStep({ mode, regions, priceBook, config, update, returnTo 
                   <span
                     aria-hidden
                     className="size-4 shrink-0 rounded-full ring-1 ring-carbon/20"
-                    style={{ backgroundColor: itemTreatment?.value?.startsWith("#") ? itemTreatment.value : item.defaultColour }}
+                    style={{ backgroundColor: itemTreatment?.value?.startsWith("#") ? itemTreatment.value : (itemTreatment?.under ?? item.defaultColour) }}
                   />
                   {item.label}
                 </button>
               )
             })}
           </div>
+          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Hand className="size-3.5" aria-hidden /> Or tap a part on the helmet: it takes the colour or film you chose last.
+          </p>
         </fieldset>
       )}
 
       {region.hint && <p className="text-sm text-muted-foreground">{region.hint}</p>}
 
-      {(mode === "colour" || mode === "pinstripe") && (
-        <>
-          {treatment?.kind === "film" && (
-            <p className="flex gap-2 rounded-xl bg-paddock/50 p-3 text-xs text-muted-foreground">
-              <Droplets className="size-4 shrink-0 text-brand-ink" aria-hidden />
-              {treatment.value === BESPOKE_PRINT_FILM ? "Your own print" : (films.find((film) => film.id === treatment.value)?.name ?? "A film")} is on
-              this part. Pick a colour to paint it instead.
-            </p>
-          )}
-          <SwatchGrid
-            label={/colour/i.test(region.label) ? region.label : `${region.label} colour`}
-            options={colours}
-            value={treatment?.kind === "colour" || treatment?.kind === "metallic" ? treatment.value : undefined}
-            onChange={(value) => apply({ kind: treatment?.kind === "metallic" ? "metallic" : "colour", value })}
-            size="lg"
-          />
-          {mode === "colour" && carbon && region.allowsFilm && (
+      <div className="flex flex-wrap gap-2" role="group" aria-label={`${region.label} finish`}>
+        {tabs
+          .filter((item) => item.show)
+          .map((item) => (
             <button
+              key={item.id}
               type="button"
-              onClick={() => apply({ kind: "film", value: carbon.id })}
-              aria-pressed={treatment?.kind === "film" && treatment.value === carbon.id}
+              aria-pressed={tab === item.id}
+              onClick={item.select}
               className={cn(
-                "flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition",
-                treatment?.kind === "film" && treatment.value === carbon.id
-                  ? "border-brand-ink ring-2 ring-brand-ink/20"
-                  : "border-carbon/15 hover:border-carbon/35",
+                "rounded-full border px-3 py-1.5 text-sm transition",
+                tab === item.id ? "border-brand-ink bg-brand-ink text-white" : "border-carbon/15 hover:border-carbon/35",
               )}
             >
-              <span
-                aria-hidden
-                className="size-10 shrink-0 rounded-xl bg-cover bg-center ring-1 ring-carbon/20"
-                style={{ backgroundImage: `url(${carbon.thumbUrl ?? carbon.textureUrl})` }}
-              />
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-semibold">Make it carbon</span>
-                <span className="block text-xs text-muted-foreground">Carbon fibre film on the {region.label.toLowerCase()} instead of paint.</span>
-              </span>
-              <span className="text-xs font-semibold text-brand-ink">{formatSurcharge(carbon.price)}</span>
+              {item.label}
+              {item.price && <span className="ml-1 text-xs opacity-75">{item.price}</span>}
             </button>
-          )}
-        </>
+          ))}
+      </div>
+
+      {(tab === "colour" || tab === "metallic") && (
+        <ColourChooser
+          label={`${region.label}: ${tab === "metallic" ? "metallic colour" : "colour"}`}
+          options={colours}
+          value={treatment?.value}
+          onChange={(value) => apply({ kind: tab === "metallic" ? "metallic" : "colour", value })}
+          priceBook={priceBook}
+        />
       )}
 
-      {mode === "material" && (
-        <fieldset className="space-y-3">
-          <legend className="text-sm font-semibold">{region.label} paint</legend>
-          <div className="grid gap-2 sm:grid-cols-3">
-            {kinds.map((kind) => {
-              const meta = materialMeta[kind]
-              const option = kind === "colour" ? null : priceBook.options.material.find((item) => item.value === kind && item.isActive)
-              const selected = treatment?.kind === kind
-              const Icon = meta.icon
-              return (
-                <button
-                  key={kind}
-                  type="button"
-                  onClick={() =>
-                    apply({
-                      kind,
-                      // Chrome has no colour of its own; the others keep the one already chosen.
-                      value: kind === "chrome" ? "chrome" : treatment?.value?.startsWith("#") ? treatment.value : region.defaultColour,
-                    })
-                  }
-                  aria-pressed={selected}
-                  className={cn(
-                    "flex flex-col items-start gap-1 rounded-2xl border p-3 text-left transition",
-                    selected ? "border-brand-ink ring-2 ring-brand-ink/20" : "border-carbon/15 hover:border-carbon/35",
-                  )}
-                >
-                  <span className="flex items-center gap-2 text-sm font-semibold">
-                    <Icon className="size-4 text-brand-ink" aria-hidden />
-                    {meta.label}
-                  </span>
-                  <span className="text-xs text-muted-foreground">{meta.hint}</span>
-                  {option && option.price !== null && <span className="text-xs font-semibold text-brand-ink">{optionPriceLabel(option.price)}</span>}
-                </button>
-              )
-            })}
+      {tab === "film" && treatment?.kind === "film" && (
+        <div className="space-y-4">
+          <ColourChooser
+            label="Colour underneath the film"
+            hint="Films are printed on a clear sheet, so this colour shows through the pattern. White shows the film as it is."
+            options={[{ group: "base", value: "#ffffff", label: "White", swatch: "#ffffff", price: 0, hint: null, isActive: true, sortOrder: -1 }, ...colours]}
+            value={treatment.under ?? "#ffffff"}
+            onChange={(under) => apply({ ...treatment, under: under === "#ffffff" ? undefined : under })}
+            priceBook={priceBook}
+          />
+          <FilmPicker films={films} value={treatment.value} onChange={(filmId) => apply({ kind: "film", value: filmId, under: treatment.under })} />
+        </div>
+      )}
+
+      {tab === "pattern" && bespoke && (
+        <LogoUpload
+          key={region.key}
+          path={treatment?.kind === "film" && treatment.value === BESPOKE_PRINT_FILM ? treatment.print : undefined}
+          onChange={(path) => apply(path ? { kind: "film", value: BESPOKE_PRINT_FILM, print: path } : { kind: "colour", value: region.defaultColour })}
+          onUrl={onImageUrl}
+          returnTo={returnTo}
+          copy={printCopy}
+        />
+      )}
+
+      {tab === "holographic" && (
+        <fieldset className="space-y-2">
+          <legend className="text-sm font-semibold">Holographic tape colour</legend>
+          <div className="flex flex-wrap gap-2">
+            {tapes.map((tape) => (
+              <button
+                key={tape.id}
+                type="button"
+                aria-pressed={treatment?.value === tape.id}
+                onClick={() => apply({ kind: "film", value: tape.id })}
+                className={cn("flex items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-sm", treatment?.value === tape.id ? "border-brand-ink ring-2 ring-brand-ink/20" : "border-carbon/15")}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element -- small static swatch */}
+                <img src={tape.thumbUrl ?? tape.textureUrl ?? ""} alt="" className="size-7 rounded-full object-cover" />
+                {tape.name.replace(/^Holographic /, "")}
+              </button>
+            ))}
           </div>
-          {(treatment?.kind === "metallic" || treatment?.kind === "chrome") && (
-            <p className="rounded-xl bg-paddock/50 p-3 text-xs text-muted-foreground">
-              Metallic and chrome are lacquered gloss, so the overall finish is set to gloss at step 8.
-            </p>
-          )}
         </fieldset>
       )}
 
-      {mode === "film" && (
-        <div className="space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => apply({ kind: "colour", value: region.defaultColour })}
-              aria-pressed={treatment?.kind !== "film"}
-              className={cn(
-                "rounded-full border px-3 py-1.5 text-sm transition",
-                treatment?.kind !== "film" ? "border-brand-ink bg-brand-ink text-white" : "border-carbon/15 hover:border-carbon/35",
-              )}
-            >
-              <Palette className="mr-1.5 inline size-3.5" aria-hidden />
-              No film
-            </button>
-            <span className="text-xs text-muted-foreground">
-              <Droplets className="mr-1 inline size-3.5" aria-hidden />
-              Films and paint can sit on different parts of the same helmet.
-            </span>
-          </div>
-          {bespoke && (
-            <div className="space-y-2 rounded-2xl border border-carbon/15 p-4">
-              <p className="flex items-center justify-between gap-3 text-sm">
-                <span className="flex items-center gap-2 font-semibold">
-                  <ImagePlus className="size-4 text-brand-ink" aria-hidden />
-                  Your own print on the {region.label.toLowerCase()}
-                </span>
-                <span className="text-xs font-semibold text-brand-ink">{formatSurcharge(bespoke.price)}</span>
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Upload a pattern, photo or artwork and we&apos;ll print it as a hydro-dip film for this part.
-              </p>
-              <LogoUpload
-                key={region.key}
-                path={treatment?.kind === "film" && treatment.value === BESPOKE_PRINT_FILM ? treatment.print : undefined}
-                onChange={(path) =>
-                  apply(path ? { kind: "film", value: BESPOKE_PRINT_FILM, print: path } : { kind: "colour", value: region.defaultColour })
-                }
-                onUrl={onImageUrl}
-                returnTo={returnTo}
-                copy={printCopy}
-              />
-            </div>
-          )}
-          <FilmPicker
-            films={films}
-            value={treatment?.kind === "film" ? treatment.value : ""}
-            onChange={(filmId) => apply({ kind: "film", value: filmId })}
-          />
-        </div>
-      )}
+      {tab === "designed" && <p className="rounded-xl bg-paddock/50 p-3 text-sm text-muted-foreground">This part shows the designer&apos;s artwork. Choose a colour or film to change it.</p>}
+    </div>
+  )
+}
+
+/** The colour range as swatches, plus any colour at all, which the workshop matches. */
+export function ColourChooser({
+  label,
+  hint,
+  options,
+  value,
+  onChange,
+  priceBook,
+}: {
+  label: string
+  hint?: string
+  options: PriceBook["options"]["base"]
+  value: string | undefined
+  onChange: (value: string) => void
+  priceBook: PriceBook
+}) {
+  const custom = value && value.startsWith("#") && !options.some((option) => option.value === value)
+  return (
+    <div className="space-y-2">
+      <SwatchGrid label={label} options={options} value={value} onChange={onChange} />
+      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+      <label className="flex flex-wrap items-center gap-3 text-sm">
+        Any other colour
+        <input
+          type="color"
+          aria-label={`${label}: any colour`}
+          value={value?.startsWith("#") ? value : "#ffffff"}
+          onChange={(event) => onChange(event.target.value)}
+          className="h-9 w-12 cursor-pointer rounded border border-carbon/20"
+        />
+        {custom && <span className="font-mono text-xs">{colourName(priceBook, value)}</span>}
+        <span className="text-xs text-muted-foreground">We match it for you.</span>
+      </label>
     </div>
   )
 }

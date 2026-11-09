@@ -21,6 +21,8 @@ export interface RegionTreatment {
   value: string
   /** For the bespoke print film: the customer's own artwork, a path in the design-logos bucket. */
   print?: string
+  /** For a film: the paint colour underneath it, which shows through the pattern. White when left out. */
+  under?: string
 }
 
 /** Text the customer adds to the helmet. */
@@ -55,6 +57,8 @@ export interface PersonalItem {
 export interface LogoPlacementItem {
   /** Storage path in the design-logos bucket. */
   path: string
+  /** "image" for a picture printed onto the helmet (priced); a sponsor or team logo otherwise (free). */
+  kind?: "logo" | "image"
   position: Placement
   scale?: number
   rotation?: number
@@ -62,6 +66,17 @@ export interface LogoPlacementItem {
   offsetX?: number
   /** Fine placement within its spot: -1 (up) to 1 (down). */
   offsetY?: number
+}
+
+/**
+ * A spoiler's finish. "matched" continues the helmet's design onto the spoiler, which the
+ * workshop marks out by hand. Any of them can go over a chrome base coat.
+ */
+export interface SpoilerFinish {
+  kind: "colour" | "metallic" | "film" | "matched"
+  /** Hex colour, or film id. Unused for "matched". */
+  value: string
+  chrome?: boolean
 }
 
 export interface VisorStrip {
@@ -72,6 +87,10 @@ export interface VisorStrip {
   kind?: PartKind
   /** Film id, when the band is dipped. */
   film?: string
+  /** Printed on holographic film instead of standard vinyl. */
+  holographic?: boolean
+  /** The Lucas Racing sticker every helmet comes with, rather than a bespoke one. Drawn only, never saved. */
+  branded?: boolean
   text: string
   textColour?: string
   font?: string
@@ -126,8 +145,12 @@ export interface HelmetConfiguration extends BellPartColours {
   aero?: string
   /** Visor id. */
   visor?: string
-  /** How the chosen spoiler is finished. Left out, it stays clear. */
-  spoilerFinish?: RegionTreatment
+  /** "chrome" when the helmet is chromed before the colours and films go on. */
+  baseCoat?: "chrome"
+  /** Spoiler kits fitted together (top, rear, chin…). Left out, it's whichever kit `aero` names. */
+  spoilers?: string[]
+  /** How the spoilers are finished. Left out, they stay clear. */
+  spoilerFinish?: SpoilerFinish
   visorStrip?: VisorStrip
 
   /** Treatment per editable region of the template, keyed by region key. */

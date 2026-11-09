@@ -1,9 +1,10 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Plus, RotateCcw, Trash2 } from "lucide-react"
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Move, Plus, RotateCcw, Trash2 } from "lucide-react"
 
 import { helmetFont, helmetFontStyles } from "@/components/helmet-3d/helmet-fonts"
+import { findFlag, helmetFlags } from "@/lib/helmet-3d/flags"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { logoPlacements, namePlacements, numberPlacements } from "@/lib/configurator/helmet-configuration"
@@ -25,14 +26,35 @@ const kindMeta: Record<PersonalKind, { label: string; placeholder: string; maxLe
   name: { label: "Name", placeholder: "e.g. C. LUCAS", maxLength: 24, hint: "Up to 24 characters." },
   number: { label: "Racing number", placeholder: "e.g. 42", maxLength: 3, hint: "Up to 3 letters or digits." },
   initials: { label: "Initials", placeholder: "e.g. CJL", maxLength: 3, hint: "Up to 3 letters." },
-  flag: { label: "National flag", placeholder: "e.g. GBR", maxLength: 3, hint: "The country's three-letter code." },
+  flag: { label: "National flag", placeholder: "", maxLength: 3, hint: "Shown as the real flag on your helmet." },
   text: { label: "Custom text", placeholder: "Your words", maxLength: 24, hint: "Up to 24 characters." },
 }
 
 const placementsFor = (kind: PersonalKind) => (kind === "number" ? numberPlacements : namePlacements)
 
 /** Step 9: names, numbers, initials, flags and free text. */
-export function StepPersonalisation({ priceBook, config, update }: UpdateProps & { priceBook: PriceBook }) {
+/** Which item is being dragged into place on the 3D helmet. */
+export interface PlacingTarget {
+  list: "personalisation" | "logos"
+  index: number
+}
+
+/** Turns on dragging this item around on the helmet. */
+function PlaceOnHelmet({ active, onToggle }: { active: boolean; onToggle: (on: boolean) => void }) {
+  return (
+    <Button type="button" variant={active ? "default" : "outline"} size="sm" onClick={() => onToggle(!active)} aria-pressed={active}>
+      <Move /> {active ? "Done" : "Drag on helmet"}
+    </Button>
+  )
+}
+
+export function StepPersonalisation({
+  priceBook,
+  config,
+  update,
+  placing,
+  onPlace,
+}: UpdateProps & { priceBook: PriceBook; placing: PlacingTarget | null; onPlace: (target: PlacingTarget | null) => void }) {
   const items = config.personalisation ?? []
   const colours = priceBook.options.base.filter((option) => option.isActive)
   const prices = priceBook.options.personalisation ?? []
@@ -75,15 +97,40 @@ export function StepPersonalisation({ priceBook, config, update }: UpdateProps &
                     <label htmlFor={`personal-${index}`} className="text-sm font-semibold">
                       {meta.label}
                     </label>
-                    <Input
-                      id={`personal-${index}`}
-                      value={item.value}
-                      maxLength={meta.maxLength}
-                      placeholder={meta.placeholder}
-                      onChange={(event) => patch(index, { value: event.target.value })}
-                    />
+                    {item.kind === "flag" ? (
+                      <div className="flex items-center gap-3">
+                        {findFlag(item.value) && (
+                          // eslint-disable-next-line @next/next/no-img-element -- small static flag
+                          <img src={findFlag(item.value)!.url} alt="" className="h-9 w-12 shrink-0 rounded-sm object-cover ring-1 ring-carbon/15" />
+                        )}
+                        <select
+                          id={`personal-${index}`}
+                          value={findFlag(item.value)?.code ?? ""}
+                          onChange={(event) => patch(index, { value: event.target.value })}
+                          className="h-10 w-full rounded-xl border border-carbon/15 bg-card px-3 text-sm"
+                        >
+                          <option value="" disabled>
+                            Choose a country
+                          </option>
+                          {helmetFlags.map((country) => (
+                            <option key={country.code} value={country.code}>
+                              {country.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    ) : (
+                      <Input
+                        id={`personal-${index}`}
+                        value={item.value}
+                        maxLength={meta.maxLength}
+                        placeholder={meta.placeholder}
+                        onChange={(event) => patch(index, { value: event.target.value })}
+                      />
+                    )}
                     <p className="text-xs text-muted-foreground">{meta.hint}</p>
                   </div>
+                  <PlaceOnHelmet active={placing?.list === "personalisation" && placing.index === index} onToggle={(on) => onPlace(on ? { list: "personalisation", index } : null)} />
                   <Button
                     type="button"
                     variant="ghost"
@@ -379,11 +426,22 @@ function LetteringPreview({ item }: { item: PersonalItem }) {
 export function StepLogos({
   config,
   update,
+  priceBook,
   returnTo,
   onLogoUrl,
-}: UpdateProps & { returnTo: string; onLogoUrl: (path: string, url: string) => void }) {
+  placing,
+  onPlace,
+}: UpdateProps & {
+  priceBook: PriceBook
+  returnTo: string
+  onLogoUrl: (path: string, url: string) => void
+  placing: PlacingTarget | null
+  onPlace: (target: PlacingTarget | null) => void
+}) {
   const logos = config.logos ?? []
   const setLogos = (next: LogoPlacementItem[]) => update({ v: "2", logos: next })
+  const logoCount = logos.filter((logo) => logo.kind !== "image").length
+  const imagePrice = priceBook.options.personalisation?.find((option) => option.value === "image" && option.isActive)?.price
 
   return (
     <div className="space-y-5">
@@ -391,7 +449,11 @@ export function StepLogos({
         {logos.map((logo, index) => (
           <li key={logo.path} className="space-y-4 rounded-2xl border border-carbon/15 p-4">
             <div className="flex items-start justify-between gap-3">
-              <LogoPreview path={logo.path} onUrl={onLogoUrl} />
+              <div className="space-y-2">
+                <LogoPreview path={logo.path} onUrl={onLogoUrl} />
+                <p className="text-xs font-semibold text-muted-foreground">{logo.kind === "image" ? "Printed image" : "Logo"}</p>
+              </div>
+              <PlaceOnHelmet active={placing?.list === "logos" && placing.index === index} onToggle={(on) => onPlace(on ? { list: "logos", index } : null)} />
               <Button
                 type="button"
                 variant="ghost"
@@ -420,7 +482,7 @@ export function StepLogos({
                 <input
                   type="range"
                   min={0.2}
-                  max={2}
+                  max={logo.kind === "image" ? 3 : 2}
                   step={0.1}
                   value={logo.scale ?? 1}
                   onChange={(event) => setLogos(logos.map((item, p) => (p === index ? { ...item, scale: Number(event.target.value) } : item)))}
@@ -444,14 +506,27 @@ export function StepLogos({
         ))}
       </ul>
 
-      {logos.length < 4 ? (
-        <LogoUpload
-          onChange={(path) => setLogos([...logos, { path, position: "back", scale: 1, rotation: 0 }])}
-          returnTo={returnTo}
-        />
-      ) : (
-        <p className="text-sm text-muted-foreground">That&apos;s the maximum of four logos.</p>
-      )}
+      <div className="grid gap-3 sm:grid-cols-2">
+        {logoCount < 4 ? (
+          <LogoUpload onChange={(path) => setLogos([...logos, { path, position: "back", scale: 1, rotation: 0 }])} returnTo={returnTo} />
+        ) : (
+          <p className="text-sm text-muted-foreground">That&apos;s the maximum of four logos.</p>
+        )}
+        {logos.length < 16 && (
+          <LogoUpload
+            key={logos.length}
+            onChange={(path) => setLogos([...logos, { path, kind: "image", position: "back", scale: 1.5, rotation: 0 }])}
+            returnTo={returnTo}
+            copy={{
+              title: "Image to print",
+              action: "Upload an image",
+              hint: `A photo or picture printed straight onto the helmet, like your dog on the back. ${imagePrice ? `The first is ${formatOptionPrice(imagePrice)}; any more are priced with your proof.` : "Priced with your proof."}`,
+              note: "We'll check the image and show it on your proof before printing.",
+              noun: "image",
+            }}
+          />
+        )}
+      </div>
 
       <p className="rounded-xl bg-paddock/50 p-3 text-xs text-muted-foreground">
         We check every logo before production and will come back to you if artwork can&apos;t be reproduced, or if it
