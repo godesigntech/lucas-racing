@@ -5,7 +5,9 @@ import { HelmetBuilder } from "@/components/builder/helmet-builder"
 import { Container } from "@/components/layout/container"
 import { StudioHighlights } from "@/components/studio/studio-highlights"
 import { Skeleton } from "@/components/ui/skeleton"
+import { isAcceptingEntries } from "@/lib/competition/status"
 import { getBuilderCatalog } from "@/lib/data/builder"
+import { getCompetition } from "@/lib/data/competition"
 import { getPriceBook, getProducts } from "@/lib/data/products"
 import { getProductionOptions } from "@/lib/data/production"
 
@@ -31,13 +33,18 @@ export default function HelmetBuilderPage({ searchParams }: { searchParams: Sear
 }
 
 async function Builder({ searchParams }: { searchParams: SearchParams }) {
-  const [products, priceBook, builder, production, query] = await Promise.all([
+  const [products, priceBook, builder, production, query, competition] = await Promise.all([
     getProducts(),
     getPriceBook(),
     getBuilderCatalog(),
     getProductionOptions(),
     searchParams,
+    getCompetition(),
   ])
+  // Entering is only offered while it's taking entries; enter_competition() checks the dates again.
+  const builderCompetition = competition
+    ? { id: competition.id, title: competition.title, closesAt: competition.closesAt, status: competition.status, accepting: isAcceptingEntries(competition) }
+    : null
   // Lets the first paint open on the right template instead of flashing the default.
   const search = new URLSearchParams()
   for (const [key, value] of Object.entries(query)) if (typeof value === "string") search.set(key, value)
@@ -50,6 +57,7 @@ async function Builder({ searchParams }: { searchParams: SearchParams }) {
       aeroKits={builder.aeroKits}
       visors={builder.visors}
       production={production}
+      competition={builderCompetition}
       initialSearch={initialSearch}
     />
   )

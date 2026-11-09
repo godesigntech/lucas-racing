@@ -10,4 +10,6 @@ export const cacheTags = {
   templates: "templates",
   /** Production settings, capacity, blackouts and rush tiers. */
   production: "production",
+  /** The design competition and its winner. */
+  competition: "competition",
 } as const

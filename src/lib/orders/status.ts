@@ -1,6 +1,6 @@
 import type { OrderStatus, PaymentStatus } from "@/types/order"
 
-type Tone = "neutral" | "info" | "progress" | "success" | "danger" | "warning"
+export type Tone = "neutral" | "info" | "progress" | "success" | "danger" | "warning"
 
 interface StatusMeta {
   label: string

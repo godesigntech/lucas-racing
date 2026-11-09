@@ -369,6 +369,39 @@ export type MessageRow = {
   created_at: string
 }
 
+export type CompetitionRow = Timestamps & {
+  id: string
+  slug: string
+  title: string
+  prize: string
+  description: string
+  rules: string[]
+  opens_at: string | null
+  closes_at: string | null
+  judging_date: string | null
+  /** upcoming, open, closed or judged. */
+  status: string
+  winner_entry_id: string | null
+}
+
+export type CompetitionEntryRow = Timestamps & {
+  id: string
+  reference: string
+  competition_id: string
+  user_id: string
+  name: string
+  email: string
+  design_name: string
+  product_slug: string
+  config: Json
+  summary: Json
+  /** entered, shortlisted, winner or disqualified. */
+  status: string
+  marketing_opt_in: boolean
+  agreed_rules_at: string
+  admin_notes: string
+}
+
 export type QuoteRequestRow = Timestamps & {
   id: string
   reference: string
@@ -620,6 +653,12 @@ export type Database = {
         ]
       >
       quote_requests: Table<QuoteRequestRow, "name" | "email" | "helmet", keyof QuoteRequestRow>
+      competitions: Table<CompetitionRow, "slug" | "title", keyof CompetitionRow>
+      competition_entries: Table<
+        CompetitionEntryRow,
+        "competition_id" | "user_id" | "name" | "email" | "design_name" | "product_slug" | "config" | "agreed_rules_at",
+        keyof CompetitionEntryRow
+      >
       contact_messages: Table<ContactMessageRow, "name" | "email" | "topic" | "message", keyof ContactMessageRow>
       saved_designs: Table<SavedDesignRow, "product_slug" | "name" | "config", keyof SavedDesignRow>
       team_members: Table<TeamMemberRow, "name", keyof TeamMemberRow>
@@ -755,6 +794,18 @@ export type Database = {
           p_ai_image_path?: string | null
         }
         Returns: { reference: string }[]
+      }
+      enter_competition: {
+        Args: { p_competition: string; p_entry: Json }
+        Returns: { reference: string; updated: boolean }[]
+      }
+      choose_competition_winner: {
+        Args: { p_entry: string }
+        Returns: undefined
+      }
+      competition_winner: {
+        Args: { p_competition: string }
+        Returns: { first_name: string; design_name: string; product_slug: string }[]
       }
       submit_build_quote: {
         Args: { p_build: Json; p_notes: string }

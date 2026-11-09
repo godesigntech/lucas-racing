@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react"
 import Link from "next/link"
-import { ArrowLeft, ArrowRight, ShoppingBag } from "lucide-react"
+import { ArrowLeft, ArrowRight, ShoppingBag, Trophy } from "lucide-react"
 import { toast } from "react-toastify"
 
 import { SaveDesignButton } from "@/components/studio/save-design-button"
+import { EnterCompetitionButton } from "@/components/builder/enter-competition-button"
 import { RequestQuoteButton } from "@/components/builder/request-quote-button"
 import { StudioActions } from "@/components/studio/studio-actions"
 import { StudioPreview } from "@/components/studio/studio-preview"
@@ -25,6 +26,7 @@ import { createClient } from "@/lib/supabase/browser"
 import type { PriceBook } from "@/types/catalog"
 import type { HelmetConfiguration, RegionTreatment } from "@/types/configurator"
 import type { CatalogProduct } from "@/types/product"
+import type { BuilderCompetition } from "@/types/competition"
 import type { AeroKit, DesignTemplate, Visor } from "@/types/templates"
 import type { ProductionOptions } from "@/lib/data/production"
 
@@ -45,6 +47,8 @@ interface HelmetBuilderProps {
   aeroKits?: AeroKit[]
   visors?: Visor[]
   production?: ProductionOptions
+  /** The current competition, if any. While it takes entries, the review step offers to enter it. */
+  competition?: BuilderCompetition | null
 }
 
 const noSubscription = () => () => {}
@@ -67,6 +71,7 @@ export function HelmetBuilder({
   aeroKits = [],
   visors = [],
   production = emptyProduction,
+  competition = null,
   initialSearch = "",
 }: HelmetBuilderProps & { initialSearch?: string }) {
   const search = useSyncExternalStore(noSubscription, () => window.location.search, () => initialSearch)
@@ -79,7 +84,7 @@ export function HelmetBuilder({
   const start = useMemo(() => {
     const slug = saved?.productSlug ?? params.get("template")
     const product = products.find((item) => item.slug === slug) ?? products[0]
-    const shared = [...params.keys()].some((key) => key !== "template" && key !== "design")
+    const shared = [...params.keys()].some((key) => key !== "template" && key !== "design" && key !== "competition")
     return {
       product,
       config: saved?.config ?? (shared ? decodeShared(params) : undefined),
@@ -99,6 +104,8 @@ export function HelmetBuilder({
       aeroKits={aeroKits}
       visors={visors}
       production={production}
+      competition={competition}
+      competitionMode={params.has("competition") && Boolean(competition)}
       start={{ product: start.product, config: start.config, shared: start.shared }}
     />
   )
@@ -157,8 +164,13 @@ function BuilderBody({
   aeroKits = [],
   visors = [],
   production = emptyProduction,
+  competition = null,
+  competitionMode = false,
   start,
-}: HelmetBuilderProps & { start: { product: CatalogProduct; config?: HelmetConfiguration; shared?: boolean } }) {
+}: HelmetBuilderProps & {
+  /** Opened from the competition page: the build is for entering, not buying. */
+  competitionMode?: boolean
+} & { start: { product: CatalogProduct; config?: HelmetConfiguration; shared?: boolean } }) {
   // Resolved from the build's own template slug, so switching template can't be stale.
   const getExtras = useCallback(
     (current: HelmetConfiguration) => {
@@ -279,9 +291,9 @@ function BuilderBody({
     } catch {
       // Private browsing, or storage turned off: the build just won't survive a reload.
     }
-    const url = `${window.location.pathname}?${configToSearchParams(config)}`
+    const url = `${window.location.pathname}?${configToSearchParams(config)}${competitionMode ? "&competition=1" : ""}`
     window.history.replaceState(window.history.state, "", url)
-  }, [config, product.slug])
+  }, [config, product.slug, competitionMode])
 
   function go(id: BuilderStepId) {
     setStepId(id)
@@ -346,6 +358,8 @@ function BuilderBody({
   // A bespoke image or a dip: the workshop prices it, so unpriced choices don't block it.
   const bespoke = useMemo(() => quoteReasons(config, priceBook), [config, priceBook])
   const blocked = bespoke.length === 0 && pending.length > 0
+  // Where this build reopens, e.g. after logging in; competition mode carries over.
+  const builderUrl = `/helmet-builder?${configToSearchParams(config)}${competitionMode ? "&competition=1" : ""}`
   const deposit = price && !blocked ? helmetDeposit(price.total, config) : null
 
   return (
@@ -383,7 +397,12 @@ function BuilderBody({
             <h1 className="mt-1 truncate font-display text-3xl font-bold uppercase leading-none sm:text-4xl">{product.name}</h1>
           </div>
           <p className="shrink-0 text-right">
-            {bespoke.length > 0 ? (
+            {competitionMode ? (
+              <>
+                <span className="block font-display text-2xl font-bold uppercase leading-none sm:text-3xl">Free entry</span>
+                <span className="text-xs text-muted-foreground">Competition design</span>
+              </>
+            ) : bespoke.length > 0 ? (
               <>
                 <span className="block font-display text-2xl font-bold uppercase leading-none sm:text-3xl" aria-live="polite">
                   Bespoke
@@ -401,6 +420,22 @@ function BuilderBody({
           </p>
         </header>
 
+        {competition && (competition.accepting || competitionMode) && (
+          <p className="mx-5 mt-3 flex items-center gap-2 rounded-xl bg-accent px-3 py-2 text-xs text-accent-foreground sm:mx-6">
+            <Trophy className="size-4 shrink-0 text-brand-ink" aria-hidden />
+            <span>
+              <Link href="/competition" className="font-semibold underline underline-offset-2">
+                {competition.title}
+              </Link>
+              {competition.accepting
+                ? ": design your helmet, then enter it from the Review step."
+                : competition.status === "upcoming"
+                  ? ": entries open soon. Design your helmet now and save it to enter later."
+                  : ": entries have closed."}
+            </span>
+          </p>
+        )}
+
         <BuilderStepper current={stepId} visited={visited} onSelect={go} />
 
         <div className="flex-1 space-y-5 px-5 py-5 sm:px-6" role="region" aria-labelledby="builder-step-title">
@@ -411,7 +446,9 @@ function BuilderBody({
             <h2 id="builder-step-title" className="font-display text-2xl font-bold uppercase leading-tight">
               {step.title}
             </h2>
-            <p className="text-sm text-muted-foreground">{step.description}</p>
+            <p className="text-sm text-muted-foreground">
+              {competitionMode && stepId === "review" ? "Check everything, then enter it in the competition." : step.description}
+            </p>
           </div>
 
           {stepId === "helmet" && (
@@ -452,7 +489,27 @@ function BuilderBody({
           {stepId === "production" && <StepProduction />}
           {stepId === "review" && (
             <>
-              <StepReview summary={summary} price={price} onEdit={go} pending={bespoke.length > 0 ? [] : pending} bespoke={bespoke} deposit={deposit} chrome={config.baseCoat === "chrome"} />
+              {competitionMode ? (
+                <StepReview summary={summary} price={null} onEdit={go} competitionEntry />
+              ) : (
+                <StepReview summary={summary} price={price} onEdit={go} pending={bespoke.length > 0 ? [] : pending} bespoke={bespoke} deposit={deposit} chrome={config.baseCoat === "chrome"} />
+              )}
+              {competition?.accepting && !competitionMode && (
+                <div className="flex flex-col gap-3 rounded-2xl border border-carbon/10 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm">
+                    <span className="font-semibold">{competition.title}</span>
+                    <span className="block text-muted-foreground">Free to enter. Entering again replaces your entry.</span>
+                  </p>
+                  <EnterCompetitionButton
+                    competition={competition}
+                    slug={product.slug}
+                    productName={product.name}
+                    getConfig={fullConfig}
+                    summary={summary}
+                    returnTo={builderUrl}
+                  />
+                </div>
+              )}
               <div className="flex flex-wrap gap-2">
                 <SaveDesignButton productSlug={product.slug} productName={product.name} config={config} />
                 <StudioActions
@@ -495,13 +552,30 @@ function BuilderBody({
             <Button size="lg" onClick={() => go(next.id)}>
               Next: {next.label} <ArrowRight />
             </Button>
+          ) : competitionMode && competition ? (
+            // From the competition page: the build is entered, not bought.
+            competition.accepting ? (
+              <EnterCompetitionButton
+                primary
+                competition={competition}
+                slug={product.slug}
+                productName={product.name}
+                getConfig={fullConfig}
+                summary={summary}
+                returnTo={builderUrl}
+              />
+            ) : (
+              <Button size="lg" disabled>
+                <Trophy /> {competition.status === "upcoming" ? "Entries open soon" : "Entries have closed"}
+              </Button>
+            )
           ) : bespoke.length > 0 ? (
             <RequestQuoteButton
               slug={product.slug}
               name={product.name}
               getConfig={fullConfig}
               summary={summary}
-              returnTo={`/helmet-builder?${configToSearchParams(config)}`}
+              returnTo={builderUrl}
             />
           ) : blocked || !price ? (
             // Only when the workshop has left a choice unpriced; the review above says which.

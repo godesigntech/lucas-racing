@@ -339,3 +339,63 @@ export async function notifyQuotePrice(quote: {
     text: `${firstName}, your ${quote.designName} design (${quote.reference}) is priced at ${money(quote.price)}. Deposit to start: ${depositText}.${quote.note ? `\n\n${quote.note}` : ""}\n\n${href}`,
   })
 }
+
+/** Confirms a competition entry to the entrant. */
+export async function notifyCompetitionEntry(entry: {
+  reference: string
+  customerName: string
+  customerEmail: string
+  designName: string
+  competitionTitle: string
+  closesAt: string | null
+  updated: boolean
+}): Promise<void> {
+  const firstName = entry.customerName.split(" ")[0]
+  const href = siteUrl("/account/competition")
+  const closes = entry.closesAt
+    ? new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/London" }).format(new Date(entry.closesAt))
+    : ""
+  await sendEmail({
+    to: entry.customerEmail,
+    subject: `${entry.updated ? "Entry updated" : "You're in"}: ${entry.competitionTitle} – Lucas Racing`,
+    html: emailLayout({
+      heading: entry.updated ? `${firstName}, your entry is updated` : `${firstName}, you're in!`,
+      body:
+        paragraphs(`Thanks for entering ${entry.competitionTitle} with your design "${entry.designName}".`) +
+        detailRows([
+          ["Entry", entry.reference],
+          ["Design", entry.designName],
+          ["Entries close", closes],
+        ]) +
+        paragraphs("You can update your design until entries close: open the builder, change it and enter again. We'll email the winner."),
+      action: { label: "See your entry", href },
+    }),
+    text: `${firstName}, your entry ${entry.reference} ("${entry.designName}") for ${entry.competitionTitle} is saved.${closes ? ` Entries close ${closes}.` : ""}\n\n${href}`,
+  })
+}
+
+/** Tells the winner they've won. */
+export async function notifyCompetitionWinner(winner: {
+  reference: string
+  customerName: string
+  customerEmail: string
+  designName: string
+  competitionTitle: string
+  prize: string
+}): Promise<void> {
+  const firstName = winner.customerName.split(" ")[0]
+  const href = siteUrl("/account/competition")
+  await sendEmail({
+    to: winner.customerEmail,
+    subject: `You won ${winner.competitionTitle.replace(/^win\s+/i, "")}! – Lucas Racing`,
+    html: emailLayout({
+      heading: `Congratulations ${firstName}, you won!`,
+      body:
+        paragraphs(`Your design "${winner.designName}" won ${winner.competitionTitle}.`) +
+        (winner.prize ? paragraphs(`Your prize: ${winner.prize}`) : "") +
+        paragraphs("We'll be in touch shortly to confirm your helmet size and arrange everything."),
+      action: { label: "See your entry", href },
+    }),
+    text: `Congratulations ${firstName}! Your design "${winner.designName}" (${winner.reference}) won ${winner.competitionTitle}. We'll be in touch shortly.\n\n${href}`,
+  })
+}

@@ -56,10 +56,12 @@ interface StepReviewProps {
   /** The deposit on a priced build. */
   deposit?: number | null
   chrome?: boolean
+  /** A competition entry: no prices, nothing to pay. */
+  competitionEntry?: boolean
 }
 
 /** Everything chosen, with a shortcut back to each step, and the price breakdown. */
-export function StepReview({ summary, price, onEdit, pending = [], bespoke = [], deposit = null, chrome = false }: StepReviewProps) {
+export function StepReview({ summary, price, onEdit, pending = [], bespoke = [], deposit = null, chrome = false, competitionEntry = false }: StepReviewProps) {
   return (
     <div className="space-y-5">
       {bespoke.length > 0 && (
@@ -135,14 +137,16 @@ export function StepReview({ summary, price, onEdit, pending = [], bespoke = [],
             </p>
           )}
         </dl>
-      ) : bespoke.length > 0 ? null : (
+      ) : bespoke.length > 0 || competitionEntry ? null : (
         <p className="rounded-2xl bg-accent p-4 text-sm text-accent-foreground">
           Send this design to the workshop and we&apos;ll come back with a proof and a quote.
         </p>
       )}
 
       <p className="text-xs text-muted-foreground">
-        We email you a digital proof of this exact design. Your deposit books your helmet in with the workshop.
+        {competitionEntry
+          ? "Free to enter, nothing to pay. You can change your design and enter again until entries close."
+          : "We email you a digital proof of this exact design. Your deposit books your helmet in with the workshop."}
       </p>
     </div>
   )

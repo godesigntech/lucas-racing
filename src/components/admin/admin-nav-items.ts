@@ -1,6 +1,7 @@
 import {
   BookOpen,
   HardHat,
+  Trophy,
   Images,
   Inbox,
   LayoutDashboard,
@@ -39,6 +40,7 @@ export const adminNavSections: { title: string; items: AdminNavItem[] }[] = [
       { label: "Orders", href: "/admin/orders", icon: ShoppingBag, teamwear: true },
       { label: "Customers", href: "/admin/customers", icon: Users },
       { label: "Quotes", href: "/admin/quotes", icon: Sparkles },
+      { label: "Competition", href: "/admin/competition", icon: Trophy },
       { label: "Messages", href: "/admin/messages", icon: MessagesSquare, unreadBadge: true },
       { label: "Enquiries", href: "/admin/enquiries", icon: Inbox },
     ],
