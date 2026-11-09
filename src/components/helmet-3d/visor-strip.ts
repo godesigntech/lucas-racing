@@ -105,13 +105,16 @@ async function drawStrip(strip: VisorStrip, aspect: number, filmUrl: string | nu
   const context = canvas.getContext("2d")!
 
   if (strip.branded) {
-    // The Lucas Racing sticker artwork, stretched along the tape.
-    context.fillStyle = strip.colour
-    context.fillRect(0, 0, canvas.width, canvas.height)
+    // The Lucas Racing sticker in its own shape, across the front of the visor. The band
+    // is about twice as long as the sticker, so it keeps (nearly) its own proportions and
+    // the rest of the band is left clear rather than stretching the artwork.
     const sticker = new Image()
     sticker.src = BRANDED_STICKER_URL
     await sticker.decode().catch(() => undefined)
-    if (sticker.naturalWidth) context.drawImage(sticker, 0, 0, canvas.width, canvas.height)
+    if (sticker.naturalWidth) {
+      const width = Math.min(canvas.width, CANVAS_HEIGHT * (sticker.naturalWidth / sticker.naturalHeight) * STICKER_STRETCH)
+      context.drawImage(sticker, (canvas.width - width) / 2, 0, width, CANVAS_HEIGHT)
+    }
     return finish(canvas)
   }
 
@@ -147,8 +150,10 @@ function finish(canvas: HTMLCanvasElement): CanvasTexture {
   return texture
 }
 
-/** The client's visor sticker (the main band; the strip below it needs its own mesh). */
-const BRANDED_STICKER_URL = "/stickers/lucas-racing-visor.webp"
+/** The client's visor sticker, cut out of its background. */
+const BRANDED_STICKER_URL = "/stickers/lucas-racing-visor.webp?v=straight-1"
+/** How much wider than its artwork the sticker is drawn, so it reaches further round the visor. */
+const STICKER_STRETCH = 1.3
 
 function findStrips(root: Object3D): Mesh[] {
   const strips: Mesh[] = []
@@ -194,7 +199,10 @@ export async function updateVisorStrip(root: Object3D, strip: VisorStrip | null,
     const material = mesh.material as MeshStandardMaterial
     material.map = texture
     material.color.set("#ffffff")
-    material.metalness = strip.kind === "chrome" ? 1 : strip.kind === "metallic" || strip.holographic ? 0.65 : 0
+    // The branded sticker has a shaped outline: the clear parts of its artwork show the visor.
+    material.transparent = Boolean(strip.branded)
+    material.alphaTest = strip.branded ? 0.5 : 0
+    material.metalness = strip.branded ? 0.25 : strip.kind === "chrome" ? 1 : strip.kind === "metallic" || strip.holographic ? 0.65 : 0
     material.roughness = strip.kind === "chrome" ? 0.1 : strip.kind === "metallic" ? 0.28 : 0.35
     material.needsUpdate = true
     mesh.visible = true

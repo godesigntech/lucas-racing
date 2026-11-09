@@ -15,8 +15,8 @@ import type { PriceBook } from "@/types/catalog"
 import type { HelmetConfiguration } from "@/types/configurator"
 import type { CatalogProduct } from "@/types/product"
 
-/** Personal details that carry over when the customer switches template. */
-const carriedOver = [...bellParts.map(({ key }) => key), "model", "size", "finish", "trim", "spoiler", "riderName", "namePosition", "raceNumber", "numberPosition", "logo", "logoPosition"] as const
+/** Everything that carries over when the customer switches template: only the design's own colours reset. */
+const carriedOver = [...bellParts.map(({ key }) => key), "model", "size", "route", "finish", "baseCoat", "trim", "spoiler", "aero", "spoilers", "spoilerFinish", "visor", "visorStrip", "personalisation", "logos", "riderName", "namePosition", "raceNumber", "numberPosition", "logo", "logoPosition"] as const
 
 /**
  * Builder state: the chosen template (design) and the build on it, kept valid as
