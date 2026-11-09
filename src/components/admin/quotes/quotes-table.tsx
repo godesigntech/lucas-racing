@@ -87,6 +87,10 @@ export function QuotesTable({ quotes, emptyMessage }: { quotes: QuoteRequest[]; 
                   <span className="inline-flex items-center rounded-full bg-accent px-2.5 py-0.5 text-xs font-semibold text-accent-foreground">
                     Own helmet{quote.details.makeModel ? `: ${quote.details.makeModel}` : ""}
                   </span>
+                ) : quote.kind === "build" ? (
+                  <span className="inline-flex items-center rounded-full bg-carbon px-2.5 py-0.5 text-xs font-semibold text-paper">
+                    Bespoke build{quote.build?.name ? `: ${quote.build.name}` : ""}
+                  </span>
                 ) : (
                   helmetLabel(quote.helmet)
                 )}

@@ -104,6 +104,17 @@ async function drawStrip(strip: VisorStrip, aspect: number, filmUrl: string | nu
   canvas.height = CANVAS_HEIGHT
   const context = canvas.getContext("2d")!
 
+  if (strip.branded) {
+    // The Lucas Racing sticker artwork, stretched along the tape.
+    context.fillStyle = strip.colour
+    context.fillRect(0, 0, canvas.width, canvas.height)
+    const sticker = new Image()
+    sticker.src = BRANDED_STICKER_URL
+    await sticker.decode().catch(() => undefined)
+    if (sticker.naturalWidth) context.drawImage(sticker, 0, 0, canvas.width, canvas.height)
+    return finish(canvas)
+  }
+
   await paintBand(context, canvas.width, strip, filmUrl)
 
   const text = strip.text.trim()
@@ -125,12 +136,19 @@ async function drawStrip(strip: VisorStrip, aspect: number, filmUrl: string | nu
     context.fillText(text, canvas.width / 2, CANVAS_HEIGHT / 2 + size * 0.04)
   }
 
+  return finish(canvas)
+}
+
+function finish(canvas: HTMLCanvasElement): CanvasTexture {
   const texture = new CanvasTexture(canvas)
   texture.colorSpace = SRGBColorSpace
   texture.flipY = true
   texture.anisotropy = 8
   return texture
 }
+
+/** The client's visor sticker (the main band; the strip below it needs its own mesh). */
+const BRANDED_STICKER_URL = "/stickers/lucas-racing-visor.webp"
 
 function findStrips(root: Object3D): Mesh[] {
   const strips: Mesh[] = []

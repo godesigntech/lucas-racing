@@ -63,8 +63,12 @@ export function StepPersonalisation({
   const patch = (index: number, changes: Partial<PersonalItem>) =>
     setItems(items.map((item, position) => (position === index ? { ...item, ...changes } : item)))
 
-  const add = (kind: PersonalKind) =>
+  // The item being edited is open; the rest fold to one line, and the newest goes on top.
+  const [openIndex, setOpenIndex] = useState<number | null>(items.length > 0 ? items.length - 1 : null)
+  const add = (kind: PersonalKind) => {
     setItems([...items, { kind, value: "", position: placementsFor(kind)[0], font: "racing", scale: 1, rotation: 0 }])
+    setOpenIndex(items.length)
+  }
 
   return (
     <div className="space-y-5">
@@ -88,8 +92,35 @@ export function StepPersonalisation({
         </p>
       ) : (
         <ul className="space-y-4">
-          {items.map((item, index) => {
+          {items
+            .map((item, index) => ({ item, index }))
+            .reverse()
+            .map(({ item, index }) => {
             const meta = kindMeta[item.kind]
+            if (index !== openIndex) {
+              const flag = item.kind === "flag" ? findFlag(item.value) : undefined
+              return (
+                <li key={`${item.kind}-${index}`} className="flex items-center gap-3 rounded-2xl border border-carbon/15 px-4 py-2.5">
+                  <span className="text-sm font-semibold">{meta.label}</span>
+                  <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">{flag?.name ?? (item.value.trim() || "Not filled in yet")}</span>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setOpenIndex(index)}>
+                    Edit
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Remove ${meta.label.toLowerCase()}`}
+                    onClick={() => {
+                      setItems(items.filter((_, position) => position !== index))
+                      if (openIndex !== null && openIndex > index) setOpenIndex(openIndex - 1)
+                    }}
+                  >
+                    <Trash2 />
+                  </Button>
+                </li>
+              )
+            }
             return (
               <li key={`${item.kind}-${index}`} className="space-y-4 rounded-2xl border border-carbon/15 p-4">
                 <div className="flex items-end gap-3">
@@ -426,7 +457,6 @@ function LetteringPreview({ item }: { item: PersonalItem }) {
 export function StepLogos({
   config,
   update,
-  priceBook,
   returnTo,
   onLogoUrl,
   placing,
@@ -441,7 +471,6 @@ export function StepLogos({
   const logos = config.logos ?? []
   const setLogos = (next: LogoPlacementItem[]) => update({ v: "2", logos: next })
   const logoCount = logos.filter((logo) => logo.kind !== "image").length
-  const imagePrice = priceBook.options.personalisation?.find((option) => option.value === "image" && option.isActive)?.price
 
   return (
     <div className="space-y-5">
@@ -520,7 +549,7 @@ export function StepLogos({
             copy={{
               title: "Image to print",
               action: "Upload an image",
-              hint: `A photo or picture printed straight onto the helmet, like your dog on the back. ${imagePrice ? `The first is ${formatOptionPrice(imagePrice)}; any more are priced with your proof.` : "Priced with your proof."}`,
+              hint: "A photo or picture printed straight onto the helmet, like your dog on the back. A bespoke image makes this a bespoke design: send it to us and we'll email you a price.",
               note: "We'll check the image and show it on your proof before printing.",
               noun: "image",
             }}

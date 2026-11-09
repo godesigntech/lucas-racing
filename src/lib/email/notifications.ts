@@ -304,3 +304,38 @@ export async function notifyOrderStatus(update: {
     text: `${firstName}, order ${update.orderNumber} is now: ${update.label}.\n\n${update.description}${update.note ? `\n\n${update.note}` : ""}\n\n${href}`,
   })
 }
+
+/** The workshop's price for a bespoke build, with the deposit due to start it. */
+export async function notifyQuotePrice(quote: {
+  reference: string
+  customerName: string
+  customerEmail: string
+  designName: string
+  price: number
+  deposit: number
+  chrome: boolean
+  note: string
+}): Promise<void> {
+  const firstName = quote.customerName.split(" ")[0]
+  const href = siteUrl("/account/quotes")
+  const money = (value: number) => `£${value.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  const depositText = quote.chrome ? `${money(quote.deposit)} (20% plus £200 for the chrome base coat)` : `${money(quote.deposit)} (20%)`
+  await sendEmail({
+    to: quote.customerEmail,
+    subject: `Your helmet price (${quote.reference}) – Lucas Racing`,
+    html: emailLayout({
+      heading: `${firstName}, your helmet is priced`,
+      body:
+        paragraphs(`Thanks for sending us your ${quote.designName} design. Here's our price.`) +
+        detailRows([
+          ["Quote", quote.reference],
+          ["Price", money(quote.price)],
+          ["Deposit to start", depositText],
+        ]) +
+        (quote.note ? paragraphs(quote.note) : "") +
+        paragraphs("Pay the deposit and we'll book your helmet in. We'll send your payment link shortly."),
+      action: { label: "See your quote", href },
+    }),
+    text: `${firstName}, your ${quote.designName} design (${quote.reference}) is priced at ${money(quote.price)}. Deposit to start: ${depositText}.${quote.note ? `\n\n${quote.note}` : ""}\n\n${href}`,
+  })
+}

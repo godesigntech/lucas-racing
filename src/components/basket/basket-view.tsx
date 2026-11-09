@@ -6,7 +6,10 @@ import { ArrowRight, Lock, ShoppingBag } from "lucide-react"
 import { EmptyState } from "@/components/shared/empty-state"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Deposit } from "@/components/checkout/order-summary-card"
+import type { AvailableLine } from "@/lib/basket/resolve-basket"
 import { useResolvedBasket } from "@/lib/basket/use-resolved-basket"
+import { chromeHelmetCount, orderDeposit } from "@/lib/configurator/pricing-rules"
 import { formatMoney } from "@/lib/format"
 import type { PriceBook } from "@/types/catalog"
 import type { CatalogProduct } from "@/types/product"
@@ -20,7 +23,8 @@ interface BasketViewProps {
 
 export function BasketView({ products, priceBook }: BasketViewProps) {
   const { items, lines, subtotal, loaded } = useResolvedBasket(products, priceBook)
-  const orderable = lines.some((line) => line.available)
+  const available = lines.filter((line): line is AvailableLine => line.available)
+  const orderable = available.length > 0
   const hasHelmets = lines.some((line) => line.available && line.kind === "helmet")
 
   if (!loaded) return <Skeleton className="h-80 rounded-3xl" aria-label="Loading your basket" />
@@ -71,6 +75,7 @@ export function BasketView({ products, priceBook }: BasketViewProps) {
           <span className="text-sm text-paper/60">Estimated total</span>
           <span className="font-display text-4xl font-bold">{formatMoney(subtotal)}</span>
         </div>
+        {orderable && <Deposit label="Estimated deposit" amount={orderDeposit(subtotal, chromeHelmetCount(available))} chrome={chromeHelmetCount(available) > 0} />}
         {orderable ? (
           <Button asChild size="lg" className="w-full">
             <Link href="/checkout">

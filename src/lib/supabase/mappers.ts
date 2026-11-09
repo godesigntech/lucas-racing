@@ -311,6 +311,7 @@ export function toOrder(
     estimatedCompletionDate: row.estimated_completion_date,
     rushTier: row.rush_tier,
     rushFee: num(row.rush_fee),
+    depositAmount: num(row.deposit_amount ?? 0),
     items,
     events: [...row.order_status_events]
       .sort((a, b) => a.created_at.localeCompare(b.created_at))

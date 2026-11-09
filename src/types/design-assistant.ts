@@ -75,11 +75,26 @@ export interface QuoteRequest {
   status: QuoteStatus
   adminNotes: string
   createdAt: string
-  /** "design": from the design assistant. "own_helmet": a customer sending their own helmet. */
-  kind: "design" | "own_helmet"
+  /** "design": from the design assistant. "own_helmet": a customer sending their own helmet. "build": a bespoke build from the builder. */
+  kind: "design" | "own_helmet" | "build"
   /** Own-helmet requests: storage paths of the photos of their helmet. */
   photoPaths: string[]
   details: OwnHelmetDetails
+  /** Bespoke builds: the design as the customer made it in the builder. */
+  build: BuildQuoteDetails | null
+  /** The price the workshop sent back, and the deposit due, once priced. */
+  quotedPrice: number | null
+  quotedDeposit: number | null
+  quotedAt: string | null
+}
+
+/** A bespoke build sent from the builder for a price. */
+export interface BuildQuoteDetails {
+  slug: string
+  name: string
+  /** The builder configuration, as sent (normalised again before it's shown). */
+  config: Record<string, unknown>
+  summary: { key: string; label: string; value: string }[]
 }
 
 /** What a customer chose when asking us to customise their own helmet. */

@@ -96,6 +96,9 @@ export interface MyQuoteRequest {
   status: QuoteStatus
   summary: string
   createdAt: string
+  /** Bespoke builds, once the workshop has priced them. */
+  quotedPrice: number | null
+  quotedDeposit: number | null
 }
 
 /** Quote requests the customer sent from the design assistant while signed in. */
@@ -106,7 +109,7 @@ export async function getMyQuotes(): Promise<MyQuoteRequest[]> {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from("quote_requests")
-    .select("id, reference, helmet, status, concept, created_at")
+    .select("id, reference, helmet, status, concept, created_at, kind, details, quoted_price, quoted_deposit")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
   if (error) throw new Error(`Could not load your quote requests: ${error.message}`)
@@ -115,7 +118,12 @@ export async function getMyQuotes(): Promise<MyQuoteRequest[]> {
     reference: row.reference,
     helmet: row.helmet,
     status: row.status as QuoteStatus,
-    summary: ((row.concept as { summary?: string } | null)?.summary ?? "").trim(),
+    summary:
+      row.kind === "build"
+        ? `Bespoke build: ${String((row.details as { name?: unknown } | null)?.name ?? "helmet")}`
+        : ((row.concept as { summary?: string } | null)?.summary ?? "").trim(),
     createdAt: row.created_at,
+    quotedPrice: row.quoted_price === null ? null : Number(row.quoted_price),
+    quotedDeposit: row.quoted_deposit === null ? null : Number(row.quoted_deposit),
   }))
 }

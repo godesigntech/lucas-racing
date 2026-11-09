@@ -4,6 +4,7 @@ import {
   normaliseConfiguration,
   summariseConfiguration,
 } from "@/lib/configurator/helmet-configuration"
+import { quoteReasons } from "@/lib/configurator/pricing-rules"
 import { isCustomisable, priceFinish } from "@/lib/shop/part-finish"
 import { maxQuantity, stockStatus, variantLabel } from "@/lib/shop/stock"
 import type { PriceBook } from "@/types/catalog"
@@ -72,6 +73,10 @@ function resolveHelmetLine(item: HelmetBasketItem, { products, priceBook }: Cata
   const config = normaliseConfiguration(item.config, product, priceBook)
   const price = calculateHelmetPrice(product, config, priceBook)
   if (!price) return unavailable
+  // Bespoke images and dips are priced by hand: these go to the workshop for a quote.
+  if (quoteReasons(config, priceBook).length > 0) {
+    return { ...unavailable, reason: "This is a bespoke design, so it needs a quote. Open it in the builder and choose Get a quote." }
+  }
 
   return {
     kind: "helmet",

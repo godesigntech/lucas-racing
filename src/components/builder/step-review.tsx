@@ -51,12 +51,31 @@ interface StepReviewProps {
   onEdit: (step: BuilderStepId) => void
   /** Choices the workshop hasn't priced yet. While there are any, we can't take the order. */
   pending?: { key: string; label: string }[]
+  /** Why the build needs a quote (a bespoke image or a dip). Empty for priced builds. */
+  bespoke?: string[]
+  /** The deposit on a priced build. */
+  deposit?: number | null
+  chrome?: boolean
 }
 
 /** Everything chosen, with a shortcut back to each step, and the price breakdown. */
-export function StepReview({ summary, price, onEdit, pending = [] }: StepReviewProps) {
+export function StepReview({ summary, price, onEdit, pending = [], bespoke = [], deposit = null, chrome = false }: StepReviewProps) {
   return (
     <div className="space-y-5">
+      {bespoke.length > 0 && (
+        <div className="rounded-2xl bg-carbon p-4 text-sm text-paper">
+          <p className="font-semibold">This is a bespoke design</p>
+          <ul className="mt-2 list-disc space-y-0.5 pl-5 text-paper/80">
+            {bespoke.map((reason) => (
+              <li key={reason}>{reason}</li>
+            ))}
+          </ul>
+          <p className="mt-2 text-paper/80">
+            Send it to us with Get a quote. We&apos;ll price it and email you, then you pay a 20% deposit
+            {chrome ? " plus £200 for the chrome base coat" : ""} to start.
+          </p>
+        </div>
+      )}
       {pending.length > 0 && (
         <div className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-200">
           <p className="font-semibold">
@@ -91,7 +110,7 @@ export function StepReview({ summary, price, onEdit, pending = [] }: StepReviewP
         ))}
       </dl>
 
-      {price ? (
+      {price && bespoke.length === 0 ? (
         <dl className="space-y-1.5 rounded-2xl bg-paper/70 p-4 text-sm" aria-label="Price breakdown">
           {price.lines.map((line) => (
             <div key={line.label} className="flex justify-between gap-4">
@@ -103,6 +122,12 @@ export function StepReview({ summary, price, onEdit, pending = [] }: StepReviewP
             <dt>{pending.length > 0 ? "Priced so far" : "Total"}</dt>
             <dd className="tabular-nums">{formatMoney(price.total)}</dd>
           </div>
+          {deposit !== null && pending.length === 0 && (
+            <div className="flex justify-between gap-4 text-sm">
+              <dt>Deposit to start{chrome ? " (20% + £200 chrome)" : " (20%)"}</dt>
+              <dd className="font-semibold tabular-nums">{formatMoney(deposit)}</dd>
+            </div>
+          )}
           {pending.length > 0 && (
             <p className="pt-1 text-xs font-normal text-muted-foreground">
               This doesn&apos;t include the {pending.length === 1 ? "choice" : "choices"} above, which we&apos;ll price
@@ -110,15 +135,14 @@ export function StepReview({ summary, price, onEdit, pending = [] }: StepReviewP
             </p>
           )}
         </dl>
-      ) : (
+      ) : bespoke.length > 0 ? null : (
         <p className="rounded-2xl bg-accent p-4 text-sm text-accent-foreground">
           Send this design to the workshop and we&apos;ll come back with a proof and a quote.
         </p>
       )}
 
       <p className="text-xs text-muted-foreground">
-        No payment today. We email you a digital proof of this exact design; once you approve it, we send a payment link and
-        get started.
+        We email you a digital proof of this exact design. Your deposit books your helmet in with the workshop.
       </p>
     </div>
   )

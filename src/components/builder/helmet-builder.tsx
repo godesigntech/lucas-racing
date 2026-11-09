@@ -6,6 +6,7 @@ import { ArrowLeft, ArrowRight, ShoppingBag } from "lucide-react"
 import { toast } from "react-toastify"
 
 import { SaveDesignButton } from "@/components/studio/save-design-button"
+import { RequestQuoteButton } from "@/components/builder/request-quote-button"
 import { StudioActions } from "@/components/studio/studio-actions"
 import { StudioPreview } from "@/components/studio/studio-preview"
 import { Button } from "@/components/ui/button"
@@ -15,6 +16,7 @@ import { getCategory } from "@/lib/catalog/categories"
 import { configToSearchParams, logoPlacements, namePlacements, numberPlacements, selectedSpoilers } from "@/lib/configurator/helmet-configuration"
 import { decalSlot, faceFor, type HelmetSpot, offsetsForSpot, placementForSpot } from "@/lib/helmet-3d/decal-layout"
 import { pendingPrices } from "@/lib/configurator/pending-prices"
+import { helmetDeposit, quoteReasons } from "@/lib/configurator/pricing-rules"
 import { getTreatment, requiresGloss, resolveRegions, setTreatment, templateArtworkUrl } from "@/lib/configurator/regions"
 import { buildSceneDesign, designMainColour, fittingFinishes, withShellPrint } from "@/lib/configurator/scene-design"
 import { formatMoney } from "@/lib/format"
@@ -322,10 +324,14 @@ function BuilderBody({
     }
   }
 
-  function addToBasket() {
-    // Every zone goes with the order, so its summary uses this template's own names for them.
+  // Every zone goes with the order, so its summary uses this template's own names for them.
+  function fullConfig(): HelmetConfiguration {
     const allRegions = Object.fromEntries(regions.map((region) => [region.key, getTreatment(config, region.key) ?? { kind: "colour" as const, value: region.defaultColour }]))
-    basket.add({ slug: product.slug, name: product.name, config: { ...config, v: "2", regions: allRegions } })
+    return { ...config, v: "2", regions: allRegions }
+  }
+
+  function addToBasket() {
+    basket.add({ slug: product.slug, name: product.name, config: fullConfig() })
     setAddedBuild(JSON.stringify(config))
     toast.success(
       <span>
@@ -337,7 +343,10 @@ function BuilderBody({
     )
   }
 
-  const blocked = pending.length > 0
+  // A bespoke image or a dip: the workshop prices it, so unpriced choices don't block it.
+  const bespoke = useMemo(() => quoteReasons(config, priceBook), [config, priceBook])
+  const blocked = bespoke.length === 0 && pending.length > 0
+  const deposit = price && !blocked ? helmetDeposit(price.total, config) : null
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:items-start lg:gap-8">
@@ -374,10 +383,21 @@ function BuilderBody({
             <h1 className="mt-1 truncate font-display text-3xl font-bold uppercase leading-none sm:text-4xl">{product.name}</h1>
           </div>
           <p className="shrink-0 text-right">
-            <span className="block font-display text-2xl font-bold leading-none sm:text-3xl" aria-live="polite">
-              {!blocked && price ? formatMoney(price.total) : "—"}
-            </span>
-            <span className="text-xs text-muted-foreground">No payment today</span>
+            {bespoke.length > 0 ? (
+              <>
+                <span className="block font-display text-2xl font-bold uppercase leading-none sm:text-3xl" aria-live="polite">
+                  Bespoke
+                </span>
+                <span className="text-xs text-muted-foreground">Priced by our team</span>
+              </>
+            ) : (
+              <>
+                <span className="block font-display text-2xl font-bold leading-none sm:text-3xl" aria-live="polite">
+                  {!blocked && price ? formatMoney(price.total) : "—"}
+                </span>
+                <span className="text-xs text-muted-foreground">{deposit !== null ? `Deposit ${formatMoney(deposit)}` : "Price so far"}</span>
+              </>
+            )}
           </p>
         </header>
 
@@ -432,7 +452,7 @@ function BuilderBody({
           {stepId === "production" && <StepProduction />}
           {stepId === "review" && (
             <>
-              <StepReview summary={summary} price={price} onEdit={go} pending={pending} />
+              <StepReview summary={summary} price={price} onEdit={go} pending={bespoke.length > 0 ? [] : pending} bespoke={bespoke} deposit={deposit} chrome={config.baseCoat === "chrome"} />
               <div className="flex flex-wrap gap-2">
                 <SaveDesignButton productSlug={product.slug} productName={product.name} config={config} />
                 <StudioActions
@@ -475,6 +495,14 @@ function BuilderBody({
             <Button size="lg" onClick={() => go(next.id)}>
               Next: {next.label} <ArrowRight />
             </Button>
+          ) : bespoke.length > 0 ? (
+            <RequestQuoteButton
+              slug={product.slug}
+              name={product.name}
+              getConfig={fullConfig}
+              summary={summary}
+              returnTo={`/helmet-builder?${configToSearchParams(config)}`}
+            />
           ) : blocked || !price ? (
             // Only when the workshop has left a choice unpriced; the review above says which.
             <Button size="lg" disabled>

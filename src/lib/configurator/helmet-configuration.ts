@@ -544,10 +544,7 @@ export function calculateHelmetPrice(
     if (each) lines.push({ label: `Spoiler finish: ${spoilerFinishLabel(config.spoilerFinish, priceBook)} × ${spoilers.length}`, amount: each * spoilers.length })
   }
 
-  // The first printed image has a set price; any more are priced with the proof.
-  const images = (config.logos ?? []).filter((logo) => logo.kind === "image").length
-  const imageOption = priceBook.options.personalisation?.find((option) => option.value === "image" && option.isActive)
-  if (images > 0 && imageOption?.price) lines.push({ label: images > 1 ? `Printed image (${images - 1} more priced with your proof)` : "Printed image", amount: imageOption.price })
+  // Bespoke images are priced by hand with a quote (pricing-rules.ts), so they add nothing here.
 
   for (const item of config.personalisation ?? []) {
     if (!item.value.trim()) continue
@@ -612,11 +609,10 @@ export function summariseConfiguration(
 
   ;(config.logos ?? []).forEach((logo, index) => {
     const image = logo.kind === "image"
-    const quoted = image && (config.logos ?? []).slice(0, index).some((item) => item.kind === "image")
     lines.push({
       key: `logos-${index}`,
       label: image ? "Image" : "Logo",
-      value: `Uploaded · ${placementLabels[logo.position]}${quoted ? " · priced with your proof" : ""}`,
+      value: `Uploaded · ${placementLabels[logo.position]}`,
     })
   })
   if (config.model === "bell-kc7") {

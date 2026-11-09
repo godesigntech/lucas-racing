@@ -74,7 +74,6 @@ export function pendingPrices(
     }
   }
 
-  if ((config.logos ?? []).some((logo) => logo.kind === "image")) pending.push(fromOption(find("personalisation", "image"), "image", "Printed image"))
 
   for (const item of config.personalisation ?? []) {
     if (item.value.trim() === "") continue

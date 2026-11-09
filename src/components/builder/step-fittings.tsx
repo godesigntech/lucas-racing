@@ -150,6 +150,12 @@ function SpoilerFinishPicker({
             />
           ))}
       </div>
+      {value?.kind === "matched" && (
+        <p className="rounded-xl bg-paddock/50 p-3 text-sm text-muted-foreground">
+          The preview shows your spoilers in your helmet&apos;s main colour. Our team matches the design onto them by hand on
+          the real helmet, and you&apos;ll see it on your proof.
+        </p>
+      )}
       {(value?.kind === "colour" || value?.kind === "metallic") && (
         <ColourChooser label="Spoiler colour" options={colours} value={value.value} onChange={(colour) => onChange({ ...value, value: colour })} priceBook={priceBook} />
       )}

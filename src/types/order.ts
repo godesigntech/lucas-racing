@@ -94,4 +94,6 @@ export interface Order extends OrderListItem {
   estimatedCompletionDate: string | null
   rushTier: string | null
   rushFee: number
+  /** 20% of the total, plus £200 for each chrome base-coated helmet. */
+  depositAmount: number
 }

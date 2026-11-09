@@ -95,6 +95,7 @@ function order(seed: OrderSeed): Order {
     estimatedCompletionDate: completion.toISOString().slice(0, 10),
     rushTier: "standard",
     rushFee: 0,
+    depositAmount: 0,
     customerName: seed.customer.fullName,
     customerEmail: seed.customer.email,
     total: subtotal + deliveryPrice,

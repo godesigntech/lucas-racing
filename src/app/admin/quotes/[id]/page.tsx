@@ -5,6 +5,7 @@ import { ExternalLink, Mail, Phone, UserRound } from "lucide-react"
 import { AdminCard } from "@/components/admin/admin-card"
 import { AdminPageHeader } from "@/components/admin/admin-page-header"
 import { QuoteStatusBadge } from "@/components/admin/quotes/quote-status-badge"
+import { BuildQuoteRequest } from "@/components/admin/quotes/build-quote-request"
 import { OwnHelmetRequest } from "@/components/admin/quotes/own-helmet-request"
 import { QuoteUpdateForm } from "@/components/admin/quotes/quote-update-form"
 import { HelmetArt } from "@/components/helmet/helmet-art"
@@ -27,9 +28,10 @@ export default function AdminQuotePage({ params }: PageProps<"/admin/quotes/[id]
 }
 
 async function QuoteDetail({ id }: { id: string }) {
-  const { quote, photoUrl, aiImageUrl, suggestions, photoUrls, logoUrls } = await getQuoteRequest(id)
+  const { quote, photoUrl, aiImageUrl, suggestions, photoUrls, logoUrls, buildImageUrls } = await getQuoteRequest(id)
   const ownHelmet = quote.kind === "own_helmet"
-  const helmet = ownHelmet ? `Their own helmet${quote.details.makeModel ? `: ${quote.details.makeModel}` : ""}` : (quoteHelmetLabels[quote.helmet as QuoteHelmet] ?? quote.helmet)
+  const build = quote.kind === "build"
+  const helmet = build ? `Bespoke build: ${quote.build?.name ?? ""}` : ownHelmet ? `Their own helmet${quote.details.makeModel ? `: ${quote.details.makeModel}` : ""}` : (quoteHelmetLabels[quote.helmet as QuoteHelmet] ?? quote.helmet)
 
   return (
     <>
@@ -43,7 +45,8 @@ async function QuoteDetail({ id }: { id: string }) {
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="min-w-0 space-y-6">
           {ownHelmet && <OwnHelmetRequest quote={quote} photoUrls={photoUrls} logoUrls={logoUrls} />}
-          {!ownHelmet && <div className="grid gap-6 md:grid-cols-2">
+          {build && <BuildQuoteRequest quote={quote} imageUrls={buildImageUrls} />}
+          {!ownHelmet && !build && <div className="grid gap-6 md:grid-cols-2">
             <AdminCard title="Customer's photo" flush>
               {photoUrl ? (
                 <a href={photoUrl} target="_blank" rel="noreferrer" className="block bg-carbon/5">

@@ -8,7 +8,7 @@ import { getProducts } from "@/lib/data/products"
 import { isDemoMode } from "@/lib/demo/mode"
 import type { QuoteRequestRow } from "@/lib/supabase/database.types"
 import { createClient } from "@/lib/supabase/server"
-import { quoteStatuses, type OwnHelmetDetails, type QuoteRequest, type QuoteStatus } from "@/types/design-assistant"
+import { quoteStatuses, type BuildQuoteDetails, type OwnHelmetDetails, type QuoteRequest, type QuoteStatus } from "@/types/design-assistant"
 import type { HelmetLook } from "@/types/helmet"
 import type { CatalogProduct } from "@/types/product"
 
@@ -34,10 +34,37 @@ function toQuoteRequest(row: QuoteRequestRow): QuoteRequest {
     status: row.status as QuoteStatus,
     adminNotes: row.admin_notes,
     createdAt: row.created_at,
-    kind: row.kind === "own_helmet" ? "own_helmet" : "design",
+    kind: row.kind === "own_helmet" || row.kind === "build" ? row.kind : "design",
     photoPaths: row.photo_paths ?? [],
     details: toOwnHelmetDetails(row.details),
+    build: row.kind === "build" ? toBuildDetails(row.details) : null,
+    quotedPrice: row.quoted_price === null ? null : Number(row.quoted_price),
+    quotedDeposit: row.quoted_deposit === null ? null : Number(row.quoted_deposit),
+    quotedAt: row.quoted_at,
   }
+}
+
+/** The design sent with a bespoke build request. */
+export function toBuildDetails(value: unknown): BuildQuoteDetails {
+  const details = (value && typeof value === "object" ? value : {}) as Record<string, unknown>
+  const summary = Array.isArray(details.summary) ? details.summary : []
+  return {
+    slug: typeof details.slug === "string" ? details.slug : "",
+    name: typeof details.name === "string" ? details.name : "",
+    config: details.config && typeof details.config === "object" ? (details.config as Record<string, unknown>) : {},
+    summary: summary.flatMap((line) =>
+      line && typeof line === "object" && typeof (line as { label?: unknown }).label === "string"
+        ? [{ key: String((line as { key?: unknown }).key ?? ""), label: (line as { label: string }).label, value: String((line as { value?: unknown }).value ?? "") }]
+        : [],
+    ),
+  }
+}
+
+/** Storage paths of the customer's images and prints in a build. */
+function buildImagePaths(config: Record<string, unknown>): string[] {
+  const logos = Array.isArray(config.logos) ? config.logos.map((logo) => (logo && typeof logo === "object" ? (logo as { path?: unknown }).path : null)) : []
+  const prints = config.regions && typeof config.regions === "object" ? Object.values(config.regions).map((region) => (region && typeof region === "object" ? (region as { print?: unknown }).print : null)) : []
+  return [...new Set([...logos, ...prints].filter((path): path is string => typeof path === "string" && path.length > 0))]
 }
 
 /** The choices sent with an own-helmet request (empty for design-assistant requests). */
@@ -113,6 +140,8 @@ export interface QuoteRequestDetail {
   logoUrls: string[]
   /** Short-lived link to the AI concept image, if there is one. */
   aiImageUrl: string | null
+  /** Bespoke builds: short-lived links to the customer's images, by storage path, for the 3D view. */
+  buildImageUrls: Record<string, string>
   suggestions: CatalogProduct[]
 }
 
@@ -126,7 +155,8 @@ export async function getQuoteRequest(id: string): Promise<QuoteRequestDetail> {
   if (!data) notFound()
   const quote = toQuoteRequest(data)
 
-  const [photo, aiImage, products, photos, logos] = await Promise.all([
+  const buildPaths = quote.build ? buildImagePaths(quote.build.config) : []
+  const [photo, aiImage, products, photos, logos, buildImages] = await Promise.all([
     quote.imagePath
       ? supabase.storage.from("design-uploads").createSignedUrl(quote.imagePath, PHOTO_LINK_SECONDS)
       : Promise.resolve(null),
@@ -140,6 +170,7 @@ export async function getQuoteRequest(id: string): Promise<QuoteRequestDetail> {
     quote.details.logos.length
       ? supabase.storage.from("design-logos").createSignedUrls(quote.details.logos, PHOTO_LINK_SECONDS)
       : Promise.resolve(null),
+    buildPaths.length ? supabase.storage.from("design-logos").createSignedUrls(buildPaths, PHOTO_LINK_SECONDS) : Promise.resolve(null),
   ])
   const links = (result: typeof photos) => (result?.data ?? []).flatMap((link) => (link.signedUrl ? [link.signedUrl] : []))
 
@@ -149,6 +180,7 @@ export async function getQuoteRequest(id: string): Promise<QuoteRequestDetail> {
     logoUrls: links(logos),
     photoUrl: photo?.data?.signedUrl ?? null,
     aiImageUrl: aiImage?.data?.signedUrl ?? null,
+    buildImageUrls: Object.fromEntries((buildImages?.data ?? []).flatMap((link) => (link.path && link.signedUrl ? [[link.path, link.signedUrl]] : []))),
     suggestions: quote.suggestedProducts
       .map((slug) => products.find((product) => product.slug === slug))
       .filter((product): product is CatalogProduct => Boolean(product)),

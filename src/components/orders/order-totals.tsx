@@ -1,7 +1,7 @@
 import { formatMoney } from "@/lib/format"
 import type { Order } from "@/types/order"
 
-export function OrderTotals({ order }: { order: Pick<Order, "subtotal" | "deliveryLabel" | "deliveryPrice" | "total"> }) {
+export function OrderTotals({ order }: { order: Pick<Order, "subtotal" | "deliveryLabel" | "deliveryPrice" | "total"> & { depositAmount?: number } }) {
   return (
     <dl className="space-y-2 text-sm">
       <div className="flex justify-between">
@@ -16,6 +16,12 @@ export function OrderTotals({ order }: { order: Pick<Order, "subtotal" | "delive
         <dt className="font-semibold">Total</dt>
         <dd className="font-display text-3xl font-bold tabular-nums">{formatMoney(order.total)}</dd>
       </div>
+      {Boolean(order.depositAmount) && (
+        <div className="flex justify-between gap-3">
+          <dt className="text-muted-foreground">Deposit to start</dt>
+          <dd className="font-semibold tabular-nums">{formatMoney(order.depositAmount ?? 0)}</dd>
+        </div>
+      )}
     </dl>
   )
 }

@@ -305,6 +305,8 @@ export type OrderRow = Timestamps & {
   estimated_completion_date: string | null
   rush_tier: string | null
   rush_fee: number
+  /** 20% of the total, plus £200 for each chrome base-coated helmet. Set by place_order(). */
+  deposit_amount: number
 }
 
 export type OrderItemRow = {
@@ -383,12 +385,16 @@ export type QuoteRequestRow = Timestamps & {
   suggested_products: string[]
   status: string
   admin_notes: string
-  /** "design" (the design assistant) or "own_helmet" (a customer's own shell). */
+  /** "design" (the design assistant), "own_helmet" (a customer's own shell) or "build" (a bespoke build from the builder). */
   kind: string
   /** Own-helmet requests: photos of the customer's helmet in design-uploads. */
   photo_paths: string[]
   /** Own-helmet requests: the customer's choices (finishes, films, lacquer, text, logos). */
   details: Json
+  /** Bespoke builds: the price the workshop sent, and the deposit due. */
+  quoted_price: number | null
+  quoted_deposit: number | null
+  quoted_at: string | null
 }
 
 export type NewsCategoryRow = Timestamps & {
@@ -748,6 +754,10 @@ export type Database = {
           p_suggested_products: string[]
           p_ai_image_path?: string | null
         }
+        Returns: { reference: string }[]
+      }
+      submit_build_quote: {
+        Args: { p_build: Json; p_notes: string }
         Returns: { reference: string }[]
       }
       submit_own_helmet_request: {

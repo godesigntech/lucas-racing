@@ -3,6 +3,7 @@ import { Package } from "lucide-react"
 
 import { HelmetArt } from "@/components/helmet/helmet-art"
 import type { AvailableLine } from "@/lib/basket/resolve-basket"
+import { chromeHelmetCount, orderDeposit } from "@/lib/configurator/pricing-rules"
 import { formatMoney } from "@/lib/format"
 import { isExternalImage } from "@/lib/shop/images"
 
@@ -36,6 +37,19 @@ function lineDetail(line: AvailableLine): string {
       : [line.variantLabel, ...line.finishSummary.map((row) => row.value)]
   if (line.quantity > 1) parts.push(`×${line.quantity}`)
   return parts.filter(Boolean).join(" · ")
+}
+
+/** The 20% deposit (plus £200 for each chrome base coat) due to start the order. */
+export function Deposit({ amount, chrome, label = "Deposit to start" }: { amount: number; chrome: boolean; label?: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3 rounded-2xl bg-white/10 px-4 py-3">
+      <span className="text-sm">
+        {label}
+        <span className="block text-xs text-paper/55">20% of the total{chrome ? ", plus £200 per chrome base coat" : ""}</span>
+      </span>
+      <span className="font-display text-2xl font-bold tabular-nums">{formatMoney(amount)}</span>
+    </div>
+  )
 }
 
 export function OrderSummaryCard({
@@ -84,6 +98,7 @@ export function OrderSummaryCard({
         <span className="text-sm text-paper/60">Total</span>
         <span className="font-display text-4xl font-bold">{formatMoney(subtotal + deliveryPrice + rushFee)}</span>
       </div>
+      <Deposit amount={orderDeposit(subtotal + deliveryPrice + rushFee, chromeHelmetCount(lines))} chrome={chromeHelmetCount(lines) > 0} />
       {children}
     </aside>
   )
