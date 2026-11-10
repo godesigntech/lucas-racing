@@ -771,6 +771,7 @@ export type Database = {
       is_admin: { Args: Record<string, never>; Returns: boolean }
       is_full_admin: { Args: Record<string, never>; Returns: boolean }
       is_teamwear: { Args: Record<string, never>; Returns: boolean }
+      is_shop_staff: { Args: Record<string, never>; Returns: boolean }
       record_external_click: { Args: { p_product_id: string }; Returns: string | null }
       release_ai_use: { Args: { p_visitor: string; p_kind: string }; Returns: undefined }
       claim_ai_use: { Args: { p_visitor: string; p_kind: string; p_limit: number; p_window_minutes: number }; Returns: boolean }

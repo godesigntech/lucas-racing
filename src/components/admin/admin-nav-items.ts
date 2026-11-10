@@ -67,6 +67,8 @@ export const adminNavSections: { title: string; items: AdminNavItem[] }[] = [
 /** The menu items a staff role can see. */
 export function visibleNavItems(item: AdminNavItem, role: StaffRole | null): boolean {
   if (role === "teamwear") return Boolean(item.teamwear)
+  // Delta Racewear manage their products and nothing else.
+  if (role === "delta") return item.href === "/admin/shop"
   if (role === "admin") return true
   return !item.fullAdminOnly && !item.teamwearAndAdminOnly
 }

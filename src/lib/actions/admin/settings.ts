@@ -6,6 +6,7 @@ import { databaseError, failure, validationError } from "@/lib/actions/result"
 import { cacheTags } from "@/lib/data/cache-tags"
 import { DEMO_READ_ONLY, isDemoMode } from "@/lib/demo/mode"
 import { fromDeliveryMethods, fromSocialLinks } from "@/lib/supabase/mappers"
+import { canCreateAccounts, createAdminClient } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
 import {
   adminEmailSchema,
@@ -30,7 +31,7 @@ const socialLabels: Record<SocialIconName, string> = {
   tiktok: "TikTok",
 }
 
-const roleNames: Record<StaffRole, string> = { admin: "an admin", sales: "sales", teamwear: "Teamwear" }
+const roleNames: Record<StaffRole, string> = { admin: "an admin", sales: "sales", teamwear: "Teamwear", delta: "Delta Racewear" }
 
 function refreshSettings() {
   updateTag(cacheTags.settings)
@@ -129,14 +130,37 @@ export async function addAdmin(values: AdminEmailValues): Promise<ActionResult> 
   if (!parsed.success) return validationError(parsed.error)
 
   const supabase = await createClient()
-  const { email, role } = parsed.data
+  const { email, role, password } = parsed.data
+
+  // With a starting password, their account is created now, already confirmed, so they
+  // can log in straight away and change the password later in their account.
+  let created = false
+  if (password) {
+    if (!canCreateAccounts) return failure("Creating accounts needs the Supabase secret key on the server (SUPABASE_SECRET_KEY). Leave the password empty and they can sign up themselves.")
+    const { error: createError } = await createAdminClient().auth.admin.createUser({ email, password, email_confirm: true })
+    if (createError) {
+      if (createError.code === "email_exists" || /already/i.test(createError.message)) {
+        return failure("That email already has an account. Leave the password empty: they log in with their own password (or use Forgot password).")
+      }
+      if (createError.code === "weak_password") return failure("That password is too weak. Try a longer one.")
+      console.error(createError)
+      return failure("We couldn't create that account.")
+    }
+    created = true
+  }
+
   const { error } = await supabase.from("admin_users").insert({ email, role, created_by: admin.id })
   if (error) {
     if (error.code === "23505") return failure("That email already has access.")
     return databaseError(error, "We couldn't add that person.")
   }
   revalidatePath("/admin/settings")
-  return { ok: true, message: `${email} can now use the admin panel as ${roleNames[role]}.` }
+  return {
+    ok: true,
+    message: created
+      ? `Account created. ${email} can log in now as ${roleNames[role]} with the password you set.`
+      : `${email} can now use the admin panel as ${roleNames[role]}.`,
+  }
 }
 
 /** Change a team member's role (Admin, Sales or Teamwear). */

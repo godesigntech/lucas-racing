@@ -1,4 +1,5 @@
 import { Suspense } from "react"
+import { staffShop } from "@/lib/auth/roles"
 import Link from "next/link"
 import { FolderTree, Upload } from "lucide-react"
 
@@ -9,7 +10,7 @@ import { Pagination } from "@/components/admin/pagination"
 import { SearchInput } from "@/components/admin/search-input"
 import { NewShopProductDialog } from "@/components/admin/shop/new-shop-product-dialog"
 import { ShopProductsTable } from "@/components/admin/shop/shop-products-table"
-import { storeOptions } from "@/components/admin/shop/store-labels"
+import { storeLabels, storeOptions } from "@/components/admin/shop/store-labels"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ADMIN_PAGE_SIZE } from "@/lib/data/admin"
@@ -41,19 +42,19 @@ export default function AdminShopPage({ searchParams }: PageProps<"/admin/shop">
 
 async function ShopList({ query }: { query: Query }) {
   const user = await requireShopManager()
-  // Teamwear staff work in the Teamwear shop only.
-  const teamwear = user.role === "teamwear"
-  const store = teamwear ? "teamwear" : (storeIds as readonly string[]).includes(query.store ?? "") ? (query.store as StoreId) : undefined
+  // Shop staff work in their own shop only.
+  const ownShop = staffShop(user.role)
+  const store = ownShop ?? ((storeIds as readonly string[]).includes(query.store ?? "") ? (query.store as StoreId) : undefined)
   const stock = query.stock === "low" || query.stock === "out" ? query.stock : ""
   const result = await listAdminShopProducts({ store, stock, query: query.q, page: Number(query.page) || 1 })
 
   return (
     <>
       <AdminPageHeader
-        title={teamwear ? "Teamwear products" : "Shop products"}
+        title={ownShop ? `${storeLabels[ownShop]} products` : "Shop products"}
         description={
-          teamwear
-            ? "Wendy's Teamwear: add products, sizes and colours, prices, stock and photos."
+          ownShop
+            ? `${storeLabels[ownShop]}: add products, sizes and colours, prices, stock and photos.`
             : "Products for the MS Kart shop, Teamwear, HydroKarts parts and Delta Racewear, with their options, prices and stock."
         }
         actions={
@@ -63,20 +64,20 @@ async function ShopList({ query }: { query: Query }) {
                 <FolderTree /> Categories
               </Link>
             </Button>
-            {!teamwear && (
+            {!ownShop && (
               <Button asChild variant="outline">
                 <Link href="/admin/shop/import">
                   <Upload /> Import CSV
                 </Link>
               </Button>
             )}
-            <NewShopProductDialog defaultStore={store} stores={teamwear ? ["teamwear"] : undefined} />
+            <NewShopProductDialog defaultStore={store} stores={ownShop ? [ownShop] : undefined} />
           </>
         }
       />
       <div className="space-y-4">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          {teamwear ? (
+          {ownShop ? (
             <span />
           ) : (
             <FilterTabs

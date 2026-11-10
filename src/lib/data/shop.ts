@@ -4,6 +4,7 @@ import { cacheLife, cacheTag } from "next/cache"
 import { notFound } from "next/navigation"
 import { connection } from "next/server"
 
+import { staffShop } from "@/lib/auth/roles"
 import { getCurrentUser, requireFullAdmin, requireShopManager } from "@/lib/auth/session"
 import { ADMIN_PAGE_SIZE, type Paged } from "@/lib/data/admin"
 import { isDemoMode } from "@/lib/demo/mode"
@@ -104,8 +105,9 @@ export async function listAdminShopProducts(options: {
   page?: number
 }): Promise<Paged<ShopProduct>> {
   const user = await requireShopManager()
-  // Teamwear staff only ever see the Teamwear shop.
-  if (user.role === "teamwear") options = { ...options, store: "teamwear" }
+  // Shop staff only ever see their own shop.
+  const shop = staffShop(user.role)
+  if (shop) options = { ...options, store: shop }
   const empty = { rows: [], total: 0, page: 1, pageCount: 1 }
   if (isDemoMode()) return empty
 
@@ -161,7 +163,8 @@ export async function getAdminShopProduct(id: string): Promise<AdminShopProductD
   if (error) throw new Error(error.message)
   if (!data) notFound()
   const product = toShopProduct(data as ProductWithVariants)
-  if (user.role === "teamwear" && product.storeId !== "teamwear") notFound()
+  const shop = staffShop(user.role)
+  if (shop && product.storeId !== shop) notFound()
 
   const variantIds = product.variants.map((variant) => variant.id)
   const { data: movements } = variantIds.length
@@ -194,7 +197,8 @@ export async function listAdminShopCategories(): Promise<ShopCategory[]> {
   if (isDemoMode()) return []
   const supabase = await createClient()
   let request = supabase.from("shop_categories").select("*").order("store_id").order("sort_order").order("name")
-  if (user.role === "teamwear") request = request.eq("store_id", "teamwear")
+  const shop = staffShop(user.role)
+  if (shop) request = request.eq("store_id", shop)
   const { data, error } = await request
   if (error) throw new Error(error.message)
   return data.map(toShopCategory)
@@ -205,7 +209,8 @@ export async function listAdminStores(): Promise<Store[]> {
   if (isDemoMode()) return []
   const supabase = await createClient()
   let request = supabase.from("stores").select("*").order("sort_order")
-  if (user.role === "teamwear") request = request.eq("id", "teamwear")
+  const shop = staffShop(user.role)
+  if (shop) request = request.eq("id", shop)
   const { data, error } = await request
   if (error) throw new Error(error.message)
   return data.map(toStore)

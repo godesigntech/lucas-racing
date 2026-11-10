@@ -1,6 +1,7 @@
 import "server-only"
 
 import { getCurrentUser } from "@/lib/auth/session"
+import { staffShop } from "@/lib/auth/roles"
 import type { CurrentUser } from "@/types/account"
 
 /**
@@ -19,13 +20,14 @@ export async function getFullAdmin(): Promise<CurrentUser | null> {
 }
 
 /**
- * For shop catalogue actions: admins can change any shop, Teamwear only the Teamwear
- * shop. Pass every store the change touches (the product's current and new shop).
+ * For shop catalogue actions: admins can change any shop, shop staff only their own shop.
+ * Pass every store the change touches (the product's current and new shop).
  */
 export async function getShopManager(...storeIds: (string | null | undefined)[]): Promise<CurrentUser | null> {
   const user = await getCurrentUser()
   if (user?.role === "admin") return user
-  if (user?.role === "teamwear" && storeIds.length > 0 && storeIds.every((store) => store === "teamwear")) return user
+  const shop = staffShop(user?.role)
+  if (user && shop && storeIds.length > 0 && storeIds.every((store) => store === shop)) return user
   return null
 }
 

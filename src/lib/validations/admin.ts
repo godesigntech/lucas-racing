@@ -162,10 +162,12 @@ export const deliveryMethodsSchema = z.object({
 })
 export type DeliveryMethodsValues = z.infer<typeof deliveryMethodsSchema>
 
-export const staffRoles = ["admin", "sales", "teamwear"] as const
+export const staffRoles = ["admin", "sales", "teamwear", "delta"] as const
 
 export const adminEmailSchema = z.object({
   email: z.email("Enter a valid email address").trim().toLowerCase(),
   role: z.enum(staffRoles),
+  /** Optional: create their account with this starting password, ready to log in. */
+  password: z.union([z.literal(""), z.string().min(8, "Use at least 8 characters").max(72, "Use at most 72 characters")]).optional(),
 })
 export type AdminEmailValues = z.infer<typeof adminEmailSchema>

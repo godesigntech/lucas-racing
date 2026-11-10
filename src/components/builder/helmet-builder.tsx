@@ -270,7 +270,7 @@ function BuilderBody({
     if (glossOnly && config.finish !== "gloss") update({ finish: "gloss" })
   }, [glossOnly, config.finish, update])
 
-  // Spoilers come from the aero kits (step 2), so every build carries a real kit for its
+  // Spoilers come from the aero kits (step 3), so every build carries a real kit for its
   // helmet: the standard one unless the customer picks another. Without one, pricing and
   // the 3D view fell back to the old yes/no spoiler and could add it unseen.
   useEffect(() => {

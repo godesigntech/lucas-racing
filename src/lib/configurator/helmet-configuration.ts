@@ -242,13 +242,14 @@ export function selectedSpoilers(config: HelmetConfiguration, aeroKits: AeroKit[
   return aeroKits.filter((kit) => ids.includes(kit.id) && kit.meshName && kit.modelId === config.model)
 }
 
-/** What one spoiler's finish costs: the finish, plus the chrome base coat under it. Null while either is unpriced. */
+/**
+ * What one spoiler's finish costs. Over a chrome base coat each finish has its own price
+ * ("chrome-colour", "chrome-matched"…), which replaces the plain one. Null while unpriced.
+ */
 export function spoilerFinishPrice(finish: SpoilerFinish, priceBook: PriceBook): number | null {
   const options = priceBook.options.spoiler_finish ?? []
-  const own = options.find((option) => option.value === finish.kind && option.isActive)
-  const chrome = finish.chrome ? options.find((option) => option.value === "chrome" && option.isActive) : undefined
-  if (!own || own.price === null || (finish.chrome && (!chrome || chrome.price === null))) return null
-  return own.price + (chrome?.price ?? 0)
+  const value = finish.chrome ? `chrome-${finish.kind}` : finish.kind
+  return options.find((option) => option.value === value && option.isActive)?.price ?? null
 }
 
 /** "Film Carbon fibre over chrome", "Design matched"… */

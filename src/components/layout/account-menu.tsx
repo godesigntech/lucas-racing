@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { LayoutDashboard, LogOut, Package, UserRound } from "lucide-react"
+import { KeyRound, LayoutDashboard, LogOut, Package, UserRound } from "lucide-react"
 
 import {
   DropdownMenu,
@@ -44,6 +44,11 @@ export function AccountMenu({ user }: { user: MenuUser }) {
         <DropdownMenuItem asChild>
           <Link href="/account/orders">
             <Package /> Orders
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/account/profile#password">
+            <KeyRound /> Change password
           </Link>
         </DropdownMenuItem>
         {user.isAdmin && (

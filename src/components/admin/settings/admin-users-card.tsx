@@ -23,6 +23,7 @@ const roleLabels: Record<StaffRole, { label: string; hint: string }> = {
   admin: { label: "Admin", hint: "Everything, including prices, products, films, settings and the team" },
   sales: { label: "Sales", hint: "Orders, customers, messages, quotes and enquiries" },
   teamwear: { label: "Teamwear", hint: "Teamwear products, stock and photos, and orders containing teamwear" },
+  delta: { label: "Delta Racewear", hint: "Racewear products, options, stock and photos only" },
 }
 
 function RoleSelect({
@@ -106,7 +107,16 @@ function TeamMember({ admin, isYou }: { admin: AdminUser; isYou: boolean }) {
   )
 }
 
-export function AdminUsersCard({ admins, currentEmail }: { admins: AdminUser[]; currentEmail: string }) {
+export function AdminUsersCard({
+  admins,
+  currentEmail,
+  canCreateAccounts = false,
+}: {
+  admins: AdminUser[]
+  currentEmail: string
+  /** The server has the Supabase secret key, so an admin can set a starting password. */
+  canCreateAccounts?: boolean
+}) {
   const {
     register,
     control,
@@ -114,11 +124,11 @@ export function AdminUsersCard({ admins, currentEmail }: { admins: AdminUser[]; 
     setError,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<AdminEmailValues>({ resolver: zodResolver(adminEmailSchema), defaultValues: { email: "", role: "sales" } })
+  } = useForm<AdminEmailValues>({ resolver: zodResolver(adminEmailSchema), defaultValues: { email: "", role: "sales", password: "" } })
 
   async function onSubmit(values: AdminEmailValues) {
     const result = await runAction(() => addAdmin(values), setError)
-    if (result?.ok) reset({ email: "", role: values.role })
+    if (result?.ok) reset({ email: "", role: values.role, password: "" })
   }
 
   return (
@@ -161,6 +171,28 @@ export function AdminUsersCard({ admins, currentEmail }: { admins: AdminUser[]; 
             {errors.email.message}
           </p>
         )}
+        <div className="space-y-1 pt-1">
+          <label htmlFor="new-admin-password" className="text-sm font-medium">
+            Starting password <span className="font-normal text-muted-foreground">(optional)</span>
+          </label>
+          <Input
+            id="new-admin-password"
+            type="text"
+            autoComplete="new-password"
+            {...register("password")}
+            disabled={!canCreateAccounts}
+            aria-invalid={errors.password ? true : undefined}
+            aria-describedby="new-admin-password-hint"
+            placeholder={canCreateAccounts ? "At least 8 characters" : "Not available yet"}
+            className="sm:max-w-xs"
+          />
+          <p id="new-admin-password-hint" className={errors.password ? "text-xs font-medium text-destructive" : "text-xs text-muted-foreground"}>
+            {errors.password?.message ??
+              (canCreateAccounts
+                ? "Creates their account now, ready to log in. They can change it in their account (Account › Profile). Leave empty if they already have an account or will sign up themselves."
+                : "To set passwords here, add the Supabase secret key (SUPABASE_SECRET_KEY) to the server. Until then they sign up with this email themselves.")}
+          </p>
+        </div>
       </form>
     </AdminCard>
   )

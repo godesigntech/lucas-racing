@@ -1,4 +1,5 @@
 import { Suspense } from "react"
+import { staffShop } from "@/lib/auth/roles"
 import Link from "next/link"
 import { ExternalLink } from "lucide-react"
 
@@ -56,7 +57,7 @@ async function ProductEditor({ id }: { id: string }) {
             <VariantsManager product={product} />
           </AdminCard>
           <AdminCard title="Details">
-            <ShopProductForm product={product} categories={categories} stores={user.role === "teamwear" ? ["teamwear"] : undefined} />
+            <ShopProductForm product={product} categories={categories} stores={staffShop(user.role) ? [staffShop(user.role)!] : undefined} />
           </AdminCard>
         </div>
         <div className="space-y-6">

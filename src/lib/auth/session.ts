@@ -6,6 +6,7 @@ import { connection } from "next/server"
 
 import { isDemoMode } from "@/lib/demo/mode"
 import { demoUser } from "@/lib/demo/people"
+import { staffShop } from "@/lib/auth/roles"
 import { createClient } from "@/lib/supabase/server"
 import type { CurrentUser, StaffRole } from "@/types/account"
 
@@ -56,24 +57,26 @@ export async function requireStaff(): Promise<CurrentUser> {
   return user
 }
 
-/** Admin or Sales only. Teamwear goes to their products; everyone else sees a 404. For pages. */
+/** Admin or Sales only. Shop staff (Teamwear, Delta) go to their products; everyone else sees a 404. For pages. */
 export async function requireAdmin(): Promise<CurrentUser> {
   const user = await requireStaff()
-  if (user.role === "teamwear") redirect("/admin/shop")
+  if (staffShop(user.role)) redirect("/admin/shop")
   if (!user.isAdmin) notFound()
   return user
 }
 
-/** Shop products: admins (every shop) and Teamwear (Teamwear only). Sales go back to the dashboard. */
+/** Shop products: admins (every shop) and shop staff (their own shop only). Sales go back to the dashboard. */
 export async function requireShopManager(): Promise<CurrentUser> {
   const user = await requireStaff()
-  if (user.role !== "admin" && user.role !== "teamwear") redirect("/admin")
+  if (user.role !== "admin" && !staffShop(user.role)) redirect("/admin")
   return user
 }
 
-/** Orders: Admin and Sales see all; Teamwear sees orders containing teamwear (row level security). */
+/** Orders: Admin and Sales see all; Teamwear sees orders containing teamwear (row level security). Delta Racewear has no orders here. */
 export async function requireOrderViewer(): Promise<CurrentUser> {
-  return requireStaff()
+  const user = await requireStaff()
+  if (user.role === "delta") redirect("/admin/shop")
+  return user
 }
 
 /** Catalogue, pricing, settings and team pages: full admins only. Sales go back to the dashboard. */

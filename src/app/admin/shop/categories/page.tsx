@@ -1,4 +1,5 @@
 import { Suspense } from "react"
+import { staffShop } from "@/lib/auth/roles"
 import { Plus } from "lucide-react"
 
 import { AdminCard } from "@/components/admin/admin-card"
@@ -24,8 +25,8 @@ export default function AdminShopCategoriesPage() {
 
 async function CategoryList() {
   const [user, categories] = await Promise.all([requireShopManager(), listAdminShopCategories()])
-  const teamwear = user.role === "teamwear"
-  const shops = teamwear ? storeOptions.filter((store) => store.value === "teamwear") : storeOptions
+  const ownShop = staffShop(user.role)
+  const shops = ownShop ? storeOptions.filter((store) => store.value === ownShop) : storeOptions
 
   return (
     <>
@@ -35,8 +36,8 @@ async function CategoryList() {
         description="How products are grouped in each shop. The MS Kart categories also appear in the main menu."
         actions={
           <CategoryDialog
-            defaultStore={teamwear ? "teamwear" : undefined}
-            stores={teamwear ? ["teamwear"] : undefined}
+            defaultStore={ownShop ?? undefined}
+            stores={ownShop ? [ownShop] : undefined}
             trigger={
               <Button>
                 <Plus /> Add a category

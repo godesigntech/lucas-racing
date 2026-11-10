@@ -9,6 +9,7 @@ import { SocialLinksForm } from "@/components/admin/settings/social-links-form"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getAdminSettings } from "@/lib/data/admin"
+import { canCreateAccounts } from "@/lib/supabase/admin"
 
 export const metadata = { title: "Settings" }
 
@@ -60,7 +61,7 @@ async function SettingsEditor() {
         <LaunchesCard kartPartsLive={settings.kartPartsLive} showNews={settings.showNews} showGallery={settings.showGallery} />
       </TabsContent>
       <TabsContent value="admins">
-        <AdminUsersCard admins={admins} currentEmail={currentEmail} />
+        <AdminUsersCard admins={admins} currentEmail={currentEmail} canCreateAccounts={canCreateAccounts} />
       </TabsContent>
     </Tabs>
   )

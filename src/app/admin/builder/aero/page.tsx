@@ -14,7 +14,7 @@ export default function AdminBuilderAeroPage() {
   return (
     <>
       <AdminPageHeader
-        title="Step 2 · Aero kits"
+        title="Step 3 · Spoilers"
         description="The standard aero for each helmet and the spoilers customers can upgrade to. Leave a price blank until it's confirmed: the kit still previews in 3D, but checkout won't take the order."
       />
       <Suspense fallback={<Skeleton className="h-[32rem] rounded-2xl" />}>
@@ -35,7 +35,7 @@ async function AeroKits() {
           {
             key: "spoiler_finish",
             title: "Spoiler finishes",
-            description: "Charged per spoiler. \"chrome\" is the chrome base coat, added on top of any finish except clear.",
+            description: "Charged per spoiler. The chrome-… rows are each finish's full price over a chrome base coat, used instead of its plain price.",
           },
         ]}
       />

@@ -60,7 +60,7 @@ function ChoiceCard({
   )
 }
 
-/** Step 2: the standard shell, or a spoiler that fits this helmet. */
+/** Step 3: the standard shell, or a spoiler that fits this helmet. */
 export function StepAero({ aeroKits, priceBook, config, update }: UpdateProps & { aeroKits: AeroKit[]; priceBook: PriceBook }) {
   const kits = aeroKits.filter((kit) => kit.modelId === config.model)
   if (kits.length === 0) {
@@ -130,7 +130,9 @@ function SpoilerFinishPicker({
       value: kind === "film" ? (films.find((film) => film.id === value?.value)?.id ?? films[0]?.id ?? "") : value?.value?.startsWith("#") ? value.value : (colours[0]?.value ?? "#ffffff"),
       ...(value?.chrome ? { chrome: true } : {}),
     })
-  const chromePrice = price("chrome")
+  // Each finish has its own price over chrome, replacing its plain price.
+  const chromePrice = value ? price(`chrome-${value.kind}`) : null
+  const plainPrice = value ? price(value.kind) : null
 
   return (
     <fieldset className="space-y-3">
@@ -164,7 +166,10 @@ function SpoilerFinishPicker({
         <label className="flex items-start justify-between gap-4 rounded-2xl border border-carbon/15 p-3">
           <span className="text-sm">
             <span className="block font-semibold">Chrome base coat</span>
-            <span className="block text-xs text-muted-foreground">Chrome under the finish, so it shines through. {optionPriceLabel(chromePrice)} per spoiler.</span>
+            <span className="block text-xs text-muted-foreground">
+              Chrome under the finish, so it shines through. {optionPriceLabel(chromePrice)} per spoiler with chrome
+              {plainPrice !== null && chromePrice !== null && chromePrice > plainPrice ? ` (+£${chromePrice - plainPrice})` : ""}.
+            </span>
           </span>
           <Switch checked={Boolean(value.chrome)} onCheckedChange={(chrome) => onChange({ ...value, chrome: chrome || undefined })} aria-label="Chrome base coat" />
         </label>

@@ -22,7 +22,7 @@ export default function AdminBuilderTemplatesPage() {
   return (
     <>
       <AdminPageHeader
-        title="Step 3 · Templates"
+        title="Step 2 · Templates"
         description="The designs customers start from. Edit a template's name, starting price and photos, switch it on or off, and check its 3D artwork for each helmet."
         actions={<NewProductDialog />}
       />

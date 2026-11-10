@@ -16,7 +16,9 @@ export default function AccountProfilePage() {
         <Suspense fallback={<Skeleton className="h-[34rem] rounded-3xl" />}>
           <ProfileSection />
         </Suspense>
-        <PasswordForm />
+        <div id="password" className="scroll-mt-28">
+          <PasswordForm />
+        </div>
       </div>
     </>
   )

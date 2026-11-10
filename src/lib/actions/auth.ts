@@ -56,9 +56,9 @@ export async function signIn(values: LoginFormValues, next?: string): Promise<Ac
     return failure("That email and password don't match an account.")
   }
 
-  // Staff land in the admin portal (Teamwear on their products) unless they were heading somewhere specific.
-  const [{ data: isAdmin }, { data: isTeamwear }] = await Promise.all([supabase.rpc("is_admin"), supabase.rpc("is_teamwear")])
-  redirect(safeNext(next, isAdmin ? "/admin" : isTeamwear ? "/admin/shop" : "/account"))
+  // Staff land in the admin portal (shop staff on their products) unless they were heading somewhere specific.
+  const [{ data: isAdmin }, { data: isShopStaff }] = await Promise.all([supabase.rpc("is_admin"), supabase.rpc("is_shop_staff")])
+  redirect(safeNext(next, isAdmin ? "/admin" : isShopStaff ? "/admin/shop" : "/account"))
 }
 
 /** `next` is where to go once the account exists, e.g. back to a form the customer was filling in. */

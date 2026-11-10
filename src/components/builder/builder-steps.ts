@@ -1,7 +1,7 @@
 export type BuilderStepId =
   | "helmet"
-  | "aero"
   | "template"
+  | "aero"
   | "colours"
   | "pinstripes"
   | "finish"
@@ -35,8 +35,8 @@ export interface BuilderStep {
 
 export const builderSteps: BuilderStep[] = [
   { id: "helmet", group: "Helmet", stage: "build", label: "Helmet", title: "Choose your helmet", description: "Pick the shell and size, and tell us whether we supply it." },
-  { id: "aero", group: "Helmet", stage: "build", label: "Aero", title: "Choose your aero kit", description: "The standard shell, or a spoiler that fits your helmet." },
   { id: "template", group: "Design", stage: "build", label: "Template", title: "Choose a template", description: "The layout of stripes and shapes you'll colour in next." },
+  { id: "aero", group: "Design", stage: "build", label: "Spoilers", title: "Choose your spoilers", description: "Add any spoilers that fit your helmet, and choose how they're finished." },
   { id: "colours", group: "Design", stage: "build", label: "Colours & films", title: "Colours and films", description: "Give each part of the design a colour, a metallic colour or a hydro-dip film. Tap a part on the helmet to fill it." },
   { id: "finish", group: "Design", stage: "build", label: "Finish", title: "Finish and base coat", description: "Gloss or matte on top, and a standard or chrome base coat underneath." },
   { id: "pinstripes", group: "Design", stage: "build", label: "Racing lines", title: "Customise your racing lines", description: "The lines between the sections of your design: any colour of tape, or holographic tape." },

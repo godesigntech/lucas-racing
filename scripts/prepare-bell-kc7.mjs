@@ -213,7 +213,10 @@ for (const node of root.listNodes().filter((item) => item.getName().trim().start
     for (let k = 0; k < 3; k++) centre[k] += point[k] / position.getCount()
   }
   const [x, , z] = centre
-  node.setName(Math.abs(x) > 0.3 ? (x > 0 ? "BellLogo_Left" : "BellLogo_Right") : z > 0 ? "BellLogo_Front" : "BellLogo_Back")
+  // The side badges sit on the visor pivots, on top of the visor sticker: the client wants
+  // only the forehead and back badges.
+  if (Math.abs(x) > 0.3) node.dispose()
+  else node.setName(z > 0 ? "BellLogo_Front" : "BellLogo_Back")
 }
 
 /** Where a triangle's centre sits in the helmet's own space. */

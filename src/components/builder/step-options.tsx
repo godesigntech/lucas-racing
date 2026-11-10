@@ -245,7 +245,7 @@ function BaseCoat({ priceBook, config, update }: { priceBook: PriceBook; config:
   )
 }
 
-/** Step 11: rubber trims and, on the Bell KC7, its accessory colours. Spoilers are aero kits (step 2). */
+/** Step 11: rubber trims and, on the Bell KC7, its accessory colours. Spoilers are aero kits (step 3). */
 export function StepTrims({ priceBook, config, update }: { priceBook: PriceBook; config: HelmetConfiguration; update: Update }) {
   const trims = priceBook.options.trim.filter((option) => option.isActive && option.value !== "bespoke")
   const bespoke = priceBook.options.trim.find((option) => option.value === "bespoke" && option.isActive)

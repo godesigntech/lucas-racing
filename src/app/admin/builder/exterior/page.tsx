@@ -11,7 +11,7 @@ export default function AdminBuilderExteriorPage() {
     <>
       <AdminPageHeader
         title="Step 11 · Exterior parts"
-        description="The rubber trim colours customers can pick. Spoilers are chosen in step 2 (Aero kits)."
+        description="The rubber trim colours customers can pick. Spoilers are chosen in step 3 (Spoilers)."
       />
       <Suspense fallback={<Skeleton className="h-[20rem] rounded-2xl" />}>
         <BuilderOptionGroups groups={[{ key: "trim", title: "Rubber trim", description: "Eye-port and base rubber colours." }]} />

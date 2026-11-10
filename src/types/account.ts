@@ -2,7 +2,7 @@
  * Staff roles: admins run everything; sales handle orders, customers, messages, quotes and
  * enquiries; teamwear (Wendy) manages Teamwear products and sees Teamwear orders, nothing else.
  */
-export type StaffRole = "admin" | "sales" | "teamwear"
+export type StaffRole = "admin" | "sales" | "teamwear" | "delta"
 
 export interface CurrentUser {
   id: string
