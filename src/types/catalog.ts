@@ -19,9 +19,9 @@ export interface Film {
   sortOrder: number
 }
 
-export type OptionGroupKey = "route" | "finish" | "base" | "trim" | "spoiler" | "material" | "visor_strip" | "personalisation" | "spoiler_finish"
+export type OptionGroupKey = "route" | "finish" | "base" | "trim" | "spoiler" | "material" | "visor_strip" | "personalisation" | "spoiler_finish" | "coverage"
 
-export const optionGroupKeys: OptionGroupKey[] = ["route", "finish", "base", "trim", "spoiler", "material", "visor_strip", "personalisation", "spoiler_finish"]
+export const optionGroupKeys: OptionGroupKey[] = ["route", "finish", "base", "trim", "spoiler", "material", "visor_strip", "personalisation", "spoiler_finish", "coverage"]
 
 export interface ConfiguratorOption {
   group: OptionGroupKey

@@ -6,6 +6,7 @@ import { Hand } from "lucide-react"
 import { FilmPicker } from "@/components/studio/film-picker"
 import { cn } from "@/lib/utils"
 import { getTreatment, setTreatment, type BuilderRegion } from "@/lib/configurator/regions"
+import { coveragePrice } from "@/lib/configurator/coverage-pricing"
 import { BESPOKE_PRINT_FILM, colourName, holographicTapes, pickableFilms } from "@/lib/configurator/helmet-configuration"
 import { formatSurcharge } from "@/lib/format"
 import type { PriceBook } from "@/types/catalog"
@@ -80,7 +81,10 @@ export function RegionStep({
   const colours = priceBook.options.base.filter((option) => option.isActive)
   const films = pickableFilms(priceBook)
   const tapes = holographicTapes(priceBook)
-  const metallic = priceBook.options.material.find((option) => option.value === "metallic" && option.isActive)
+  // On racing lines, metallic is metallic tape, priced on its own.
+  const metallic = priceBook.options.material.find((option) => option.value === (mode === "pinstripe" ? "metallic-tape" : "metallic") && option.isActive)
+  // Dips and prints cost this zone's share of a whole-helmet one.
+  const dipPrice = region.coverage != null ? coveragePrice(priceBook, "dip", region.coverage) : (films[0]?.price ?? null)
   const bespoke = region.allowsFilm ? priceBook.films.find((film) => film.id === BESPOKE_PRINT_FILM && film.textureUrl) : undefined
   const asDesigned = hasArtwork && (!treatment || (treatment.kind === "colour" && treatment.value === region.defaultColour))
 
@@ -107,8 +111,8 @@ export function RegionStep({
   const tabs: { id: Tab; label: string; price?: string; show: boolean; select: () => void }[] = [
     { id: "designed", label: "As designed", show: hasArtwork, select: () => apply({ kind: "colour", value: region.defaultColour }) },
     { id: "colour", label: mode === "pinstripe" ? "Tape colour" : "Colour", show: true, select: () => apply({ kind: "colour", value: asDesigned ? (colours.find((option) => option.value !== region.defaultColour)?.value ?? currentColour) : currentColour }) },
-    { id: "metallic", label: "Metallic", price: formatSurcharge(metallic?.price), show: Boolean(metallic) && region.allowsMetallic, select: () => apply({ kind: "metallic", value: currentColour }) },
-    { id: "film", label: "Film", show: region.allowsFilm && mode === "zones", select: () => apply({ kind: "film", value: films[0]?.id ?? "", under: undefined }) },
+    { id: "metallic", label: mode === "pinstripe" ? "Metallic tape" : "Metallic", price: formatSurcharge(metallic?.price), show: Boolean(metallic) && region.allowsMetallic, select: () => apply({ kind: "metallic", value: currentColour }) },
+    { id: "film", label: "Film", price: formatSurcharge(dipPrice), show: region.allowsFilm && mode === "zones", select: () => apply({ kind: "film", value: films[0]?.id ?? "", under: undefined }) },
     {
       id: "holographic",
       label: "Holographic tape",
@@ -116,7 +120,13 @@ export function RegionStep({
       show: mode === "pinstripe" && tapes.length > 0 && region.allowsFilm,
       select: () => apply({ kind: "film", value: tapes[0].id }),
     },
-    { id: "pattern", label: "Your own pattern", price: formatSurcharge(bespoke?.price), show: Boolean(bespoke) && mode === "zones", select: () => setPatternFor(region.key) },
+    {
+      id: "pattern",
+      label: "Your own pattern",
+      price: formatSurcharge(region.coverage != null ? coveragePrice(priceBook, "print", region.coverage) : bespoke?.price),
+      show: Boolean(bespoke) && mode === "zones",
+      select: () => setPatternFor(region.key),
+    },
   ]
 
   return (

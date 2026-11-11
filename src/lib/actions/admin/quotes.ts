@@ -5,7 +5,8 @@ import { after } from "next/server"
 import { z } from "zod"
 
 import { databaseError, validationError } from "@/lib/actions/result"
-import { helmetDeposit } from "@/lib/configurator/pricing-rules"
+import { chromeBaseCoatPrice, helmetDeposit } from "@/lib/configurator/pricing-rules"
+import { getPriceBook } from "@/lib/data/products"
 import { DEMO_READ_ONLY, isDemoMode } from "@/lib/demo/mode"
 import { notifyQuotePrice } from "@/lib/email/notifications"
 import { createClient } from "@/lib/supabase/server"
@@ -39,7 +40,7 @@ const sendPriceSchema = z.object({
 })
 
 /**
- * Prices a bespoke build: saves the price and the deposit (20%, plus £200 with a
+ * Prices a bespoke build: saves the price and the deposit (10%, plus the chrome base coat in full with a
  * chrome base coat), marks the request quoted and emails the customer.
  */
 export async function sendBuildQuotePrice(id: string, values: { price: number; note: string }): Promise<ActionResult> {
@@ -57,7 +58,7 @@ export async function sendBuildQuotePrice(id: string, values: { price: number; n
   const details = (quote.details ?? {}) as { name?: string; config?: { baseCoat?: string } }
   const chrome = details.config?.baseCoat === "chrome"
   const price = Math.round(parsed.data.price * 100) / 100
-  const deposit = helmetDeposit(price, { baseCoat: chrome ? "chrome" : undefined })
+  const deposit = helmetDeposit(price, { baseCoat: chrome ? "chrome" : undefined }, chromeBaseCoatPrice(await getPriceBook()))
 
   const { error } = await supabase
     .from("quote_requests")

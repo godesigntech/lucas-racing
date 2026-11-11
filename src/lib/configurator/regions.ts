@@ -38,6 +38,8 @@ export interface BuilderRegion {
   allowsFilm: boolean
   allowsChrome: boolean
   allowsMetallic: boolean
+  /** Share of the shell (0–1), when measured: dips are priced by it. */
+  coverage?: number | null
 }
 
 function isLegacyKey(key: string): key is PartId {
@@ -63,6 +65,7 @@ export function resolveRegions(
       allowsFilm: region.allowsFilm,
       allowsChrome: region.allowsChrome,
       allowsMetallic: region.allowsMetallic,
+      coverage: region.coverage,
     }))
   }
 

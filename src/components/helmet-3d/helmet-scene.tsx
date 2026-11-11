@@ -6,7 +6,7 @@ import { Bounds, Center, ContactShadows, Environment, Lightformer, OrbitControls
 import { type Object3D, type Texture } from "three"
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib"
 
-import { Box3, Vector3, type CanvasTexture } from "three"
+import { BackSide, Box3, Vector3, type CanvasTexture } from "three"
 
 import type { BellPartColours } from "@/lib/helmet-3d/parts"
 
@@ -150,21 +150,27 @@ function setDecals(root: Object3D, texture: CanvasTexture | null) {
   if (texture) setDecalProjection(root)
 }
 
+/** How much larger than a film a customer's print is shown: films tile about six times across the helmet, a print about once. */
+const PRINT_SCALE = 0.2
+
 /**
  * The template's masks and films, once they've loaded. Regions using the same film share
  * a slot; past the shader's film limit a region falls back to its colour.
  */
-function setRegionTextures(root: Object3D, regionMaps: CanvasTexture[], films: (Texture | null)[], count: number) {
+function setRegionTextures(root: Object3D, regionMaps: CanvasTexture[], films: (Texture | null)[], count: number, prints: boolean[] = []) {
   const uniforms = root.userData.film as FilmUniforms
   uniforms.regionMap.value = regionMaps[0]
   uniforms.regionMap2.value = regionMaps[1] ?? null
   uniforms.regionCount.value = count
   const slots: Texture[] = []
   uniforms.regionFilm.value.fill(null)
+  uniforms.regionFilmScale.value.fill(1)
   films.forEach((texture, index) => {
     let slot = texture ? slots.indexOf(texture) : -1
     if (texture && slot === -1 && slots.length < MAX_REGION_FILMS) slot = slots.push(texture) - 1
     uniforms.regionFilmSlot.value[index] = slot
+    // A customer's own print shows about once per side of the helmet rather than tiled.
+    if (slot !== -1 && prints[index]) uniforms.regionFilmScale.value[slot] = PRINT_SCALE
   })
   slots.forEach((texture, slot) => (uniforms.regionFilm.value[slot] = texture))
   uniforms.templateStrength.value = 1
@@ -204,7 +210,9 @@ function HelmetModel({ url, tint = "#ffffff", finish = "gloss", paintFinish = "g
     ])
       .then(([regionMaps, ...films]) => {
         if (cancelled || !regionMaps) return
-        setRegionTextures(root, regionMaps as CanvasTexture[], films as (Texture | null)[], regions.length)
+        // Films live in /films; anything else is the customer's uploaded print.
+        const prints = regions.map((region) => Boolean(region.filmUrl) && !region.filmUrl!.startsWith("/films/"))
+        setRegionTextures(root, regionMaps as CanvasTexture[], films as (Texture | null)[], regions.length, prints)
       })
       .catch((error) => console.error("Couldn't load helmet template artwork:", error))
     return () => {
@@ -374,9 +382,19 @@ function HelmetModel({ url, tint = "#ffffff", finish = "gloss", paintFinish = "g
 function StudioLights() {
   return (
     <Environment resolution={256}>
+      {/* A soft grey studio all round, like a photographer's cyclorama: chrome and gloss reflect
+          their surroundings, and a black void made the back of a chrome helmet look black. */}
+      <mesh scale={30}>
+        <sphereGeometry args={[1, 32, 16]} />
+        <meshBasicMaterial color="#5e5e5e" side={BackSide} />
+      </mesh>
       <Lightformer form="rect" intensity={3} position={[0, 4, 2]} scale={[6, 2, 1]} />
       <Lightformer form="rect" intensity={1.5} position={[-4, 1, 2]} rotation-y={Math.PI / 2} scale={[4, 3, 1]} />
       <Lightformer form="rect" intensity={1.5} position={[4, 1, -1]} rotation-y={-Math.PI / 2} scale={[4, 3, 1]} />
+      {/* Behind and below: chrome mirrors its surroundings, so without these the back of a chrome helmet looks black. */}
+      <Lightformer form="rect" intensity={1.6} position={[0, 2, -5]} rotation-y={Math.PI} scale={[8, 3, 1]} />
+      <Lightformer form="rect" intensity={1.2} position={[0, 0.5, 5]} scale={[8, 3, 1]} />
+      <Lightformer form="rect" intensity={0.6} position={[0, -4, 0]} rotation-x={-Math.PI / 2} scale={[8, 8, 1]} />
       <Lightformer form="ring" color="#f95312" intensity={0.6} position={[0, 0.5, -4]} scale={2} />
     </Environment>
   )

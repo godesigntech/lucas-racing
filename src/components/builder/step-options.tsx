@@ -251,8 +251,14 @@ export function StepTrims({ priceBook, config, update }: { priceBook: PriceBook;
   const bespoke = priceBook.options.trim.find((option) => option.value === "bespoke" && option.isActive)
   return (
     <div className="space-y-6">
+      {/* Boxed like the accessories below, so it's clear which part a colour is for. */}
+      <section aria-label="Rubber trims" className="space-y-4 rounded-2xl border border-carbon/15 p-4">
+        <div>
+          <h3 className="font-display text-xl font-bold uppercase">Rubber trims</h3>
+          <p className="text-sm text-muted-foreground">The rubber around the visor opening and along the lower edge. Each has its own colour.</p>
+        </div>
       {trimParts(config, priceBook).map((part) => (
-        <div key={part.key} className="space-y-3">
+        <div key={part.key} className="space-y-3 rounded-xl border border-carbon/10 bg-paper/40 p-3">
           <SwatchGrid
             label={part.key === "eyeportTrim" ? "Eyeport trim (around the visor opening)" : "Base trim (around the lower edge)"}
             options={trims}
@@ -275,6 +281,7 @@ export function StepTrims({ priceBook, config, update }: { priceBook: PriceBook;
           )}
         </div>
       ))}
+      </section>
       {config.model === "bell-kc7" && <BellPartOptions config={config} priceBook={priceBook} update={update} />}
     </div>
   )

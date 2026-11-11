@@ -6,6 +6,7 @@ import { ArrowLeft, ArrowRight, ShoppingBag, Trophy } from "lucide-react"
 import { toast } from "react-toastify"
 
 import { SaveDesignButton } from "@/components/studio/save-design-button"
+import { AiHelpNudge } from "@/components/builder/ai-help-nudge"
 import { EnterCompetitionButton } from "@/components/builder/enter-competition-button"
 import { RequestQuoteButton } from "@/components/builder/request-quote-button"
 import { StudioActions } from "@/components/studio/studio-actions"
@@ -17,7 +18,7 @@ import { getCategory } from "@/lib/catalog/categories"
 import { configToSearchParams, logoPlacements, namePlacements, numberPlacements, selectedSpoilers } from "@/lib/configurator/helmet-configuration"
 import { decalSlot, faceFor, type HelmetSpot, offsetsForSpot, placementForSpot } from "@/lib/helmet-3d/decal-layout"
 import { pendingPrices } from "@/lib/configurator/pending-prices"
-import { helmetDeposit, quoteReasons } from "@/lib/configurator/pricing-rules"
+import { chromeBaseCoatPrice, helmetDeposit, quoteReasons } from "@/lib/configurator/pricing-rules"
 import { getTreatment, requiresGloss, resolveRegions, setTreatment, templateArtworkUrl } from "@/lib/configurator/regions"
 import { buildSceneDesign, designMainColour, fittingFinishes, withShellPrint } from "@/lib/configurator/scene-design"
 import { formatMoney } from "@/lib/format"
@@ -176,7 +177,7 @@ function BuilderBody({
     (current: HelmetConfiguration) => {
       const design = products.find((item) => item.slug === current.template) ?? start.product
       return {
-        regions: resolveRegions(design, current.model, templates).map(({ key, label }) => ({ key, label })),
+        regions: resolveRegions(design, current.model, templates).map(({ key, label, kind, coverage }) => ({ key, label, kind, coverage })),
         aeroKits,
         visors,
       }
@@ -360,7 +361,7 @@ function BuilderBody({
   const blocked = bespoke.length === 0 && pending.length > 0
   // Where this build reopens, e.g. after logging in; competition mode carries over.
   const builderUrl = `/helmet-builder?${configToSearchParams(config)}${competitionMode ? "&competition=1" : ""}`
-  const deposit = price && !blocked ? helmetDeposit(price.total, config) : null
+  const deposit = price && !blocked ? helmetDeposit(price.total, config, chromeBaseCoatPrice(priceBook)) : null
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:items-start lg:gap-8">
@@ -439,6 +440,8 @@ function BuilderBody({
         <BuilderStepper current={stepId} visited={visited} onSelect={go} />
 
         <div className="flex-1 space-y-5 px-5 py-5 sm:px-6" role="region" aria-labelledby="builder-step-title">
+          {/* After a while designing (past the template, before the review), offer AI help. */}
+          <AiHelpNudge engaged={visited.size >= 4 && step.stage === "build" && stepId !== "review" && stepId !== "helmet"} />
           <div>
             <p className="text-xs font-medium text-muted-foreground">
               Step {index + 1} of {builderSteps.length}

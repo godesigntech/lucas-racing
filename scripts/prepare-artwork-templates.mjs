@@ -136,6 +136,16 @@ const templates = [
     zones: ["base", "graphic", "accent"],
     zoneOf: (h, s, v) => (isCardinal(h, s, v) && isRed(h) && s > 0.45 ? "graphic" : between(180, 250)(h) && s > 0.3 && v > 0.25 ? "base" : isLight(s, v) ? "accent" : "base"),
   },
+  // By Ilyas: white blades and yellow strikes, with the gaps left as the helmet's base
+  // colour (black to start), so `base` fills them.
+  {
+    slug: "yellow-flash",
+    file: "tamplateByIlyas.svg",
+    fit: true,
+    base: "#111412",
+    zones: ["base", "graphic", "accent"],
+    zoneOf: (h, s, v) => (between(45, 75)(h) && s > 0.45 && v > 0.45 ? "accent" : isLight(s, v) ? "graphic" : "base"),
+  },
   {
     slug: "gold-line",
     file: "10.svg",
@@ -346,7 +356,7 @@ async function fillHoles(rgba, width, height) {
  * transparent sheet are trimmed to what's drawn; designs traced over black are measured
  * by their light outline instead, since the black around them isn't transparent.
  */
-async function renderFitted(file) {
+async function renderFitted(file, base) {
   const source = readFileSync(file, "utf8")
   const tracedOnBlack = /id="Black_background"/.test(source)
   const svg = source.replace(/<rect[^>]*id="Black_background"[^>]*\/>/g, "")
@@ -368,8 +378,10 @@ async function renderFitted(file) {
   const width = Math.round((SHELL_BAND.right - SHELL_BAND.left) * SIZE)
   const height = Math.round((SHELL_BAND.bottom - SHELL_BAND.top) * SIZE)
   const resized = await sharp(outline).resize(width, height, { fit: "fill" }).raw().toBuffer({ resolveWithObject: true })
-  if (!tracedOnBlack) await fillHoles(resized.data, width, height)
-  const placed = await sharp(resized.data, { raw: { width, height, channels: 4 } }).png().toBuffer()
+  if (!tracedOnBlack && !base) await fillHoles(resized.data, width, height)
+  let placed = await sharp(resized.data, { raw: { width, height, channels: 4 } }).png().toBuffer()
+  // Open areas are the helmet's base colour: lay the design over it.
+  if (base) placed = await sharp(placed).flatten({ background: base }).ensureAlpha().png().toBuffer()
   return (
     await sharp({ create: { width: SIZE, height: SIZE, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
       .composite([{ input: placed, left: Math.round(SHELL_BAND.left * SIZE), top: Math.round(SHELL_BAND.top * SIZE) }])
@@ -380,7 +392,7 @@ async function renderFitted(file) {
 
 for (const template of templates.filter((item) => onlySlugs.length === 0 || onlySlugs.includes(item.slug))) {
   const file = path.join(svgDir, template.file)
-  const raster = template.fit ? await renderFitted(file) : await renderSvg(file)
+  const raster = template.fit ? await renderFitted(file, template.base) : await renderSvg(file)
   const rgba = growEdges(raster, template.gutter)
 
   const artwork = Buffer.alloc(SIZE * SIZE * 3)

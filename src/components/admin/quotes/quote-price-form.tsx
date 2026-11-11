@@ -14,18 +14,20 @@ import { formatMoney } from "@/lib/format"
 interface QuotePriceFormProps {
   id: string
   chrome: boolean
+  /** The chrome base coat's price, paid in full with the deposit. */
+  chromePrice: number
   /** What the builder could price on its own, as a starting point. */
   pricedSoFar: number | null
   quotedPrice: number | null
 }
 
 /** Price a bespoke build and email the customer the price and deposit. */
-export function QuotePriceForm({ id, chrome, pricedSoFar, quotedPrice }: QuotePriceFormProps) {
+export function QuotePriceForm({ id, chrome, chromePrice, pricedSoFar, quotedPrice }: QuotePriceFormProps) {
   const [price, setPrice] = useState<number>(quotedPrice ?? Number.NaN)
   const [note, setNote] = useState("")
   const [isPending, startTransition] = useTransition()
   const valid = Number.isFinite(price) && price > 0
-  const deposit = valid ? helmetDeposit(price, { baseCoat: chrome ? "chrome" : undefined }) : null
+  const deposit = valid ? helmetDeposit(price, { baseCoat: chrome ? "chrome" : undefined }, chromePrice) : null
 
   function send() {
     startTransition(async () => {
@@ -54,7 +56,7 @@ export function QuotePriceForm({ id, chrome, pricedSoFar, quotedPrice }: QuotePr
       </div>
       <p className="rounded-xl bg-paper/70 p-3 text-sm">
         Deposit: <span className="font-semibold tabular-nums">{deposit === null ? "—" : formatMoney(deposit)}</span>
-        <span className="block text-xs text-muted-foreground">20% of the price{chrome ? ", plus £200 for the chrome base coat" : ""}.</span>
+        <span className="block text-xs text-muted-foreground">10% of the price{chrome ? `, plus the chrome base coat in full (£${chromePrice})` : ""}.</span>
       </p>
       <div className="space-y-1.5">
         <label htmlFor="quote-note" className="text-sm font-medium">

@@ -338,6 +338,7 @@ export function toTemplateRegion(row: TemplateRegionRow): TemplateRegion {
     allowsChrome: row.allows_chrome,
     allowsMetallic: row.allows_metallic,
     sortOrder: row.sort_order,
+    coverage: row.coverage === null || row.coverage === undefined ? null : Number(row.coverage),
   }
 }
 

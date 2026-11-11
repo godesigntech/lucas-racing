@@ -1,9 +1,10 @@
 import { findFlag } from "@/lib/helmet-3d/flags"
+import { coverageLabel, coveragePrice, imageCoverage } from "@/lib/configurator/coverage-pricing"
 import { bellParts } from "@/lib/helmet-3d/parts"
 import { colourDistance } from "@/lib/design-assistant/colour"
 import { getTreatment } from "@/lib/configurator/regions"
 import { first3dModel } from "@/lib/helmet-3d/models"
-import type { AeroKit, Visor } from "@/types/templates"
+import type { AeroKit, RegionKind, Visor } from "@/types/templates"
 import type { ConfiguratorOption, Film, PriceBook } from "@/types/catalog"
 import type {
   ConfigSummaryLine,
@@ -58,13 +59,14 @@ export function templateParts(product: CatalogProduct): PartId[] {
  * pricing mirror and the summary stay pure and match what the customer is looking at.
  */
 export interface BuilderExtras {
-  regions?: { key: string; label: string }[]
+  /** The template's regions; their kind and coverage price tape and dips like place_order() does. */
+  regions?: { key: string; label: string; kind?: RegionKind; coverage?: number | null }[]
   aeroKits?: AeroKit[]
   visors?: Visor[]
 }
 
 /** Regions to price: the template's own when we know them, else the original three. */
-function priceableRegions(product: CatalogProduct, extras: BuilderExtras): { key: string; label: string }[] {
+function priceableRegions(product: CatalogProduct, extras: BuilderExtras): NonNullable<BuilderExtras["regions"]> {
   if (extras.regions?.length) return extras.regions
   return templateParts(product).map((part) => ({ key: part, label: partLabels[part] }))
 }
@@ -494,14 +496,21 @@ export function calculateHelmetPrice(
   const model = priceBook.models.find((item) => item.id === config.model)
   if (model && (config.route ?? "new") === "new") lines.push({ label: `New ${model.name}`, amount: model.newHelmetPrice })
 
-  for (const { key, label } of priceableRegions(product, extras)) {
+  for (const { key, label, kind, coverage } of priceableRegions(product, extras)) {
     const paint = getTreatment(config, key)
     if (!paint) continue
     if (paint.kind === "film") {
       const film = priceBook.films.find((item) => item.id === paint.value)
-      if (film?.price) lines.push({ label: `${label}: ${film.name}`, amount: film.price })
+      // Tape is a flat price; a dip or print costs its zone's share of a whole-helmet one.
+      const amount =
+        film && film.category !== HOLOGRAPHIC_TAPE && coverage != null
+          ? coveragePrice(priceBook, film.id === BESPOKE_PRINT_FILM ? "print" : "dip", coverage)
+          : (film?.price ?? null)
+      if (film && amount) lines.push({ label: `${label}: ${film.name}${coverage != null && film.category !== HOLOGRAPHIC_TAPE ? ` (${coverageLabel(coverage)})` : ""}`, amount })
     } else if (paint.kind === "chrome" || paint.kind === "metallic") {
-      const material = priceBook.options.material.find((option) => option.value === paint.kind)
+      // Metallic on the racing lines is metallic tape, with its own price.
+      const value = paint.kind === "metallic" && kind === "pinstripe" ? "metallic-tape" : paint.kind
+      const material = priceBook.options.material.find((option) => option.value === value)
       if (material?.price) lines.push({ label: `${label}: ${material.label.toLowerCase()}`, amount: material.price })
     } else {
       const colour = colourOption(priceBook, paint.value)
@@ -545,7 +554,17 @@ export function calculateHelmetPrice(
     if (each) lines.push({ label: `Spoiler finish: ${spoilerFinishLabel(config.spoilerFinish, priceBook)} × ${spoilers.length}`, amount: each * spoilers.length })
   }
 
-  // Bespoke images are priced by hand with a quote (pricing-rules.ts), so they add nothing here.
+  // Images cost their share of a whole-helmet print; logos a set price each.
+  const logoOption = priceBook.options.personalisation?.find((option) => option.value === "logo" && option.isActive)
+  for (const logo of config.logos ?? []) {
+    if (logo.kind === "image") {
+      const coverage = imageCoverage(logo)
+      const amount = coveragePrice(priceBook, "print", coverage)
+      if (amount) lines.push({ label: `Printed image (${coverageLabel(coverage)})`, amount })
+    } else if (logoOption?.price) {
+      lines.push({ label: "Logo", amount: logoOption.price })
+    }
+  }
 
   for (const item of config.personalisation ?? []) {
     if (!item.value.trim()) continue
@@ -613,7 +632,7 @@ export function summariseConfiguration(
     lines.push({
       key: `logos-${index}`,
       label: image ? "Image" : "Logo",
-      value: `Uploaded · ${placementLabels[logo.position]}`,
+      value: `Uploaded · ${placementLabels[logo.position]}${image ? ` · ${coverageLabel(imageCoverage(logo))}` : ""}`,
     })
   })
   if (config.model === "bell-kc7") {

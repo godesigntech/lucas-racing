@@ -73,8 +73,8 @@ export function StepReview({ summary, price, onEdit, pending = [], bespoke = [],
             ))}
           </ul>
           <p className="mt-2 text-paper/80">
-            Send it to us with Get a quote. We&apos;ll price it and email you, then you pay a 20% deposit
-            {chrome ? " plus £200 for the chrome base coat" : ""} to start.
+            Send it to us with Get a quote. We&apos;ll price it and email you, then you pay a 10% deposit
+            {chrome ? " plus the chrome base coat" : ""} to start.
           </p>
         </div>
       )}
@@ -126,7 +126,7 @@ export function StepReview({ summary, price, onEdit, pending = [], bespoke = [],
           </div>
           {deposit !== null && pending.length === 0 && (
             <div className="flex justify-between gap-4 text-sm">
-              <dt>Deposit to start{chrome ? " (20% + £200 chrome)" : " (20%)"}</dt>
+              <dt>Deposit to book your slot{chrome ? " (10% + chrome base coat)" : " (10%)"}</dt>
               <dd className="font-semibold tabular-nums">{formatMoney(deposit)}</dd>
             </div>
           )}

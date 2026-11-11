@@ -25,6 +25,8 @@ export interface TemplateRegion {
   allowsChrome: boolean
   allowsMetallic: boolean
   sortOrder: number
+  /** Share of the shell this zone covers (0–1); dips on it cost that share of a whole-helmet dip. */
+  coverage?: number | null
 }
 
 /**

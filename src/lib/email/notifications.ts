@@ -319,7 +319,7 @@ export async function notifyQuotePrice(quote: {
   const firstName = quote.customerName.split(" ")[0]
   const href = siteUrl("/account/quotes")
   const money = (value: number) => `£${value.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-  const depositText = quote.chrome ? `${money(quote.deposit)} (20% plus £200 for the chrome base coat)` : `${money(quote.deposit)} (20%)`
+  const depositText = quote.chrome ? `${money(quote.deposit)} (10% plus the chrome base coat)` : `${money(quote.deposit)} (10%)`
   await sendEmail({
     to: quote.customerEmail,
     subject: `Your helmet price (${quote.reference}) – Lucas Racing`,

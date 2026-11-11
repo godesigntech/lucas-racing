@@ -3,7 +3,7 @@ import { OrderDesign } from "@/components/admin/orders/order-design"
 import { getBuilderCatalog } from "@/lib/data/builder"
 import { getPriceBook, getProducts } from "@/lib/data/products"
 import { calculateHelmetPrice, normaliseConfiguration } from "@/lib/configurator/helmet-configuration"
-import { quoteReasons } from "@/lib/configurator/pricing-rules"
+import { chromeBaseCoatPrice, quoteReasons } from "@/lib/configurator/pricing-rules"
 import { resolveRegions } from "@/lib/configurator/regions"
 import { formatDateTime, formatMoney } from "@/lib/format"
 import type { QuoteRequest } from "@/types/design-assistant"
@@ -25,7 +25,7 @@ export async function BuildQuoteRequest({ quote, imageUrls }: { quote: QuoteRequ
   }
   const config = normaliseConfiguration(build.config, product, priceBook)
   const reasons = quoteReasons(config, priceBook)
-  const regions = resolveRegions(product, config.model, builder.templates).map(({ key, label }) => ({ key, label }))
+  const regions = resolveRegions(product, config.model, builder.templates).map(({ key, label, kind, coverage }) => ({ key, label, kind, coverage }))
   const standard = calculateHelmetPrice(product, config, priceBook, { regions, aeroKits: builder.aeroKits, visors: builder.visors })
 
   return (
@@ -51,7 +51,7 @@ export async function BuildQuoteRequest({ quote, imageUrls }: { quote: QuoteRequ
             Sent {formatMoney(quote.quotedPrice)} (deposit {formatMoney(quote.quotedDeposit ?? 0)}){quote.quotedAt ? ` on ${formatDateTime(quote.quotedAt)}` : ""}.
           </p>
         )}
-        <QuotePriceForm id={quote.id} chrome={config.baseCoat === "chrome"} pricedSoFar={standard?.total ?? null} quotedPrice={quote.quotedPrice} />
+        <QuotePriceForm id={quote.id} chrome={config.baseCoat === "chrome"} chromePrice={chromeBaseCoatPrice(priceBook)} pricedSoFar={standard?.total ?? null} quotedPrice={quote.quotedPrice} />
       </AdminCard>
     </>
   )

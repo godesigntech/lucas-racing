@@ -135,6 +135,8 @@ export type TemplateRegionRow = Timestamps & {
   allows_chrome: boolean
   allows_metallic: boolean
   sort_order: number
+  /** Share of the shell this zone covers (0–1), for pricing dips by coverage. */
+  coverage: number | null
 }
 
 export type HelmetModelSizeRow = {
@@ -305,7 +307,7 @@ export type OrderRow = Timestamps & {
   estimated_completion_date: string | null
   rush_tier: string | null
   rush_fee: number
-  /** 20% of the total, plus £200 for each chrome base-coated helmet. Set by place_order(). */
+  /** 10% of the total, plus the chrome base coat in full for each chrome helmet. Set by order_items_set_deposit(). */
   deposit_amount: number
 }
 

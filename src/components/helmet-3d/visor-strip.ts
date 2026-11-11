@@ -151,7 +151,7 @@ function finish(canvas: HTMLCanvasElement): CanvasTexture {
 }
 
 /** The client's visor sticker, cut out of its background. */
-const BRANDED_STICKER_URL = "/stickers/lucas-racing-visor.webp?v=straight-1"
+const BRANDED_STICKER_URL = "/stickers/lucas-racing-visor.webp?v=straight-2"
 /** How much wider than its artwork the sticker is drawn, so it reaches further round the visor. */
 const STICKER_STRETCH = 1.3
 

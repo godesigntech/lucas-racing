@@ -17,6 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { chromeBaseCoatPrice } from "@/lib/configurator/pricing-rules"
 import { placeOrder } from "@/lib/actions/checkout"
 import { buildUsesChrome } from "@/lib/configurator/helmet-configuration"
 import { basket } from "@/lib/basket/basket-store"
@@ -300,6 +301,7 @@ export function CheckoutForm({ profile, deliveryMethods, products, priceBook, pr
         <OrderSummaryCard
           lines={lines}
           subtotal={subtotal}
+          chromePrice={chromeBaseCoatPrice(priceBook)}
           deliveryLabel={delivery?.label}
           deliveryPrice={delivery?.price ?? 0}
           rushFee={rushFee}

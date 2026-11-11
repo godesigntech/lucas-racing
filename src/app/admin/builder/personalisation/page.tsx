@@ -15,7 +15,14 @@ export default function AdminBuilderPersonalisationPage() {
       />
       <Suspense fallback={<Skeleton className="h-[20rem] rounded-2xl" />}>
         <BuilderOptionGroups
-          groups={[{ key: "personalisation", title: "Personal details", description: "Names, numbers, initials, flags and custom text." }]}
+          groups={[
+            { key: "personalisation", title: "Personal details", description: "Names, numbers, initials, flags and custom text. \"Logo\" is the price of each sponsor or team logo." },
+            {
+              key: "coverage",
+              title: "Dips and prints, by coverage",
+              description: "The price of covering the whole helmet. A dip or print on part of it costs that share: a zone covering 30% costs 30%, an image covering 5% costs 5% of the print price.",
+            },
+          ]}
         />
       </Suspense>
     </>

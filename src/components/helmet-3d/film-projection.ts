@@ -4,7 +4,7 @@ import {
   NoColorSpace,
   type Material,
   type MeshStandardMaterial,
-  MirroredRepeatWrapping,
+  RepeatWrapping,
   SRGBColorSpace,
   type Texture,
   TextureLoader,
@@ -47,6 +47,8 @@ export interface FilmUniforms {
   regionFilm: { value: (Texture | null)[] }
   /** Which film each region takes, or -1 for paint. */
   regionFilmSlot: { value: number[] }
+  /** Per film slot: 1 for a film, smaller for a customer's own print so it shows large, not tiled. */
+  regionFilmScale: { value: number[] }
   regionMetalness: { value: number[] }
   regionRoughness: { value: number[] }
   filmMap: { value: Texture | null }
@@ -77,6 +79,7 @@ export function createFilmUniforms(): FilmUniforms {
     regionColour: { value: Array.from({ length: MAX_REGIONS }, () => new Color("#ffffff")) },
     regionFilm: { value: Array.from({ length: MAX_REGION_FILMS }, () => null) },
     regionFilmSlot: { value: Array.from({ length: MAX_REGIONS }, () => -1) },
+    regionFilmScale: { value: Array.from({ length: MAX_REGION_FILMS }, () => 1) },
     regionMetalness: { value: Array.from({ length: MAX_REGIONS }, () => 0) },
     regionRoughness: { value: Array.from({ length: MAX_REGIONS }, () => 0.35) },
     decalMap: { value: null },
@@ -116,6 +119,7 @@ uniform int regionCount;
 uniform vec3 regionColour[${MAX_REGIONS}];
 uniform sampler2D regionFilm[${MAX_REGION_FILMS}];
 uniform int regionFilmSlot[${MAX_REGIONS}];
+uniform float regionFilmScale[${MAX_REGION_FILMS}];
 uniform float regionMetalness[${MAX_REGIONS}];
 uniform float regionRoughness[${MAX_REGIONS}];
 uniform sampler2D decalMap;
@@ -123,10 +127,12 @@ uniform float decalStrength;
 uniform float decalScale;
 uniform vec3 decalCentre;
 
-vec3 sampleHelmetFilm(sampler2D filmTexture) {
-  vec3 weights = pow(abs(normalize(vFilmNormal)), vec3(4.0));
+// Projected from the side, top and front, and blended where the surface turns between them.
+// A sharp blend keeps each spot to one projection, so two copies of the film don't overlap.
+vec3 sampleHelmetFilm(sampler2D filmTexture, float scale) {
+  vec3 weights = pow(abs(normalize(vFilmNormal)), vec3(12.0));
   weights /= (weights.x + weights.y + weights.z);
-  vec3 p = vFilmPosition * filmScale;
+  vec3 p = vFilmPosition * filmScale * scale;
   return texture2D(filmTexture, p.zy).rgb * weights.x
     + texture2D(filmTexture, p.xz).rgb * weights.y
     + texture2D(filmTexture, p.xy).rgb * weights.z;
@@ -153,7 +159,7 @@ const perRegion = (body: (index: number) => string): string =>
 
 const fragmentBody = /* glsl */ `
 if (filmStrength > 0.0) {
-  vec3 film = sampleHelmetFilm(filmMap);
+  vec3 film = sampleHelmetFilm(filmMap, 1.0);
   #ifdef USE_MAP
     // Light (painted shell) areas take the film; dark visor and rubbers keep their colour.
     float shell = smoothstep(0.18, 0.6, dot(sampledDiffuseColor.rgb, vec3(0.299, 0.587, 0.114)));
@@ -176,7 +182,7 @@ if (templateStrength > 0.0) {
   ${perRegion(
     (index) => `
     vec3 colour${index} = regionColour[${index}];
-    ${Array.from({ length: MAX_REGION_FILMS }, (_, slot) => `if (regionFilmSlot[${index}] == ${slot}) colour${index} = sampleHelmetFilm(regionFilm[${slot}]) * regionColour[${index}];`).join("\n    ")}
+    ${Array.from({ length: MAX_REGION_FILMS }, (_, slot) => `if (regionFilmSlot[${index}] == ${slot}) colour${index} = sampleHelmetFilm(regionFilm[${slot}], regionFilmScale[${slot}]) * regionColour[${index}];`).join("\n    ")}
     diffuseColor.rgb = mix(diffuseColor.rgb, colour${index} * artworkShade, ${coverage(index)} * regionActive[${index}]);`,
   )}
 }
@@ -280,9 +286,10 @@ export function loadFilmTexture(url: string): Promise<Texture> {
   if (!pending) {
     pending = loader.loadAsync(url).then((texture) => {
       texture.colorSpace = SRGBColorSpace
-      // The photos don't tile perfectly; mirroring hides the seams.
-      texture.wrapS = MirroredRepeatWrapping
-      texture.wrapT = MirroredRepeatWrapping
+      // Repeated the same way round, like a printed dip sheet: mirroring would hide seams but
+      // flips the pattern (carbon weave turns into a zigzag, prints appear back to front).
+      texture.wrapS = RepeatWrapping
+      texture.wrapT = RepeatWrapping
       texture.anisotropy = 8
       return texture
     })

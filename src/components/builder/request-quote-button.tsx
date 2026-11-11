@@ -104,8 +104,8 @@ export function RequestQuoteButton({ slug, name, getConfig, summary, returnTo }:
             <DialogHeader>
               <DialogTitle>Get a quote for this design</DialogTitle>
               <DialogDescription>
-                We&apos;ll look at your design, price it and email you. To start, you pay a 20% deposit (plus £200 with a
-                chrome base coat).
+                We&apos;ll look at your design, price it and email you. To start, you pay a 10% deposit (plus the chrome base
+                coat in full, if you chose one).
               </DialogDescription>
             </DialogHeader>
             <form

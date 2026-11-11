@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Move, Plus, RotateCcw, Trash2 } from "lucide-react"
 
 import { helmetFont, helmetFontStyles } from "@/components/helmet-3d/helmet-fonts"
+import { coverageLabel, coveragePrice, imageCoverage } from "@/lib/configurator/coverage-pricing"
 import { findFlag, helmetFlags } from "@/lib/helmet-3d/flags"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -457,6 +458,7 @@ function LetteringPreview({ item }: { item: PersonalItem }) {
 export function StepLogos({
   config,
   update,
+  priceBook,
   returnTo,
   onLogoUrl,
   placing,
@@ -471,6 +473,9 @@ export function StepLogos({
   const logos = config.logos ?? []
   const setLogos = (next: LogoPlacementItem[]) => update({ v: "2", logos: next })
   const logoCount = logos.filter((logo) => logo.kind !== "image").length
+  const logoPrice = priceBook.options.personalisation?.find((option) => option.value === "logo" && option.isActive)?.price ?? null
+  // An image at its starting size, for the upload hint.
+  const startingImagePrice = coveragePrice(priceBook, "print", imageCoverage({ scale: 1.5, position: "back" }))
 
   return (
     <div className="space-y-5">
@@ -517,6 +522,16 @@ export function StepLogos({
                   onChange={(event) => setLogos(logos.map((item, p) => (p === index ? { ...item, scale: Number(event.target.value) } : item)))}
                   className="w-full accent-brand-ink"
                 />
+                {logo.kind === "image" && (
+                  // Images are priced by how much of the helmet they cover, so the price follows the size.
+                  <span className="block text-xs text-muted-foreground">
+                    {coverageLabel(imageCoverage(logo)).replace(/^a/, "A")}
+                    {(() => {
+                      const amount = coveragePrice(priceBook, "print", imageCoverage(logo))
+                      return amount !== null ? `: £${amount}` : ""
+                    })()}
+                  </span>
+                )}
               </label>
               <label className="space-y-1.5 text-sm">
                 <span className="font-semibold">Angle</span>
@@ -537,7 +552,17 @@ export function StepLogos({
 
       <div className="grid gap-3 sm:grid-cols-2">
         {logoCount < 4 ? (
-          <LogoUpload onChange={(path) => setLogos([...logos, { path, position: "back", scale: 1, rotation: 0 }])} returnTo={returnTo} />
+          <LogoUpload
+            onChange={(path) => setLogos([...logos, { path, position: "back", scale: 1, rotation: 0 }])}
+            returnTo={returnTo}
+            copy={{
+              title: "Logo or sponsor",
+              action: "Upload a logo",
+              hint: `PNG with a transparent background works best. Up to 5 MB.${logoPrice ? ` £${logoPrice} each.` : ""}`,
+              note: "We'll place it on your proof for you to approve.",
+              noun: "logo",
+            }}
+          />
         ) : (
           <p className="text-sm text-muted-foreground">That&apos;s the maximum of four logos.</p>
         )}
@@ -549,7 +574,7 @@ export function StepLogos({
             copy={{
               title: "Image to print",
               action: "Upload an image",
-              hint: "A photo or picture printed straight onto the helmet, like your dog on the back. A bespoke image makes this a bespoke design: send it to us and we'll email you a price.",
+              hint: `A photo or picture printed straight onto the helmet, like your dog on the back. Priced by size${startingImagePrice !== null ? `: about £${startingImagePrice} as it starts` : ""}; bigger costs more.`,
               note: "We'll check the image and show it on your proof before printing.",
               noun: "image",
             }}

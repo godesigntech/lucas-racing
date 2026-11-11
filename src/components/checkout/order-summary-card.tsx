@@ -15,6 +15,8 @@ interface OrderSummaryCardProps {
   /** Charged when the customer picks a faster turnaround than standard. */
   rushFee?: number
   rushLabel?: string
+  /** The chrome base coat's price, paid in full with the deposit for each chrome helmet. */
+  chromePrice?: number
   children?: React.ReactNode
 }
 
@@ -39,13 +41,13 @@ function lineDetail(line: AvailableLine): string {
   return parts.filter(Boolean).join(" · ")
 }
 
-/** The 20% deposit (plus £200 for each chrome base coat) due to start the order. */
+/** The deposit due to book the order: 10%, plus each chrome base coat in full. */
 export function Deposit({ amount, chrome, label = "Deposit to start" }: { amount: number; chrome: boolean; label?: string }) {
   return (
     <div className="flex items-baseline justify-between gap-3 rounded-2xl bg-white/10 px-4 py-3">
       <span className="text-sm">
         {label}
-        <span className="block text-xs text-paper/55">20% of the total{chrome ? ", plus £200 per chrome base coat" : ""}</span>
+        <span className="block text-xs text-paper/55">10% to book your slot{chrome ? ", plus the chrome base coat in full" : ""}</span>
       </span>
       <span className="font-display text-2xl font-bold tabular-nums">{formatMoney(amount)}</span>
     </div>
@@ -59,6 +61,7 @@ export function OrderSummaryCard({
   deliveryPrice,
   rushFee = 0,
   rushLabel,
+  chromePrice = 0,
   children,
 }: OrderSummaryCardProps) {
   return (
@@ -98,7 +101,7 @@ export function OrderSummaryCard({
         <span className="text-sm text-paper/60">Total</span>
         <span className="font-display text-4xl font-bold">{formatMoney(subtotal + deliveryPrice + rushFee)}</span>
       </div>
-      <Deposit amount={orderDeposit(subtotal + deliveryPrice + rushFee, chromeHelmetCount(lines))} chrome={chromeHelmetCount(lines) > 0} />
+      <Deposit amount={orderDeposit(subtotal + deliveryPrice + rushFee, chromeHelmetCount(lines), chromePrice)} chrome={chromeHelmetCount(lines) > 0} />
       {children}
     </aside>
   )
