@@ -7,6 +7,7 @@ import { OPEN_ASSISTANT_EVENT } from "@/components/design-assistant/design-assis
 import { HelmetArt } from "@/components/helmet/helmet-art"
 import { getCategory } from "@/lib/catalog/categories"
 import { formatPrice } from "@/lib/format"
+import { usePricesHidden } from "@/components/builder/prices-context"
 import { getTemplateArtwork } from "@/lib/helmet-3d/templates"
 import { cn } from "@/lib/utils"
 import type { HelmetLook } from "@/types/helmet"
@@ -25,10 +26,13 @@ interface StepTemplateProps {
 
 /** Every design as a selectable card with its showcase illustration. */
 export function StepTemplate({ products, value, modelId, onChange }: StepTemplateProps) {
+  // A sketch (own-helmet page) shows no prices, and the AI designer would take them off the page.
+  const sketch = usePricesHidden()
   return (
     <fieldset className="grid grid-cols-2 gap-3 sm:grid-cols-3">
       <legend className="sr-only">Template</legend>
       {/* A blank helmet first: the AI designs something unique instead of starting from a template. */}
+      {!sketch && (
       <button
         type="button"
         onClick={() => window.dispatchEvent(new Event(OPEN_ASSISTANT_EVENT))}
@@ -45,6 +49,7 @@ export function StepTemplate({ products, value, modelId, onChange }: StepTemplat
           <span className="text-xs text-muted-foreground">Let AI design a helmet unique to you. Free, with unlimited changes.</span>
         </span>
       </button>
+      )}
       {products.map((product) => {
         const checked = product.slug === value
         const fits = product.models.includes(modelId)
@@ -64,7 +69,7 @@ export function StepTemplate({ products, value, modelId, onChange }: StepTemplat
               <span className="flex flex-1 flex-col gap-0.5 bg-card p-3">
                 <span className="text-[0.68rem] text-muted-foreground">{getCategory(product.category).label}</span>
                 <span className="font-display text-lg font-bold uppercase leading-tight">{product.name}</span>
-                <span className="text-xs font-semibold">{formatPrice(product.startingPrice)}</span>
+                {!sketch && <span className="text-xs font-semibold">{formatPrice(product.startingPrice)}</span>}
                 <span className="text-[0.68rem] text-muted-foreground">{artwork ? "3D racing template · example colours" : "Illustrated preview"}</span>
                 {!fits && <span className="text-[0.68rem] text-muted-foreground">Not available on this helmet</span>}
               </span>

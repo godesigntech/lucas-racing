@@ -109,4 +109,11 @@ export interface OwnHelmetDetails {
   extraText: string
   /** Storage paths in design-logos. */
   logos: string[]
+  /** The design they sketched in the 3D builder on the request page, if they sent one. */
+  design: OwnHelmetSketch | null
+}
+
+/** A 3D sketch sent with an own-helmet request: the design, and pictures of it (paths in design-uploads). */
+export interface OwnHelmetSketch extends BuildQuoteDetails {
+  images: string[]
 }

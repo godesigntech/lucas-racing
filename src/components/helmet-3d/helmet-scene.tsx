@@ -18,6 +18,8 @@ import { type FilmUniforms, loadArtworkTexture, loadFilmTexture } from "./film-p
 import { cloneHelmet, disposeHelmetMaterials, type SpoilerFinish, updateHelmetSurface, updateSpoilerFinish, updateVisor, type VisorSettings } from "./model-materials"
 import type { HelmetSpot } from "@/lib/helmet-3d/decal-layout"
 
+import { registerHelmetCapture } from "@/lib/helmet-3d/capture"
+
 import { SceneLoading } from "./scene-loading"
 import { removeVisorStrips, updateVisorStrip } from "./visor-strip"
 
@@ -431,6 +433,48 @@ function CameraRig({ targetRef }: { targetRef: RefObject<{ azimuth: number; pola
   return null
 }
 
+/**
+ * Lets the page photograph the helmet from any angle (lib/helmet-3d/capture.ts), e.g. to send
+ * a sketched design with a request. Renders straight away, so no drawing buffer has to be kept.
+ * Pictures are taken at the distance the helmet was framed at, whatever the customer zoomed to.
+ */
+function Snapshots({ grabbed }: { grabbed: boolean }) {
+  const get = useThree((state) => state.get)
+  const canvasElement = useThree((state) => state.gl.domElement)
+  const framed = useRef<number | null>(null)
+
+  useFrame((state) => {
+    const controls = state.controls as unknown as OrbitControlsImpl | null
+    if (!grabbed && controls) framed.current = state.camera.position.distanceTo(controls.target)
+  })
+
+  useEffect(() => {
+    return registerHelmetCapture(canvasElement, (angle) => {
+      const { gl, scene, camera } = get()
+      const controls = get().controls as unknown as OrbitControlsImpl | null
+      if (!controls) return null
+      const goal = angles[angle]
+      const azimuth = controls.getAzimuthalAngle()
+      const polar = controls.getPolarAngle()
+      const position = camera.position.clone()
+      const distance = framed.current ?? position.distanceTo(controls.target)
+      camera.position.sub(controls.target).setLength(distance).add(controls.target)
+      controls.setAzimuthalAngle(goal.azimuth)
+      controls.setPolarAngle(goal.polar)
+      controls.update()
+      gl.render(scene, camera)
+      const png = gl.domElement.toDataURL("image/png")
+      camera.position.copy(position)
+      controls.setAzimuthalAngle(azimuth)
+      controls.setPolarAngle(polar)
+      controls.update()
+      return png
+    })
+  }, [get, canvasElement])
+
+  return null
+}
+
 /** The three.js scene. Load this through <HelmetViewer>, which keeps three.js out of the main bundle. */
 export default function HelmetScene({
   url,
@@ -499,6 +543,7 @@ export default function HelmetScene({
           }}
         />
         <CameraRig targetRef={cameraTarget} />
+        <Snapshots grabbed={handled} />
       </Canvas>
       <Progress />
     </>

@@ -14,6 +14,7 @@ import {
   ownHelmetSchema,
   type OwnHelmetValues,
 } from "@/lib/validations/own-helmet"
+import type { Json } from "@/lib/supabase/database.types"
 import type { ActionResult } from "@/types/account"
 
 import { databaseError, failure, validationError } from "./result"
@@ -67,11 +68,13 @@ export async function submitOwnHelmetRequest(values: OwnHelmetValues): Promise<A
     racingNumber: request.racingNumber,
     extraText: request.extraText,
     logos: request.logos,
+    // The 3D sketch, if they made one: the design and pictures of it.
+    ...(request.design ? { design: request.design } : {}),
   }
   const { data, error } = await supabase.rpc("submit_own_helmet_request", {
     p_notes: request.notes,
     p_photo_paths: request.photos,
-    p_details: details,
+    p_details: details as unknown as Json,
   })
   if (error) return databaseError(error, "We couldn't send your request. Please try again.")
   const reference = data?.[0]?.reference
@@ -82,6 +85,7 @@ export async function submitOwnHelmetRequest(values: OwnHelmetValues): Promise<A
     request.finishes.length ? `Paint: ${request.finishes.map((finish) => ownHelmetFinishLabels[finish]).join(", ")}` : "",
     `Lacquer: ${ownHelmetLacquerLabels[request.lacquer]}`,
     films.length ? `Films: ${films.map((film) => film.name).join(", ")}` : "",
+    request.design ? `3D sketch: ${request.design.name} template, ${request.design.images.length} picture(s)` : "",
     `${request.photos.length} photo(s), ${request.logos.length} logo(s). Full details in Admin > Quotes.`,
   ]
   after(() =>

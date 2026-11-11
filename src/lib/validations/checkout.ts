@@ -128,6 +128,8 @@ export const helmetItemSchema = z.object({
         film: z.string().trim().max(80).optional(),
         holographic: z.boolean().optional(),
         font: z.string().trim().max(20).optional(),
+        design: z.string().trim().max(40).optional(),
+        designColours: z.record(z.string().max(20), hex).optional(),
       })
       .optional(),
     spoilers: z.array(z.string().trim().max(60)).max(6).optional(),

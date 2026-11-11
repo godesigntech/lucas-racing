@@ -4,6 +4,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react"
 import { Ban, Check, Search, X } from "lucide-react"
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { usePricesHidden } from "@/components/builder/prices-context"
 import { formatSurcharge } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { Film } from "@/types/catalog"
@@ -23,6 +24,7 @@ const PAGE = 24
  * scrolling grid of film cards that loads more as you go, so hundreds of films stay quick.
  */
 export function FilmPicker({ films, value, onChange }: FilmPickerProps) {
+  const pricesHidden = usePricesHidden()
   const searchId = useId()
   const categoryId = useId()
   const solid = films.find((film) => !film.textureUrl)
@@ -191,7 +193,7 @@ export function FilmPicker({ films, value, onChange }: FilmPickerProps) {
                     <span className="block min-w-0 px-2 pb-2 pt-1.5">
                       <span className="block truncate text-xs font-semibold">{film.code}</span>
                       <span className="flex items-center justify-between gap-1 text-[0.7rem] text-muted-foreground">
-                        <span>{surcharge || "Included"}</span>
+                        <span>{pricesHidden ? "" : surcharge || "Included"}</span>
                         {category === ALL && <span className="truncate">{film.category}</span>}
                       </span>
                     </span>

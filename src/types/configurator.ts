@@ -91,6 +91,10 @@ export interface VisorStrip {
   holographic?: boolean
   /** The Lucas Racing sticker every helmet comes with, rather than a bespoke one. Drawn only, never saved. */
   branded?: boolean
+  /** A ready-made sticker design (lib/helmet-3d/sticker-designs.ts) the bespoke sticker starts from. */
+  design?: string
+  /** That design's part colours, by part key, where the customer changed them. */
+  designColours?: Record<string, string>
   text: string
   textColour?: string
   font?: string

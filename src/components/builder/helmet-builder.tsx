@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react"
 import Link from "next/link"
-import { ArrowLeft, ArrowRight, ShoppingBag, Trophy } from "lucide-react"
+import { ArrowDown, ArrowLeft, ArrowRight, ShoppingBag, Trophy } from "lucide-react"
 import { toast } from "react-toastify"
 
 import { SaveDesignButton } from "@/components/studio/save-design-button"
@@ -23,6 +23,7 @@ import { getTreatment, requiresGloss, resolveRegions, setTreatment, templateArtw
 import { buildSceneDesign, designMainColour, fittingFinishes, withShellPrint } from "@/lib/configurator/scene-design"
 import { formatMoney } from "@/lib/format"
 import { hasCustomBellParts } from "@/lib/helmet-3d/parts"
+import { OWN_HELMET_FORM_ID, setDesignReference } from "@/lib/own-helmet/design-reference"
 import { createClient } from "@/lib/supabase/browser"
 import type { PriceBook } from "@/types/catalog"
 import type { HelmetConfiguration, RegionTreatment } from "@/types/configurator"
@@ -32,6 +33,7 @@ import type { AeroKit, DesignTemplate, Visor } from "@/types/templates"
 import type { ProductionOptions } from "@/lib/data/production"
 
 import { builderSteps, type BuilderStepId } from "./builder-steps"
+import { PricesHiddenContext } from "./prices-context"
 import { BuilderStepper } from "./builder-stepper"
 import { RegionStep } from "./region-step"
 import { StepFinish, StepHelmet, StepRoute, StepSize, StepTrims } from "./step-options"
@@ -50,6 +52,11 @@ interface HelmetBuilderProps {
   production?: ProductionOptions
   /** The current competition, if any. While it takes entries, the review step offers to enter it. */
   competition?: BuilderCompetition | null
+  /**
+   * Only for sketching a design (the own-helmet page): no helmet choice, prices, review or
+   * basket. The design is shared with the request form through lib/own-helmet/design-reference.
+   */
+  sketch?: boolean
 }
 
 const noSubscription = () => () => {}
@@ -59,6 +66,8 @@ const emptyProduction: ProductionOptions = { ready: false, weeks: [], tiers: [],
 
 /** Where an in-progress build is kept, so a reload doesn't lose it. */
 const DRAFT_KEY = "lucas-racing:builder-draft:v1"
+const SKETCH_DRAFT_KEY = "lucas-racing:own-helmet-sketch:v1"
+
 
 /**
  * The helmet builder. Opens on ?template=<slug> (or the first template), a share
@@ -73,6 +82,7 @@ export function HelmetBuilder({
   visors = [],
   production = emptyProduction,
   competition = null,
+  sketch = false,
   initialSearch = "",
 }: HelmetBuilderProps & { initialSearch?: string }) {
   const search = useSyncExternalStore(noSubscription, () => window.location.search, () => initialSearch)
@@ -106,7 +116,8 @@ export function HelmetBuilder({
       visors={visors}
       production={production}
       competition={competition}
-      competitionMode={params.has("competition") && Boolean(competition)}
+      sketch={sketch}
+      competitionMode={!sketch && params.has("competition") && Boolean(competition)}
       start={{ product: start.product, config: start.config, shared: start.shared }}
     />
   )
@@ -128,9 +139,9 @@ function decodeShared(params: URLSearchParams): HelmetConfiguration {
   }
 }
 
-function readDraft(): { productSlug: string; config: HelmetConfiguration } | null {
+function readDraft(key: string): { productSlug: string; config: HelmetConfiguration } | null {
   try {
-    const raw = sessionStorage.getItem(DRAFT_KEY)
+    const raw = sessionStorage.getItem(key)
     return raw ? (JSON.parse(raw) as { productSlug: string; config: HelmetConfiguration }) : null
   } catch {
     return null
@@ -167,6 +178,7 @@ function BuilderBody({
   production = emptyProduction,
   competition = null,
   competitionMode = false,
+  sketch = false,
   start,
 }: HelmetBuilderProps & {
   /** Opened from the competition page: the build is for entering, not buying. */
@@ -185,14 +197,17 @@ function BuilderBody({
     [products, start.product, templates, aeroKits, visors],
   )
   const { product, config, update, chooseTemplate, look, price, summary } = useHelmetConfigurator(products, priceBook, start, getExtras)
-  const [stepId, setStepId] = useState<BuilderStepId>("helmet")
+  // A sketch skips choosing the helmet and the review: it's only the design.
+  const steps = useMemo(() => (sketch ? builderSteps.filter((item) => item.stage === "build" && item.id !== "helmet" && item.id !== "review") : builderSteps), [sketch])
+  const draftKey = sketch ? SKETCH_DRAFT_KEY : DRAFT_KEY
+  const [stepId, setStepId] = useState<BuilderStepId>(steps[0].id)
   // The part being coloured in steps 4 and 6, and the last colour or film applied, which a tap on the helmet repeats.
   const [activeZone, setActiveZone] = useState("")
   const [brush, setBrush] = useState<RegionTreatment | null>(null)
   // The name, flag, logo or image being dragged into place on the helmet, if any.
   const [placing, setPlacing] = useState<PlacingTarget | null>(null)
   const placingHere = placing && ((placing.list === "personalisation" && stepId === "details") || (placing.list === "logos" && stepId === "logos")) ? placing : null
-  const [visited, setVisited] = useState<Set<BuilderStepId>>(() => new Set(["helmet"]))
+  const [visited, setVisited] = useState<Set<BuilderStepId>>(() => new Set([steps[0].id]))
   // Signed URLs for the customer's logos, so the 3D preview can draw them.
   const [logoUrls, setLogoUrls] = useState<Record<string, string>>({})
   // Which exact build was last added, so editing it brings "Add to basket" back.
@@ -201,12 +216,13 @@ function BuilderBody({
   const previewRef = useRef<HTMLDivElement>(null)
   const panelRef = useRef<HTMLElement>(null)
 
-  const index = builderSteps.findIndex((step) => step.id === stepId)
-  const step = builderSteps[index]
+  // A step the builder doesn't show here (a sketch has no helmet step) falls back to the first.
+  const index = Math.max(0, steps.findIndex((step) => step.id === stepId))
+  const step = steps[index]
   // Navigation runs over all sixteen: the last two are previews of what happens after
   // the basket, not dead ends.
-  const next = builderSteps[index + 1]
-  const previous = builderSteps[index - 1]
+  const next = steps[index + 1]
+  const previous = steps[index - 1]
   const model = priceBook.models.find((item) => item.id === config.model)
   const models = priceBook.models.filter((item) => item.isActive && product.models.includes(item.id))
 
@@ -262,9 +278,9 @@ function BuilderBody({
     if (restored.current) return
     restored.current = true
     if (start.shared) return
-    const draft = readDraft()
+    const draft = readDraft(draftKey)
     if (draft && draft.productSlug === product.slug) update(draft.config)
-  }, [start.shared, product.slug, update])
+  }, [start.shared, product.slug, update, draftKey])
 
   // Metallic and chrome are lacquered gloss, which place_order() also enforces.
   useEffect(() => {
@@ -288,15 +304,30 @@ function BuilderBody({
   // Keep the build through a reload, and keep the address bar shareable.
   useEffect(() => {
     try {
-      sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ productSlug: product.slug, config }))
+      sessionStorage.setItem(draftKey, JSON.stringify({ productSlug: product.slug, config }))
     } catch {
       // Private browsing, or storage turned off: the build just won't survive a reload.
     }
+    // A sketch stays on its own page's address.
+    if (sketch) return
     const url = `${window.location.pathname}?${configToSearchParams(config)}${competitionMode ? "&competition=1" : ""}`
     window.history.replaceState(window.history.state, "", url)
-  }, [config, product.slug, competitionMode])
+  }, [config, product.slug, competitionMode, draftKey, sketch])
+
+  // A sketch hands its design to the request form on the same page.
+  useEffect(() => {
+    if (!sketch) return
+    const allRegions = Object.fromEntries(regions.map((region) => [region.key, getTreatment(config, region.key) ?? { kind: "colour" as const, value: region.defaultColour }]))
+    setDesignReference({
+      slug: product.slug,
+      name: product.name,
+      config: { ...config, v: "2", regions: allRegions },
+      summary: summary.map(({ key, label, value }) => ({ key, label, value })),
+    })
+  }, [sketch, config, regions, product.slug, product.name, summary])
 
   function go(id: BuilderStepId) {
+    if (!steps.some((item) => item.id === id)) return
     setStepId(id)
     setVisited((current) => new Set(current).add(id))
     // On phones the panel sits under the preview: bring the new step into view.
@@ -363,9 +394,12 @@ function BuilderBody({
   const builderUrl = `/helmet-builder?${configToSearchParams(config)}${competitionMode ? "&competition=1" : ""}`
   const deposit = price && !blocked ? helmetDeposit(price.total, config, chromeBaseCoatPrice(priceBook)) : null
 
+  const returnTo = sketch ? "/helmet-builder/own-helmet" : `/helmet-builder?template=${product.slug}`
+
   return (
+    <PricesHiddenContext.Provider value={sketch}>
     <div className="grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:items-start lg:gap-8">
-      <div className="lg:sticky lg:top-24">
+      <div className="lg:sticky lg:top-24" data-design-reference={sketch || undefined}>
         <StudioPreview
           ref={previewRef}
           look={shownLook}
@@ -394,11 +428,16 @@ function BuilderBody({
       <section ref={panelRef} data-helmet-builder aria-label="Build your helmet" className="flex min-w-0 scroll-mt-20 flex-col rounded-[1.75rem] border border-carbon/10 bg-card">
         <header className="flex items-start justify-between gap-3 px-5 pt-5 sm:px-6">
           <div className="min-w-0">
-            <p className="eyebrow text-muted-foreground">Helmet builder</p>
+            <p className="eyebrow text-muted-foreground">{sketch ? "Design reference" : "Helmet builder"}</p>
             <h1 className="mt-1 truncate font-display text-3xl font-bold uppercase leading-none sm:text-4xl">{product.name}</h1>
           </div>
           <p className="shrink-0 text-right">
-            {competitionMode ? (
+            {sketch ? (
+              <>
+                <span className="block font-display text-2xl font-bold uppercase leading-none sm:text-3xl">Sketch</span>
+                <span className="text-xs text-muted-foreground">Sent with your request</span>
+              </>
+            ) : competitionMode ? (
               <>
                 <span className="block font-display text-2xl font-bold uppercase leading-none sm:text-3xl">Free entry</span>
                 <span className="text-xs text-muted-foreground">Competition design</span>
@@ -421,7 +460,7 @@ function BuilderBody({
           </p>
         </header>
 
-        {competition && (competition.accepting || competitionMode) && (
+        {!sketch && competition && (competition.accepting || competitionMode) && (
           <p className="mx-5 mt-3 flex items-center gap-2 rounded-xl bg-accent px-3 py-2 text-xs text-accent-foreground sm:mx-6">
             <Trophy className="size-4 shrink-0 text-brand-ink" aria-hidden />
             <span>
@@ -437,14 +476,14 @@ function BuilderBody({
           </p>
         )}
 
-        <BuilderStepper current={stepId} visited={visited} onSelect={go} />
+        <BuilderStepper current={stepId} visited={visited} onSelect={go} steps={steps} />
 
         <div className="flex-1 space-y-5 px-5 py-5 sm:px-6" role="region" aria-labelledby="builder-step-title">
           {/* After a while designing (past the template, before the review), offer AI help. */}
-          <AiHelpNudge engaged={visited.size >= 4 && step.stage === "build" && stepId !== "review" && stepId !== "helmet"} />
+          <AiHelpNudge engaged={!sketch && visited.size >= 4 && step.stage === "build" && stepId !== "review" && stepId !== "helmet"} />
           <div>
             <p className="text-xs font-medium text-muted-foreground">
-              Step {index + 1} of {builderSteps.length}
+              Step {index + 1} of {steps.length}
             </p>
             <h2 id="builder-step-title" className="font-display text-2xl font-bold uppercase leading-tight">
               {step.title}
@@ -474,14 +513,14 @@ function BuilderBody({
               onActiveKey={setActiveZone}
               onBrush={setBrush}
               hasArtwork={Boolean(artworkUrl)}
-              returnTo={`/helmet-builder?template=${product.slug}`}
+              returnTo={returnTo}
               onImageUrl={onLogoUrl}
             />
           )}
           {stepId === "finish" && <StepFinish priceBook={priceBook} config={config} update={update} glossOnly={glossOnly} />}
           {stepId === "details" && <StepPersonalisation priceBook={priceBook} config={config} update={update} placing={placing} onPlace={setPlacing} />}
           {stepId === "logos" && (
-            <StepLogos config={config} update={update} priceBook={priceBook} returnTo={`/helmet-builder?template=${product.slug}`} onLogoUrl={onLogoUrl} placing={placing} onPlace={setPlacing} />
+            <StepLogos config={config} update={update} priceBook={priceBook} returnTo={returnTo} onLogoUrl={onLogoUrl} placing={placing} onPlace={setPlacing} />
           )}
           {stepId === "exterior" && <StepTrims priceBook={priceBook} config={config} update={update} />}
           {stepId === "visor" && <StepVisor visors={visors} config={config} update={update} />}
@@ -555,6 +594,10 @@ function BuilderBody({
             <Button size="lg" onClick={() => go(next.id)}>
               Next: {next.label} <ArrowRight />
             </Button>
+          ) : sketch ? (
+            <Button size="lg" onClick={() => document.getElementById(OWN_HELMET_FORM_ID)?.scrollIntoView({ behavior: "smooth", block: "start" })}>
+              Done: fill in your request <ArrowDown />
+            </Button>
           ) : competitionMode && competition ? (
             // From the competition page: the build is entered, not bought.
             competition.accepting ? (
@@ -599,5 +642,6 @@ function BuilderBody({
         </footer>
       </section>
     </div>
+    </PricesHiddenContext.Provider>
   )
 }

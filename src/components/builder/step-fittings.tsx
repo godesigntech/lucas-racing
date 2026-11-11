@@ -4,6 +4,8 @@ import { Check } from "lucide-react"
 
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
+import { usePricesHidden } from "@/components/builder/prices-context"
+import { findStickerDesign, stickerColours, stickerDesigns } from "@/lib/helmet-3d/sticker-designs"
 import { pickableFilms, selectedSpoilers } from "@/lib/configurator/helmet-configuration"
 import { FilmPicker } from "@/components/studio/film-picker"
 import { optionPriceLabel } from "@/lib/format"
@@ -37,6 +39,7 @@ function ChoiceCard({
   swatch?: string
   onSelect: () => void
 }) {
+  const pricesHidden = usePricesHidden()
   return (
     <button
       type="button"
@@ -54,7 +57,7 @@ function ChoiceCard({
           {selected && <Check className="size-4 text-brand-ink" aria-hidden />}
         </span>
         {summary && <span className="mt-0.5 block text-xs text-muted-foreground">{summary}</span>}
-        {price !== null && <span className="mt-1 block text-xs font-semibold text-brand-ink">{optionPriceLabel(price)}</span>}
+        {price !== null && !pricesHidden && <span className="mt-1 block text-xs font-semibold text-brand-ink">{optionPriceLabel(price)}</span>}
       </span>
     </button>
   )
@@ -214,6 +217,7 @@ export function StepVisorStrip({ priceBook, config, update }: UpdateProps & { pr
   const holographic = priceBook.options.visor_strip?.find((item) => item.value === "holographic" && item.isActive)
   const colours = priceBook.options.base.filter((item) => item.isActive)
   const set = (changes: Partial<VisorStrip>) => update({ v: "2", visorStrip: { ...strip, ...changes } })
+  const design = findStickerDesign(strip.design)
 
   return (
     <div className="space-y-5">
@@ -238,6 +242,47 @@ export function StepVisorStrip({ priceBook, config, update }: UpdateProps & { pr
 
       {strip.enabled && (
         <div className="space-y-5">
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-semibold">Start from a design</legend>
+            <p className="text-xs text-muted-foreground">Pick a ready-made sticker and make it yours with your own colours and text, or start with a plain band.</p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => set({ design: undefined, designColours: undefined })}
+                aria-pressed={!design}
+                className={cn("rounded-xl border p-2 text-left text-sm transition", !design ? "border-brand-ink bg-accent" : "border-carbon/15 hover:border-carbon/35")}
+              >
+                <span className="block h-7 rounded-md ring-1 ring-carbon/10" style={{ backgroundColor: strip.colour }} aria-hidden />
+                <span className="mt-1.5 block font-medium">Plain band</span>
+              </button>
+              {stickerDesigns.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => set({ design: item.id, designColours: undefined })}
+                  aria-pressed={design?.id === item.id}
+                  className={cn("rounded-xl border p-2 text-left text-sm transition", design?.id === item.id ? "border-brand-ink bg-accent" : "border-carbon/15 hover:border-carbon/35")}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element -- the design's own SVG */}
+                  <img src={item.file} alt="" className="h-7 w-full rounded-md object-fill ring-1 ring-carbon/10" />
+                  <span className="mt-1.5 block font-medium">{item.name}</span>
+                </button>
+              ))}
+            </div>
+          </fieldset>
+
+          {design &&
+            design.parts.map((part) => (
+              <ColourChooser
+                key={part.key}
+                label={`${design.name}: ${part.label.toLowerCase()}`}
+                options={colours}
+                value={stickerColours(design, strip.designColours)[part.key]}
+                onChange={(colour) => set({ designColours: { ...strip.designColours, [part.key]: colour } })}
+                priceBook={priceBook}
+              />
+            ))}
+
           <div className="space-y-1.5">
             <label htmlFor="visor-strip-text" className="text-sm font-semibold">
               Text on the strip
@@ -249,10 +294,12 @@ export function StepVisorStrip({ priceBook, config, update }: UpdateProps & { pr
               placeholder="e.g. LUCAS RACING"
               onChange={(event) => set({ text: event.target.value })}
             />
-            <p className="text-xs text-muted-foreground">Up to 40 characters. Leave it blank for a plain band.</p>
+            <p className="text-xs text-muted-foreground">Up to 40 characters, or leave it blank.</p>
           </div>
 
-          <ColourChooser label="Sticker colour" options={colours} value={strip.colour} onChange={(colour) => set({ colour, kind: undefined, film: undefined })} priceBook={priceBook} />
+          {!design && (
+            <ColourChooser label="Sticker colour" options={colours} value={strip.colour} onChange={(colour) => set({ colour, kind: undefined, film: undefined })} priceBook={priceBook} />
+          )}
           {holographic && (
             <label className="flex items-start justify-between gap-4 rounded-2xl border border-carbon/15 p-3">
               <span className="text-sm">

@@ -12,6 +12,16 @@ export type OwnHelmetLacquer = (typeof ownHelmetLacquers)[number]
 export const ownHelmetLacquerLabels: Record<OwnHelmetLacquer, string> = { gloss: "Gloss", matt: "Matt" }
 
 const photoPath = z.string().regex(/^quotes\/[0-9a-f-]{36}\.(jpg|png|webp)$/, "That photo isn't valid")
+/** A design sketched in the 3D builder on the same page, sent as a reference with pictures of it. */
+const designReferenceSchema = z.object({
+  slug: z.string().regex(/^[a-z0-9-]{1,80}$/),
+  name: z.string().trim().max(80),
+  config: z.record(z.string(), z.unknown()),
+  summary: z.array(z.object({ key: z.string().max(60), label: z.string().max(80), value: z.string().max(500) })).max(80),
+  images: z.array(photoPath).max(4),
+})
+export type DesignReferenceValues = z.infer<typeof designReferenceSchema>
+
 const logoPath = z.string().regex(/^[0-9a-f-]{36}\/[0-9a-f-]{36}\.(png|jpg|webp)$/, "That logo isn't valid")
 
 /**
@@ -32,6 +42,7 @@ export const ownHelmetSchema = z
     racingNumber: z.string().trim().max(4),
     extraText: z.string().trim().max(200),
     logos: z.array(logoPath).max(6, "Add up to 6 logos"),
+    design: designReferenceSchema.optional(),
     name: z.string().trim().min(2, "Enter your full name").max(80),
     phone: z
       .string()

@@ -13,7 +13,10 @@ import { fieldA11y, FormField } from "@/components/forms/form-field"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
 import { submitOwnHelmetRequest } from "@/lib/actions/own-helmet"
+import { captureHelmetViews } from "@/lib/helmet-3d/capture"
+import { DESIGN_SKETCH_ID, DESIGN_VIEWS, OWN_HELMET_FORM_ID, useDesignReference } from "@/lib/own-helmet/design-reference"
 import { DESIGN_PHOTO_ACCEPT, prepareDesignPhoto, uploadDesignPhoto, validateDesignPhoto } from "@/lib/design-assistant/photo"
 import { cn } from "@/lib/utils"
 import {
@@ -213,10 +216,24 @@ export function OwnHelmetForm({ profile, films }: { profile: Profile; films: Fil
     },
   })
   const finishes = useWatch({ control, name: "finishes" })
+  const sketch = useDesignReference()
+  const [includeSketch, setIncludeSketch] = useState(true)
   const glossOnly = finishes.some((finish) => finish !== "standard")
 
   async function onSubmit(values: OwnHelmetValues) {
-    const result = await submitOwnHelmetRequest(values)
+    // The 3D sketch goes as the design plus pictures of it from four sides.
+    let design: OwnHelmetValues["design"]
+    if (sketch.design && sketch.touched && includeSketch) {
+      try {
+        const pictures = await captureHelmetViews(document.getElementById(DESIGN_SKETCH_ID), DESIGN_VIEWS)
+        const images = await Promise.all(pictures.map((picture) => uploadDesignPhoto(picture)))
+        design = { slug: sketch.design.slug, name: sketch.design.name, config: sketch.design.config as unknown as Record<string, unknown>, summary: sketch.design.summary, images }
+      } catch {
+        toast.error("We couldn't save pictures of your 3D sketch. Please try again.")
+        return
+      }
+    }
+    const result = await submitOwnHelmetRequest({ ...values, design })
     if (!result.ok) {
       for (const [field, message] of Object.entries(result.fieldErrors ?? {})) setError(field as keyof OwnHelmetValues, { message })
       toast.error(result.message)
@@ -249,7 +266,7 @@ export function OwnHelmetForm({ profile, films }: { profile: Profile; films: Fil
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
+    <form id={OWN_HELMET_FORM_ID} onSubmit={handleSubmit(onSubmit)} noValidate className="scroll-mt-24 space-y-5">
       <Section step={1} title="Your helmet" description="Which helmet you'll be sending us.">
         <div className="grid gap-5 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
           <FormField id="own-make" label="Make and model" error={errors.makeModel?.message}>
@@ -274,6 +291,25 @@ export function OwnHelmetForm({ profile, films }: { profile: Profile; films: Fil
             placeholder="e.g. Matte black base with lime green flames from the chin bar, carbon film on the top, white pinstripes."
           />
         </FormField>
+        {sketch.design && sketch.touched ? (
+          <label className="mt-4 flex items-start gap-3 rounded-2xl border border-carbon/10 bg-paper/40 p-4 text-sm">
+            <Checkbox checked={includeSketch} onCheckedChange={(checked) => setIncludeSketch(checked === true)} className="mt-0.5" />
+            <span>
+              <span className="font-semibold">Send my 3D sketch with this request</span>
+              <span className="block text-xs text-muted-foreground">
+                Your {sketch.design.name} design from above, with pictures from the front, sides and back.
+              </span>
+            </span>
+          </label>
+        ) : (
+          <p className="mt-4 text-xs text-muted-foreground">
+            Tip: sketch your idea in the{" "}
+            <a href={`#${DESIGN_SKETCH_ID}`} className="font-medium text-carbon underline underline-offset-2">
+              3D designer above
+            </a>{" "}
+            and we&apos;ll get pictures of it with your request.
+          </p>
+        )}
       </Section>
 
       <Section step={4} title="Paint finishes" description="Choose every finish you'd like somewhere on the helmet, then the overall lacquer.">

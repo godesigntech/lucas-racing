@@ -1,5 +1,7 @@
 import { BufferAttribute, CanvasTexture, Matrix4, type Mesh, MeshStandardMaterial, SRGBColorSpace, Vector3, type Object3D } from "three"
 
+import { findStickerDesign, recolouredSticker } from "@/lib/helmet-3d/sticker-designs"
+
 import type { VisorStrip } from "@/types/configurator"
 
 import { canvasFont } from "./helmet-fonts"
@@ -24,8 +26,7 @@ interface StripWrap {
 
 function wrapStrip(mesh: Mesh, root: Object3D): StripWrap | null {
   const position = mesh.geometry.getAttribute("position")
-  const uv = mesh.geometry.getAttribute("uv")
-  if (!position || !uv) return null
+  if (!position) return null
   root.updateMatrixWorld(true)
   const toRoot = new Matrix4().copy(root.matrixWorld).invert().multiply(mesh.matrixWorld)
 
@@ -47,25 +48,46 @@ function wrapStrip(mesh: Mesh, root: Object3D): StripWrap | null {
   const angleSpan = Math.max(Math.max(...angles) - minAngle, 1e-3)
   const radius = points.reduce((sum, point) => sum + Math.hypot(point.x - centreX, point.z - axisZ), 0) / points.length
 
-  // Across the band: the artist's U, turned so that up on the helmet is up on the canvas.
-  let minU = Infinity
-  let maxU = -Infinity
-  for (let index = 0; index < position.count; index++) {
-    minU = Math.min(minU, uv.getX(index))
-    maxU = Math.max(maxU, uv.getX(index))
+  // Down the band: measured from its real top edge to its real bottom edge at each point along
+  // it. (The model's own UV squashes and bends near the front, so straight artwork sagged in a V.)
+  // Each edge is traced through its own vertices, the highest / lowest among close neighbours
+  // along the band, and followed exactly between them.
+  const order = angles.map((_, index) => index).sort((a, b) => angles[a] - angles[b])
+  const window = angleSpan * 0.01
+  const traceEdge = (beyond: (other: number, own: number) => boolean) => {
+    const edge: [number, number][] = []
+    let first = 0
+    order.forEach((index) => {
+      while (angles[order[first]] < angles[index] - window) first++
+      for (let other = first; other < order.length && angles[order[other]] <= angles[index] + window; other++) {
+        if (beyond(points[order[other]].y, points[index].y)) return
+      }
+      if (!edge.length || edge[edge.length - 1][0] !== angles[index]) edge.push([angles[index], points[index].y])
+    })
+    return edge
   }
-  const uSpan = Math.max(maxU - minU, 1e-3)
-  const centreU = (minU + maxU) / 2
-  let upward = 0
-  points.forEach((point, index) => {
-    upward += (uv.getX(index) - centreU) * (point.y - (min.y + max.y) / 2)
-  })
+  const edgeAt = (edge: [number, number][], angle: number) => {
+    if (angle <= edge[0][0]) return edge[0][1]
+    for (let at = 1; at < edge.length; at++) {
+      const [a1, y1] = edge[at]
+      if (angle <= a1) {
+        const [a0, y0] = edge[at - 1]
+        return a1 - a0 < 1e-9 ? y1 : y0 + ((y1 - y0) * (angle - a0)) / (a1 - a0)
+      }
+    }
+    return edge[edge.length - 1][1]
+  }
+  const topEdge = traceEdge((other, own) => other > own)
+  const bottomEdge = traceEdge((other, own) => other < own)
 
   const uvs = new Float32Array(position.count * 2)
-  points.forEach((_, index) => {
-    const across = (uv.getX(index) - minU) / uSpan
+  points.forEach((point, index) => {
+    const top = edgeAt(topEdge, angles[index])
+    const bottom = edgeAt(bottomEdge, angles[index])
+    const down = top - bottom > 1e-6 ? Math.min(1, Math.max(0, (top - point.y) / (top - bottom))) : 0
     uvs[index * 2] = (angles[index] - minAngle) / angleSpan
-    uvs[index * 2 + 1] = upward >= 0 ? across : 1 - across
+    // The canvas is drawn top-down; textures read bottom-up.
+    uvs[index * 2 + 1] = 1 - down
   })
 
   // How tall the band really is: its depth up the visor at the very front.
@@ -97,6 +119,22 @@ async function paintBand(context: CanvasRenderingContext2D, width: number, strip
   context.globalCompositeOperation = "source-over"
 }
 
+/** Holographic film over a printed design: the foil, tinted by the print underneath. */
+async function shimmer(context: CanvasRenderingContext2D, width: number, filmUrl: string) {
+  const image = new Image()
+  image.src = filmUrl
+  await image.decode().catch(() => undefined)
+  if (!image.naturalWidth) return
+  const pattern = context.createPattern(image, "repeat")
+  if (!pattern) return
+  const scale = CANVAS_HEIGHT / image.height
+  pattern.setTransform(new DOMMatrix().scale(scale, scale))
+  context.globalCompositeOperation = "multiply"
+  context.fillStyle = pattern
+  context.fillRect(0, 0, width, CANVAS_HEIGHT)
+  context.globalCompositeOperation = "source-over"
+}
+
 /** The band and its lettering. */
 async function drawStrip(strip: VisorStrip, aspect: number, filmUrl: string | null): Promise<CanvasTexture> {
   const canvas = document.createElement("canvas")
@@ -118,7 +156,17 @@ async function drawStrip(strip: VisorStrip, aspect: number, filmUrl: string | nu
     return finish(canvas)
   }
 
-  await paintBand(context, canvas.width, strip, filmUrl)
+  const design = findStickerDesign(strip.design)
+  if (design) {
+    // A ready-made design fills the whole strip, in the customer's colours.
+    const image = new Image()
+    image.src = await recolouredSticker(design, strip.designColours)
+    await image.decode().catch(() => undefined)
+    if (image.naturalWidth) context.drawImage(image, 0, 0, canvas.width, canvas.height)
+    if (strip.holographic && filmUrl) await shimmer(context, canvas.width, filmUrl)
+  } else {
+    await paintBand(context, canvas.width, strip, filmUrl)
+  }
 
   const text = strip.text.trim()
   if (text) {

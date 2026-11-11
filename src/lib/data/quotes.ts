@@ -86,6 +86,15 @@ function toOwnHelmetDetails(value: unknown): OwnHelmetDetails {
     racingNumber: text("racingNumber"),
     extraText: text("extraText"),
     logos: list("logos").filter((item): item is string => typeof item === "string"),
+    design:
+      details.design && typeof details.design === "object"
+        ? {
+            ...toBuildDetails(details.design),
+            images: (Array.isArray((details.design as { images?: unknown }).images) ? ((details.design as { images: unknown[] }).images) : []).filter(
+              (item): item is string => typeof item === "string",
+            ),
+          }
+        : null,
   }
 }
 
@@ -140,8 +149,10 @@ export interface QuoteRequestDetail {
   logoUrls: string[]
   /** Short-lived link to the AI concept image, if there is one. */
   aiImageUrl: string | null
-  /** Bespoke builds: short-lived links to the customer's images, by storage path, for the 3D view. */
+  /** Bespoke builds and 3D sketches: short-lived links to the customer's images, by storage path, for the 3D view. */
   buildImageUrls: Record<string, string>
+  /** Own-helmet 3D sketches: short-lived links to the pictures of it, front to back. */
+  sketchImageUrls: string[]
   suggestions: CatalogProduct[]
 }
 
@@ -155,8 +166,9 @@ export async function getQuoteRequest(id: string): Promise<QuoteRequestDetail> {
   if (!data) notFound()
   const quote = toQuoteRequest(data)
 
-  const buildPaths = quote.build ? buildImagePaths(quote.build.config) : []
-  const [photo, aiImage, products, photos, logos, buildImages] = await Promise.all([
+  const sketch = quote.details.design
+  const buildPaths = quote.build ? buildImagePaths(quote.build.config) : sketch ? buildImagePaths(sketch.config) : []
+  const [photo, aiImage, products, photos, logos, buildImages, sketchImages] = await Promise.all([
     quote.imagePath
       ? supabase.storage.from("design-uploads").createSignedUrl(quote.imagePath, PHOTO_LINK_SECONDS)
       : Promise.resolve(null),
@@ -171,6 +183,7 @@ export async function getQuoteRequest(id: string): Promise<QuoteRequestDetail> {
       ? supabase.storage.from("design-logos").createSignedUrls(quote.details.logos, PHOTO_LINK_SECONDS)
       : Promise.resolve(null),
     buildPaths.length ? supabase.storage.from("design-logos").createSignedUrls(buildPaths, PHOTO_LINK_SECONDS) : Promise.resolve(null),
+    sketch?.images.length ? supabase.storage.from("design-uploads").createSignedUrls(sketch.images, PHOTO_LINK_SECONDS) : Promise.resolve(null),
   ])
   const links = (result: typeof photos) => (result?.data ?? []).flatMap((link) => (link.signedUrl ? [link.signedUrl] : []))
 
@@ -178,6 +191,7 @@ export async function getQuoteRequest(id: string): Promise<QuoteRequestDetail> {
     quote,
     photoUrls: links(photos),
     logoUrls: links(logos),
+    sketchImageUrls: links(sketchImages),
     photoUrl: photo?.data?.signedUrl ?? null,
     aiImageUrl: aiImage?.data?.signedUrl ?? null,
     buildImageUrls: Object.fromEntries((buildImages?.data ?? []).flatMap((link) => (link.path && link.signedUrl ? [[link.path, link.signedUrl]] : []))),

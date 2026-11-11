@@ -6,7 +6,7 @@ import { ImagePlus, Loader2, X } from "lucide-react"
 import { toast } from "react-toastify"
 
 import { Button } from "@/components/ui/button"
-import { createClient } from "@/lib/supabase/browser"
+import { createClient, uploadFile } from "@/lib/supabase/browser"
 
 const LOGO_BUCKET = "design-logos"
 const LOGO_TYPES: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" }
@@ -86,7 +86,7 @@ export function LogoUpload({
     setUploading(true)
     try {
       const objectPath = `${userId}/${crypto.randomUUID()}.${extension}`
-      const { error } = await createClient().storage.from(LOGO_BUCKET).upload(objectPath, file, { contentType: file.type })
+      const { error } = await uploadFile(LOGO_BUCKET, objectPath, file, { contentType: file.type })
       if (error) throw error
       const localUrl = URL.createObjectURL(file)
       setPreviewUrl(localUrl)

@@ -5,13 +5,15 @@ import { Check, Flag } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
-import { builderSteps, type BuilderStepId } from "./builder-steps"
+import { type BuilderStep, builderSteps, type BuilderStepId } from "./builder-steps"
 
 interface BuilderStepperProps {
   current: BuilderStepId
   /** Steps the customer has already been through. */
   visited: Set<BuilderStepId>
   onSelect: (step: BuilderStepId) => void
+  /** The steps to show; all of them unless the builder is only for sketching a design. */
+  steps?: BuilderStep[]
 }
 
 /**
@@ -19,10 +21,10 @@ interface BuilderStepperProps {
  * The build steps can be opened in any order; confirming the order and production come
  * after the basket, so they're shown but not clickable.
  */
-export function BuilderStepper({ current, visited, onSelect }: BuilderStepperProps) {
+export function BuilderStepper({ current, visited, onSelect, steps = builderSteps }: BuilderStepperProps) {
   const list = useRef<HTMLOListElement>(null)
-  const index = builderSteps.findIndex((step) => step.id === current)
-  const progress = ((index + 1) / builderSteps.length) * 100
+  const index = steps.findIndex((step) => step.id === current)
+  const progress = ((index + 1) / steps.length) * 100
 
   useEffect(() => {
     list.current?.querySelector('[aria-current="step"]')?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" })
@@ -33,10 +35,10 @@ export function BuilderStepper({ current, visited, onSelect }: BuilderStepperPro
       <div className="px-4 pt-3 sm:px-5">
         <div className="flex items-baseline justify-between gap-3 text-xs">
           <span className="font-semibold uppercase tracking-wide text-muted-foreground">
-            {builderSteps[index]?.group}
+            {steps[index]?.group}
           </span>
           <span className="text-muted-foreground">
-            Step {index + 1} of {builderSteps.length}
+            Step {index + 1} of {steps.length}
           </span>
         </div>
         <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-carbon/10" role="presentation">
@@ -45,7 +47,7 @@ export function BuilderStepper({ current, visited, onSelect }: BuilderStepperPro
       </div>
 
       <ol ref={list} className="flex gap-1 overflow-x-auto px-3 py-3 [scrollbar-width:none] sm:px-4">
-        {builderSteps.map((step, position) => {
+        {steps.map((step, position) => {
           const active = step.id === current
           const done = !active && visited.has(step.id)
           // The last two happen after the basket, so they're marked as a later stage —

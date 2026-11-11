@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Move, Plus, RotateCcw, Trash2 } from "lucide-react"
 
 import { helmetFont, helmetFontStyles } from "@/components/helmet-3d/helmet-fonts"
+import { usePricesHidden } from "@/components/builder/prices-context"
 import { coverageLabel, coveragePrice, imageCoverage } from "@/lib/configurator/coverage-pricing"
 import { findFlag, helmetFlags } from "@/lib/helmet-3d/flags"
 import { Button } from "@/components/ui/button"
@@ -476,6 +477,7 @@ export function StepLogos({
   const logoPrice = priceBook.options.personalisation?.find((option) => option.value === "logo" && option.isActive)?.price ?? null
   // An image at its starting size, for the upload hint.
   const startingImagePrice = coveragePrice(priceBook, "print", imageCoverage({ scale: 1.5, position: "back" }))
+  const pricesHidden = usePricesHidden()
 
   return (
     <div className="space-y-5">
@@ -574,7 +576,9 @@ export function StepLogos({
             copy={{
               title: "Image to print",
               action: "Upload an image",
-              hint: `A photo or picture printed straight onto the helmet, like your dog on the back. Priced by size${startingImagePrice !== null ? `: about £${startingImagePrice} as it starts` : ""}; bigger costs more.`,
+              hint: pricesHidden
+                ? "A photo or picture printed straight onto the helmet, like your dog on the back."
+                : `A photo or picture printed straight onto the helmet, like your dog on the back. Priced by size${startingImagePrice !== null ? `: about £${startingImagePrice} as it starts` : ""}; bigger costs more.`,
               note: "We'll check the image and show it on your proof before printing.",
               noun: "image",
             }}

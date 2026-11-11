@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation"
 import { Box, Check, Ruler } from "lucide-react"
 
+import { usePricesHidden } from "@/components/builder/prices-context"
 import { finishLabels, trimParts } from "@/lib/configurator/helmet-configuration"
 import { formatMoney, formatSurcharge } from "@/lib/format"
 import { get3dModel } from "@/lib/helmet-3d/models"
@@ -165,6 +166,7 @@ export function StepFinish({
   glossOnly?: boolean
 }) {
   const finishes = priceBook.options.finish.filter((option) => option.isActive && option.value in finishLabels)
+  const pricesHidden = usePricesHidden()
   return (
     <div className="space-y-4">
       {glossOnly && (
@@ -194,7 +196,7 @@ export function StepFinish({
             />
             <span className="font-semibold">{finish.label}</span>
             <span className="text-xs text-muted-foreground">{finish.hint ?? (finish.value === "gloss" ? "Deep shine, easy to clean" : "")}</span>
-            <span className="mt-auto pt-1 text-sm font-semibold text-brand-ink">{formatSurcharge(finish.price) || "Included"}</span>
+            {!pricesHidden && <span className="mt-auto pt-1 text-sm font-semibold text-brand-ink">{formatSurcharge(finish.price) || "Included"}</span>}
           </ChoiceCard>
         ))}
       </fieldset>
@@ -211,6 +213,7 @@ export function StepFinish({
  * a mirror behind them, and the clear parts of a film show the chrome.
  */
 function BaseCoat({ priceBook, config, update }: { priceBook: PriceBook; config: HelmetConfiguration; update: Update }) {
+  const pricesHidden = usePricesHidden()
   const chrome = priceBook.options.material.find((option) => option.value === "chrome" && option.isActive)
   if (!chrome) return null
   const coats = [
@@ -237,7 +240,7 @@ function BaseCoat({ priceBook, config, update }: { priceBook: PriceBook; config:
             />
             <span className="font-semibold">{coat.label}</span>
             <span className="text-xs text-muted-foreground">{coat.hint}</span>
-            <span className="mt-auto pt-1 text-sm font-semibold text-brand-ink">{coat.price}</span>
+            {!pricesHidden && <span className="mt-auto pt-1 text-sm font-semibold text-brand-ink">{coat.price}</span>}
           </ChoiceCard>
         ))}
       </div>
@@ -249,6 +252,7 @@ function BaseCoat({ priceBook, config, update }: { priceBook: PriceBook; config:
 export function StepTrims({ priceBook, config, update }: { priceBook: PriceBook; config: HelmetConfiguration; update: Update }) {
   const trims = priceBook.options.trim.filter((option) => option.isActive && option.value !== "bespoke")
   const bespoke = priceBook.options.trim.find((option) => option.value === "bespoke" && option.isActive)
+  const pricesHidden = usePricesHidden()
   return (
     <div className="space-y-6">
       {/* Boxed like the accessories below, so it's clear which part a colour is for. */}
@@ -276,7 +280,7 @@ export function StepTrims({ priceBook, config, update }: { priceBook: PriceBook;
                 className="h-9 w-12 cursor-pointer rounded border border-carbon/20"
               />
               {part.bespoke && <span className="font-mono text-xs">{part.colour.toUpperCase()}</span>}
-              <span className="text-xs text-muted-foreground">Colour matched for {formatSurcharge(bespoke.price) || "a quote"} fitted</span>
+              <span className="text-xs text-muted-foreground">{pricesHidden ? "Colour matched" : `Colour matched for ${formatSurcharge(bespoke.price) || "a quote"} fitted`}</span>
             </label>
           )}
         </div>

@@ -1,4 +1,5 @@
 import { findFlag } from "@/lib/helmet-3d/flags"
+import { findStickerDesign } from "@/lib/helmet-3d/sticker-designs"
 import { coverageLabel, coveragePrice, imageCoverage } from "@/lib/configurator/coverage-pricing"
 import { bellParts } from "@/lib/helmet-3d/parts"
 import { colourDistance } from "@/lib/design-assistant/colour"
@@ -296,6 +297,14 @@ function carryV2Fields(
       textColour: isHex(strip.textColour) ? strip.textColour : "#ffffff",
       font: typeof strip.font === "string" ? strip.font.slice(0, 20) : "racing",
       ...(strip.holographic ? { holographic: true } : {}),
+    }
+    // A ready-made design, with only its own parts' colours kept.
+    const design = findStickerDesign(typeof strip.design === "string" ? strip.design : undefined)
+    if (design) {
+      config.visorStrip.design = design.id
+      const chosen = strip.designColours && typeof strip.designColours === "object" ? (strip.designColours as Record<string, unknown>) : {}
+      const colours = Object.fromEntries(design.parts.flatMap((part) => (isHex(chosen[part.key]) ? [[part.key, chosen[part.key] as string]] : [])))
+      if (Object.keys(colours).length > 0) config.visorStrip.designColours = colours
     }
     if (strip.kind && PART_KINDS.includes(strip.kind) && strip.kind !== "colour") {
       if (strip.kind !== "film" || typeof strip.film === "string") config.visorStrip.kind = strip.kind
@@ -613,7 +622,8 @@ export function summariseConfiguration(
   if (visor) lines.push({ key: "visor", label: "Visor", value: visor.name })
 
   if (config.visorStrip?.enabled) {
-    lines.push({ key: "visorStrip", label: "Visor sticker", value: `Bespoke · ${config.visorStrip.text.trim() || "no text"}` })
+    const design = findStickerDesign(config.visorStrip.design)
+    lines.push({ key: "visorStrip", label: "Visor sticker", value: `Bespoke${design ? ` · ${design.name} design` : ""} · ${config.visorStrip.text.trim() || "no text"}` })
     const finish = stripTreatment(config.visorStrip) ?? { kind: "colour" as const, value: config.visorStrip.colour }
     lines.push({ key: "visorStripFinish", label: "Visor sticker finish", value: `${partLabel(priceBook, finish)}${config.visorStrip.holographic ? ", holographic" : ""}` })
   } else {

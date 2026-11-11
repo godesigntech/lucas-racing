@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/browser"
+import { createClient, uploadFile } from "@/lib/supabase/browser"
 
 export const CHAT_BUCKET = "chat-attachments"
 export const CHAT_IMAGE_MAX_BYTES = 5 * 1024 * 1024
@@ -22,7 +22,7 @@ export function validateChatImage(file: File): string | null {
 /** Uploads a photo into the customer's folder and returns its storage path. */
 export async function uploadChatImage(customerId: string, file: File): Promise<string> {
   const path = `${customerId}/${crypto.randomUUID()}.${extensions[file.type]}`
-  const { error } = await createClient().storage.from(CHAT_BUCKET).upload(path, file, { contentType: file.type })
+  const { error } = await uploadFile(CHAT_BUCKET, path, file, { contentType: file.type })
   if (error) throw new Error(error.message)
   return path
 }

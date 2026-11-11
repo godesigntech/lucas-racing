@@ -1,6 +1,6 @@
 "use client"
 
-import { createClient } from "@/lib/supabase/browser"
+import { uploadFile } from "@/lib/supabase/browser"
 
 import { colourDistance, rgbToHex } from "./colour"
 
@@ -134,7 +134,7 @@ export async function prepareDesignPhoto(file: File): Promise<PreparedPhoto> {
 /** Uploads the photo to the private design-uploads bucket and returns its path. */
 export async function uploadDesignPhoto(blob: Blob): Promise<string> {
   const path = `quotes/${crypto.randomUUID()}.jpg`
-  const { error } = await createClient().storage.from("design-uploads").upload(path, blob, { contentType: "image/jpeg" })
+  const { error } = await uploadFile("design-uploads", path, blob, { contentType: "image/jpeg" })
   if (error) throw new Error(error.message)
   return path
 }
