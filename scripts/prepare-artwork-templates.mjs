@@ -146,6 +146,15 @@ const templates = [
     zones: ["base", "graphic", "accent"],
     zoneOf: (h, s, v) => (between(45, 75)(h) && s > 0.45 && v > 0.45 ? "accent" : isLight(s, v) ? "graphic" : "base"),
   },
+  // By Ilyas: a red helmet with black blades, white flashes and brighter red zigzags. The
+  // zigzags (#EE0B0A) are a purer red than the base (#ED3237), so saturation tells them apart.
+  {
+    slug: "crimson-bolt",
+    file: "tamplate2Byilyas.svg",
+    fit: true,
+    zones: ["base", "graphic", "accent", "detail"],
+    zoneOf: (h, s, v) => (isLight(s, v) ? "accent" : v < 0.3 ? "graphic" : isRed(h) && s > 0.9 ? "detail" : "base"),
+  },
   {
     slug: "gold-line",
     file: "10.svg",

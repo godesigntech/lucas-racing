@@ -135,6 +135,9 @@ function FilmPicker({ films, value, onChange, error }: { films: Film[]; value: s
   if (films.length === 0) return <p className="text-sm text-muted-foreground">Our film library is being updated. Mention any film you&apos;d like in your description.</p>
   return (
     <div className="space-y-3">
+      <p className="text-xs text-muted-foreground">{films.length} films. Scroll the box to see them all.</p>
+      {/* The library has hundreds of films: its own scroll area keeps the form short. */}
+      <div className="max-h-[28rem] overflow-y-auto overscroll-contain rounded-2xl border border-carbon/10 bg-paper/40 p-3" tabIndex={0} aria-label="Hydrographic films">
       <ul className="grid grid-cols-3 gap-3 sm:grid-cols-5">
         {films.map((film) => {
           const selected = value.includes(film.id)
@@ -162,6 +165,7 @@ function FilmPicker({ films, value, onChange, error }: { films: Film[]; value: s
           )
         })}
       </ul>
+      </div>
       <p className="text-xs text-muted-foreground">{value.length ? `${value.length} chosen.` : "Optional."} Tell us in your description where each film should go.</p>
       {error && <p role="alert" className="text-xs font-medium text-destructive">{error}</p>}
     </div>

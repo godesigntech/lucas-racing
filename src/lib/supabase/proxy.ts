@@ -43,9 +43,18 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (signedIn && AUTH_PAGES.includes(pathname)) {
+    const url = request.nextUrl.clone()
+    // Already signed in (say, after confirming their email in another tab): carry on to
+    // where they were heading, like the "Send my own helmet" form, not their account.
+    const next = request.nextUrl.searchParams.get("next")
+    if (next && next.startsWith("/") && !next.startsWith("//") && !AUTH_PAGES.some((page) => next.startsWith(page))) {
+      const target = new URL(next, request.nextUrl.origin)
+      url.pathname = target.pathname
+      url.search = target.search
+      return withCookies(NextResponse.redirect(url), response)
+    }
     // Only this branch needs the role, so the extra query never runs on normal page views.
     const { data: isAdmin } = await supabase.rpc("is_admin")
-    const url = request.nextUrl.clone()
     url.pathname = isAdmin ? "/admin" : "/account"
     url.search = ""
     return withCookies(NextResponse.redirect(url), response)
