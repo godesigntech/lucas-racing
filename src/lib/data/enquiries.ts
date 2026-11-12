@@ -5,6 +5,7 @@ import { ADMIN_PAGE_SIZE, type Paged } from "@/lib/data/admin"
 import { isDemoMode } from "@/lib/demo/mode"
 import type { ContactMessageRow } from "@/lib/supabase/database.types"
 import { createClient } from "@/lib/supabase/server"
+import { countStatuses } from "./status-counts"
 import { enquiryStatuses, type Enquiry, type EnquiryStatus } from "@/types/enquiry"
 
 function toEnquiry(row: ContactMessageRow): Enquiry {
@@ -48,9 +49,12 @@ export async function listEnquiries(options: {
   const term = (options.query ?? "").replace(/[%,()*]/g, " ").trim()
   if (term) request = request.or(`name.ilike.%${term}%,email.ilike.%${term}%,message.ilike.%${term}%`)
 
-  const [{ data, count, error }, statuses] = await Promise.all([request, supabase.from("contact_messages").select("status")])
+  const [{ data, count, error }, statusCounts] = await Promise.all([
+    request,
+    countStatuses(enquiryStatuses, (status) => supabase.from("contact_messages").select("id", { count: "exact", head: true }).eq("status", status)),
+  ])
   if (error) throw new Error(error.message)
-  for (const row of statuses.data ?? []) counts[row.status as EnquiryStatus] += 1
+  Object.assign(counts, statusCounts)
 
   const total = count ?? 0
   return { rows: (data ?? []).map(toEnquiry), total, page, pageCount: Math.max(1, Math.ceil(total / ADMIN_PAGE_SIZE)), counts }

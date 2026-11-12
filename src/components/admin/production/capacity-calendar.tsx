@@ -93,7 +93,7 @@ export function CapacityCalendar({ weeks, blackouts }: { weeks: ProductionWeek[]
                 title="Remove these closed dates?"
                 description="Customers will be able to start production that week again."
                 confirmLabel="Remove"
-                onConfirm={async () => (await deleteBlackout(blackout.id)).ok}
+                onConfirm={() => deleteBlackout(blackout.id)}
                 trigger={
                   <Button type="button" variant="ghost" size="icon" aria-label="Remove closed dates">
                     <Trash2 />

@@ -16,16 +16,28 @@ export function SearchInput({ placeholder, label }: SearchInputProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const [value, setValue] = useState(searchParams.get("q") ?? "")
+  const urlQuery = searchParams.get("q") ?? ""
+  const [value, setValue] = useState(urlQuery)
+  // While a search is waiting to be sent, the box is ahead of the address; otherwise it follows it.
+  const [typing, setTyping] = useState(false)
+  const [seenQuery, setSeenQuery] = useState(urlQuery)
   const [pending, startTransition] = useTransition()
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  // The address changed some other way (Back, a sidebar link): show what it searches for.
+  if (urlQuery !== seenQuery) {
+    setSeenQuery(urlQuery)
+    if (!typing) setValue(urlQuery)
+  }
 
   useEffect(() => () => clearTimeout(timer.current), [])
 
   function update(next: string) {
     setValue(next)
+    setTyping(true)
     clearTimeout(timer.current)
     timer.current = setTimeout(() => {
+      setTyping(false)
       const params = new URLSearchParams(searchParams.toString())
       if (next.trim()) params.set("q", next.trim())
       else params.delete("q")

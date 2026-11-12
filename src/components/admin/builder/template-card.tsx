@@ -164,7 +164,7 @@ export function TemplateCard({ template, modelName }: { template: DesignTemplate
                 title={`Remove ${region.label}?`}
                 description="Builds already saved keep their colours, but customers can't choose this area any more."
                 confirmLabel="Remove area"
-                onConfirm={async () => (await deleteTemplateRegion(region.id)).ok}
+                onConfirm={() => deleteTemplateRegion(region.id)}
                 trigger={
                   <Button type="button" variant="ghost" size="icon" aria-label={`Remove ${region.label}`}>
                     <Trash2 />

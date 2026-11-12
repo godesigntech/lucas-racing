@@ -17,7 +17,7 @@ interface HeaderAccountProps {
 export async function HeaderAccount({ eventText, navItems }: HeaderAccountProps) {
   const user = await getCurrentUser()
 
-  if (!user) return <GuestActions eventText={eventText} />
+  if (!user) return <GuestActions eventText={eventText} navItems={navItems} />
 
   const menuUser = { fullName: user.fullName, email: user.email, isAdmin: user.isStaff }
   return (

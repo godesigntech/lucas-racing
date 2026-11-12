@@ -147,30 +147,20 @@ export async function issueCompetitionVouchers(competitionId: string): Promise<A
   if (isDemoMode()) return DEMO_READ_ONLY
   if (!(await getAdmin())) return NOT_ALLOWED
   const supabase = await createClient()
-  const startedAt = new Date().toISOString()
-  const { data: count, error } = await supabase.rpc("issue_competition_vouchers", { p_competition: competitionId })
+  // The function returns exactly the vouchers it issued, with who they're for.
+  const { data: issued, error } = await supabase.rpc("issue_competition_vouchers", { p_competition: competitionId })
   if (error) return databaseError(error, "We couldn't issue the vouchers.")
-  if (!count) return { ok: true, message: "Everyone eligible already has a voucher." }
+  const count = issued?.length ?? 0
+  if (count === 0) return { ok: true, message: "Everyone eligible already has a voucher." }
 
-  const { data: issued } = await supabase
-    .from("vouchers")
-    .select("code, percent_off, expires_at, competition_entry_id")
-    .eq("competition_id", competitionId)
-    .gte("created_at", startedAt)
-  const entryIds = (issued ?? []).flatMap((voucher) => (voucher.competition_entry_id ? [voucher.competition_entry_id] : []))
-  const { data: entries } = entryIds.length
-    ? await supabase.from("competition_entries").select("id, name, email, place").in("id", entryIds)
-    : { data: [] }
   after(async () => {
     for (const voucher of issued ?? []) {
-      const entry = entries?.find((item) => item.id === voucher.competition_entry_id)
-      if (!entry) continue
       await notifyCompetitionVoucher({
-        customerName: entry.name,
-        customerEmail: entry.email,
+        customerName: voucher.entrant_name,
+        customerEmail: voucher.entrant_email,
         code: voucher.code,
         percentOff: voucher.percent_off,
-        placeLabel: entry.place ? ordinal(entry.place) : "",
+        placeLabel: voucher.place ? ordinal(voucher.place) : "",
         expiresAt: voucher.expires_at,
       })
     }
@@ -187,12 +177,16 @@ export async function deleteCompetitionEntries(competitionId: string): Promise<A
   if (isDemoMode()) return DEMO_READ_ONLY
   const admin = await getFullAdmin()
   if (!admin) return NOT_ALLOWED
+  // Pictures are private files only the secret key can delete; without it they'd be left
+  // behind while the rules promise they're gone, so stop before deleting anything.
+  if (!canCreateAccounts) return failure("Deleting entries needs SUPABASE_SECRET_KEY set on the server, so their pictures can be deleted too.")
   const supabase = await createClient()
   const { data, error } = await supabase.rpc("delete_competition_entries", { p_competition: competitionId })
   if (error) return databaseError(error, "We couldn't delete the entries.")
   const paths = (data ?? []).flatMap((row) => (row.image_path ? [row.image_path] : []))
-  // Pictures are private files only the secret key can delete.
-  if (paths.length && canCreateAccounts) await createAdminClient().storage.from("design-uploads").remove(paths)
+  const removed = paths.length ? await createAdminClient().storage.from("design-uploads").remove(paths) : { error: null }
   refresh()
-  return { ok: true, message: `${data?.length ?? 0} entr${data?.length === 1 ? "y" : "ies"} deleted. Vouchers and the winner's announcement are kept.` }
+  const deleted = `${data?.length ?? 0} entr${data?.length === 1 ? "y" : "ies"} deleted`
+  if (removed.error) return failure(`${deleted}, but their pictures couldn't all be removed from storage: ${removed.error.message}`)
+  return { ok: true, message: `${deleted}. Vouchers and the winner's announcement are kept.` }
 }

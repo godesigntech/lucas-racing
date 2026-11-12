@@ -26,9 +26,18 @@ export function ShopToolbar({ showStock = true }: { showStock?: boolean }) {
   const pathname = usePathname()
   const params = useSearchParams()
   const [pending, startTransition] = useTransition()
+  const urlKey = `${params.get("q") ?? ""}|${params.get("min") ?? ""}|${params.get("max") ?? ""}`
   const [query, setQuery] = useState(params.get("q") ?? "")
   const [minPrice, setMinPrice] = useState(params.get("min") ?? "")
   const [maxPrice, setMaxPrice] = useState(params.get("max") ?? "")
+  // The address changed (Back, a category link): the boxes show what it filters by.
+  const [seenKey, setSeenKey] = useState(urlKey)
+  if (urlKey !== seenKey) {
+    setSeenKey(urlKey)
+    setQuery(params.get("q") ?? "")
+    setMinPrice(params.get("min") ?? "")
+    setMaxPrice(params.get("max") ?? "")
+  }
 
   function update(changes: Record<string, string | null>) {
     const next = new URLSearchParams(params.toString())

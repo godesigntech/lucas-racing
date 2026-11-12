@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server"
 import { createServerClient } from "@supabase/ssr"
 
 import { isDemoMode } from "@/lib/demo/mode"
+import { safeRedirectPath } from "@/lib/safe-redirect"
 
 import type { Database } from "./database.types"
 import { supabaseKey, supabaseUrl } from "./env"
@@ -46,8 +47,8 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone()
     // Already signed in (say, after confirming their email in another tab): carry on to
     // where they were heading, like the "Send my own helmet" form, not their account.
-    const next = request.nextUrl.searchParams.get("next")
-    if (next && next.startsWith("/") && !next.startsWith("//") && !AUTH_PAGES.some((page) => next.startsWith(page))) {
+    const next = safeRedirectPath(request.nextUrl.searchParams.get("next"), "")
+    if (next && !AUTH_PAGES.some((page) => next.startsWith(page))) {
       const target = new URL(next, request.nextUrl.origin)
       url.pathname = target.pathname
       url.search = target.search

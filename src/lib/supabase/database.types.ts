@@ -845,7 +845,21 @@ export type Database = {
         Args: { p_build: Json; p_notes: string }
         Returns: { reference: string }[]
       }
-      issue_competition_vouchers: { Args: { p_competition: string }; Returns: number }
+      issue_competition_vouchers: {
+        Args: { p_competition: string }
+        Returns: { code: string; percent_off: number; expires_at: string; entrant_name: string; entrant_email: string; place: number | null }[]
+      }
+      admin_order_stats: {
+        Args: Record<string, never>
+        Returns: {
+          revenue_paid: number
+          revenue_last_30_days: number
+          orders_last_30_days: number
+          open_orders: number
+          awaiting_payment: number
+          status_counts: Json
+        }[]
+      }
       delete_competition_entries: { Args: { p_competition: string }; Returns: { image_path: string | null }[] }
       check_voucher: { Args: { p_code: string }; Returns: { code: string; percent_off: number; expires_at: string }[] }
       place_order_with_voucher: {

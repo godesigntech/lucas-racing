@@ -74,7 +74,7 @@ export function OrderProofs({ orderId, proofs }: { orderId: string; proofs: Proo
                     title="Remove this photo?"
                     description="It disappears from the customer's order too."
                     confirmLabel="Remove"
-                    onConfirm={async () => (await deleteOrderProof(orderId, photo.id)).ok}
+                    onConfirm={() => deleteOrderProof(orderId, photo.id)}
                     trigger={
                       <Button type="button" variant="outline" size="icon" aria-label="Remove photo">
                         <Trash2 />
@@ -128,7 +128,7 @@ function ProofRow({ orderId, proof }: { orderId: string; proof: ProofWithUrl }) 
           title={`Remove proof ${proof.version}?`}
           description="The customer will no longer see it."
           confirmLabel="Remove"
-          onConfirm={async () => (await deleteOrderProof(orderId, proof.id)).ok}
+          onConfirm={() => deleteOrderProof(orderId, proof.id)}
           trigger={
             <Button type="button" variant="ghost" size="icon" aria-label={`Remove proof ${proof.version}`}>
               <Trash2 />

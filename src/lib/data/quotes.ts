@@ -8,6 +8,7 @@ import { getProducts } from "@/lib/data/products"
 import { isDemoMode } from "@/lib/demo/mode"
 import type { QuoteRequestRow } from "@/lib/supabase/database.types"
 import { createClient } from "@/lib/supabase/server"
+import { countStatuses } from "./status-counts"
 import { quoteStatuses, type BuildQuoteDetails, type OwnHelmetDetails, type QuoteRequest, type QuoteStatus } from "@/types/design-assistant"
 import type { HelmetLook } from "@/types/helmet"
 import type { CatalogProduct } from "@/types/product"
@@ -122,12 +123,12 @@ export async function listQuoteRequests(options: {
   const term = (options.query ?? "").replace(/[%,()*]/g, " ").trim()
   if (term) request = request.or(`reference.ilike.%${term}%,name.ilike.%${term}%,email.ilike.%${term}%`)
 
-  const [{ data, count, error }, statuses] = await Promise.all([
+  const [{ data, count, error }, statusCounts] = await Promise.all([
     request,
-    supabase.from("quote_requests").select("status"),
+    countStatuses(quoteStatuses, (status) => supabase.from("quote_requests").select("id", { count: "exact", head: true }).eq("status", status)),
   ])
   if (error) throw new Error(error.message)
-  for (const row of statuses.data ?? []) counts[row.status as QuoteStatus] += 1
+  Object.assign(counts, statusCounts)
 
   const total = count ?? 0
   return {

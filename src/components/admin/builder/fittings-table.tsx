@@ -28,6 +28,7 @@ import {
   type AeroKitValues,
   type VisorValues,
 } from "@/lib/validations/builder-admin"
+import type { ActionResult } from "@/types/account"
 import type { HelmetModel } from "@/types/helmet"
 import type { AeroKit, Visor, VisorKind } from "@/types/templates"
 
@@ -61,7 +62,7 @@ function Row({
   isActive: boolean
   swatch?: string
   onEdit: () => void
-  onDelete: () => Promise<boolean>
+  onDelete: () => Promise<ActionResult>
   deleteTitle: string
 }) {
   return (
@@ -117,7 +118,7 @@ export function AeroKitTable({ kits, models }: { kits: AeroKit[]; models: Helmet
             price={kit.price}
             isActive={kit.isActive}
             onEdit={() => setEditing(kit)}
-            onDelete={async () => (await deleteAeroKit(kit.id)).ok}
+            onDelete={() => deleteAeroKit(kit.id)}
             deleteTitle={`Remove ${kit.name}?`}
           />
         ))}
@@ -270,7 +271,7 @@ export function VisorTable({ visors, models }: { visors: Visor[]; models: Helmet
             isActive={visor.isActive}
             swatch={visor.tint}
             onEdit={() => setEditing(visor)}
-            onDelete={async () => (await deleteVisor(visor.id)).ok}
+            onDelete={() => deleteVisor(visor.id)}
             deleteTitle={`Remove ${visor.name}?`}
           />
         ))}

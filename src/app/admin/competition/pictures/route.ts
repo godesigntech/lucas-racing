@@ -12,12 +12,16 @@ export async function GET() {
   const pictures = await getCompetitionPictures(competition.id)
   const width = String(Math.max(2, pictures.length)).length
   const files: Record<string, Uint8Array> = {}
-  for (const picture of pictures) {
-    if (!picture.url) continue
-    const response = await fetch(picture.url)
-    if (!response.ok) continue
-    files[`${String(picture.number).padStart(width, "0")}.jpg`] = new Uint8Array(await response.arrayBuffer())
-  }
+  const queue = pictures.filter((picture) => picture.url)
+  // Eight downloads at a time: quick, without opening hundreds of connections at once.
+  await Promise.all(
+    Array.from({ length: Math.min(8, queue.length) }, async () => {
+      for (let picture = queue.shift(); picture; picture = queue.shift()) {
+        const response = await fetch(picture.url as string)
+        if (response.ok) files[`${String(picture.number).padStart(width, "0")}.jpg`] = new Uint8Array(await response.arrayBuffer())
+      }
+    }),
+  )
   if (Object.keys(files).length === 0) return new Response("No pictures yet", { status: 404 })
   // JPEGs are already compressed: store them as they are.
   const zip = zipSync(files, { level: 0 })

@@ -11,6 +11,7 @@ import { builderHref } from "@/lib/design-assistant/builder-link"
 import { ConceptImageError, conceptImagesConfigured, generateConceptImage } from "@/lib/design-assistant/concept-image"
 import { notifyNewQuote } from "@/lib/email/notifications"
 import { DEMO_READ_ONLY, isDemoMode } from "@/lib/demo/mode"
+import { canCreateAccounts, createAdminClient } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
 import {
   conceptImageSchema,
@@ -41,15 +42,25 @@ function pickColourway({ finish, base, graphic, accent, trim, film }: HelmetLook
 
 /**
  * Who is asking, for the AI limit: a one-way hash of their connection, never the
- * address itself. Netlify passes the visitor's address in x-nf-client-connection-ip.
+ * address itself. On Netlify only its own header counts (visitors can't set it); the
+ * forwarded headers anyone can send are only trusted off Netlify, e.g. locally.
+ * The hash is salted with a server secret, so nobody can work out another key.
  */
 async function visitorKey(): Promise<string> {
   const list = await headers()
-  const address =
-    list.get("x-nf-client-connection-ip") ?? list.get("x-forwarded-for")?.split(",")[0]?.trim() ?? list.get("x-real-ip") ?? "unknown"
-  return createHash("sha256")
-    .update(`${process.env.AI_LIMIT_SALT ?? "lucas-racing-ai"}:${address}`)
-    .digest("hex")
+  const address = process.env.NETLIFY
+    ? (list.get("x-nf-client-connection-ip") ?? "unknown")
+    : (list.get("x-nf-client-connection-ip") ?? list.get("x-forwarded-for")?.split(",")[0]?.trim() ?? list.get("x-real-ip") ?? "unknown")
+  const salt = process.env.AI_LIMIT_SALT || process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "lucas-racing-ai"
+  return createHash("sha256").update(`${salt}:${address}`).digest("hex")
+}
+
+/**
+ * The limit is kept with the secret key, so visitors can't call claim_ai_use() or
+ * release_ai_use() themselves (and give themselves their attempts back).
+ */
+async function limitClient() {
+  return canCreateAccounts ? createAdminClient() : await createClient()
 }
 
 /** Open to guests: suggests a concept and matching designs. Saves nothing. */
@@ -81,7 +92,7 @@ export async function requestConceptImage(values: ConceptImageValues): Promise<A
   const parsed = conceptImageSchema.safeParse(values)
   if (!parsed.success) return validationError(parsed.error)
 
-  const supabase = await createClient()
+  const supabase = await limitClient()
   const visitor = await visitorKey()
   const limit = imagesPerHour()
   const { data: allowed, error } = await supabase.rpc("claim_ai_use", {

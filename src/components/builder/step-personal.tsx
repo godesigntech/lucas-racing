@@ -5,6 +5,7 @@ import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Move, Plus, RotateCc
 
 import { helmetFont, helmetFontStyles } from "@/components/helmet-3d/helmet-fonts"
 import { usePricesHidden } from "@/components/builder/prices-context"
+import { formatMoney } from "@/lib/format"
 import { coverageLabel, coveragePrice, imageCoverage } from "@/lib/configurator/coverage-pricing"
 import { findFlag, helmetFlags } from "@/lib/helmet-3d/flags"
 import { Button } from "@/components/ui/button"
@@ -530,7 +531,7 @@ export function StepLogos({
                     {coverageLabel(imageCoverage(logo)).replace(/^a/, "A")}
                     {(() => {
                       const amount = coveragePrice(priceBook, "print", imageCoverage(logo))
-                      return amount !== null ? `: £${amount}` : ""
+                      return amount !== null && !pricesHidden ? `: ${formatMoney(amount)}` : ""
                     })()}
                   </span>
                 )}
@@ -560,7 +561,7 @@ export function StepLogos({
             copy={{
               title: "Logo or sponsor",
               action: "Upload a logo",
-              hint: `PNG with a transparent background works best. Up to 5 MB.${logoPrice ? ` £${logoPrice} each.` : ""}`,
+              hint: `PNG with a transparent background works best. Up to 5 MB.${logoPrice && !pricesHidden ? ` ${formatMoney(logoPrice)} each.` : ""}`,
               note: "We'll place it on your proof for you to approve.",
               noun: "logo",
             }}
@@ -578,7 +579,7 @@ export function StepLogos({
               action: "Upload an image",
               hint: pricesHidden
                 ? "A photo or picture printed straight onto the helmet, like your dog on the back."
-                : `A photo or picture printed straight onto the helmet, like your dog on the back. Priced by size${startingImagePrice !== null ? `: about £${startingImagePrice} as it starts` : ""}; bigger costs more.`,
+                : `A photo or picture printed straight onto the helmet, like your dog on the back. Priced by size${startingImagePrice !== null ? `: about ${formatMoney(startingImagePrice)} as it starts` : ""}; bigger costs more.`,
               note: "We'll check the image and show it on your proof before printing.",
               noun: "image",
             }}

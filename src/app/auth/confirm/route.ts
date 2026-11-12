@@ -1,6 +1,7 @@
 import type { EmailOtpType } from "@supabase/supabase-js"
 import { NextResponse, type NextRequest } from "next/server"
 
+import { safeRedirectPath } from "@/lib/safe-redirect"
 import { createClient } from "@/lib/supabase/server"
 
 /** Handles the link in Supabase confirmation and password-reset emails. */
@@ -10,7 +11,7 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get("type") as EmailOtpType | null
   const code = searchParams.get("code")
   const nextParam = searchParams.get("next") ?? "/account"
-  const next = nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/account"
+  const next = safeRedirectPath(nextParam, "/account")
 
   const supabase = await createClient()
   const { error } = tokenHash && type

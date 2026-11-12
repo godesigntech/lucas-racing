@@ -25,9 +25,14 @@ export function ActiveSwitch({ checked, label, onToggle }: ActiveSwitchProps) {
       onCheckedChange={(next) =>
         startTransition(async () => {
           setOptimistic(next)
-          const result = await onToggle(next)
-          if (result.ok) toast.success(result.message)
-          else toast.error(result.message)
+          try {
+            const result = await onToggle(next)
+            if (result.ok) toast.success(result.message)
+            else toast.error(result.message)
+          } catch {
+            // The switch flips back by itself once the transition ends.
+            toast.error("That didn't save. Check your connection and try again.")
+          }
         })
       }
     />

@@ -68,38 +68,24 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   if (isDemoMode()) return demoAdmin.dashboardStats()
   const supabase = await createClient()
 
-  const [orders, customers, recent] = await Promise.all([
-    supabase.from("orders").select("status, payment_status, total, created_at"),
+  // Totals and counts are worked out in the database (admin_order_stats()), so they stay
+  // right however many orders there are.
+  const [stats, customers, recent] = await Promise.all([
+    supabase.rpc("admin_order_stats"),
     supabase.from("profiles").select("id", { count: "exact", head: true }),
     supabase.from("orders").select("*, order_items(count)").order("created_at", { ascending: false }).limit(6),
   ])
-  if (orders.error) throw new Error(orders.error.message)
-
-  const since = Date.now() - 30 * 24 * 60 * 60 * 1000
-  const statusCounts = Object.fromEntries(orderStatuses.map((status) => [status, 0])) as Record<OrderStatus, number>
-  let revenuePaid = 0
-  let revenueLast30Days = 0
-  let ordersLast30Days = 0
-  let awaitingPayment = 0
-
-  for (const order of orders.data ?? []) {
-    const total = Number(order.total)
-    const live = order.status !== "cancelled"
-    statusCounts[order.status as OrderStatus] += 1
-    if (order.payment_status === "paid") revenuePaid += total
-    if (live && order.payment_status === "unpaid") awaitingPayment += 1
-    if (new Date(order.created_at).getTime() >= since) {
-      ordersLast30Days += 1
-      if (live) revenueLast30Days += total
-    }
-  }
+  if (stats.error) throw new Error(stats.error.message)
+  const row = stats.data?.[0]
+  const byStatus = (row?.status_counts ?? {}) as Record<string, number>
+  const statusCounts = Object.fromEntries(orderStatuses.map((status) => [status, Number(byStatus[status] ?? 0)])) as Record<OrderStatus, number>
 
   return {
-    revenuePaid,
-    revenueLast30Days,
-    ordersLast30Days,
-    openOrders: (orders.data ?? []).filter((order) => !["completed", "cancelled"].includes(order.status)).length,
-    awaitingPayment,
+    revenuePaid: Number(row?.revenue_paid ?? 0),
+    revenueLast30Days: Number(row?.revenue_last_30_days ?? 0),
+    ordersLast30Days: row?.orders_last_30_days ?? 0,
+    openOrders: row?.open_orders ?? 0,
+    awaitingPayment: row?.awaiting_payment ?? 0,
     customerCount: customers.count ?? 0,
     statusCounts,
     recentOrders: (recent.data ?? []).map(toOrderListItem),

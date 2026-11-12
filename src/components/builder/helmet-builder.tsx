@@ -24,6 +24,7 @@ import { buildSceneDesign, designMainColour, fittingFinishes, withShellPrint } f
 import { formatMoney } from "@/lib/format"
 import { hasCustomBellParts } from "@/lib/helmet-3d/parts"
 import { designHasHydroFilm } from "@/lib/competition/prizes"
+import { decodeShared } from "@/lib/configurator/share-link"
 import { OWN_HELMET_FORM_ID, setDesignReference } from "@/lib/own-helmet/design-reference"
 import { createClient } from "@/lib/supabase/browser"
 import type { PriceBook } from "@/types/catalog"
@@ -107,7 +108,7 @@ export function HelmetBuilder({
     const shared = [...params.keys()].some((key) => !NOT_DESIGN_PARAMS.has(key))
     return {
       product,
-      config: saved?.config ?? (shared ? decodeShared(params) : undefined),
+      config: saved?.config ?? (shared ? decodeSharedLink(params) : undefined),
       shared: shared || Boolean(saved),
       step: params.get("step"),
       // Back from logging in: the draft in this tab is the whole build (logos too).
@@ -139,16 +140,11 @@ export function HelmetBuilder({
  * A share link carries the flat fields as query parameters, as it always has, plus
  * everything that doesn't fit in one (regions, personalisation, logos) in `d`.
  */
-function decodeShared(params: URLSearchParams): HelmetConfiguration {
+function decodeSharedLink(params: URLSearchParams): HelmetConfiguration {
   const flat = Object.fromEntries(params) as unknown as HelmetConfiguration
   const packed = params.get("d")
-  if (!packed) return flat
-  try {
-    const json = atob(packed.replace(/-/g, "+").replace(/_/g, "/"))
-    return { ...flat, ...(JSON.parse(json) as Partial<HelmetConfiguration>) }
-  } catch {
-    return flat
-  }
+  const nested = packed ? decodeShared(packed) : null
+  return nested && typeof nested === "object" ? { ...flat, ...(nested as Partial<HelmetConfiguration>) } : flat
 }
 
 function readDraft(key: string): { productSlug: string; config: HelmetConfiguration } | null {

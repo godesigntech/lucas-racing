@@ -7,6 +7,7 @@ import { getTreatment } from "@/lib/configurator/regions"
 import { first3dModel } from "@/lib/helmet-3d/models"
 import type { AeroKit, RegionKind, Visor } from "@/types/templates"
 import type { ConfiguratorOption, Film, PriceBook } from "@/types/catalog"
+import { encodeShared } from "./share-link"
 import type {
   ConfigSummaryLine,
   FinishId,
@@ -678,8 +679,7 @@ export function configToSearchParams(config: HelmetConfiguration): URLSearchPara
   }
   if (Object.keys(nested).length > 0) {
     // base64url, so the link survives being pasted into a message or an email.
-    const packed = btoa(JSON.stringify(nested)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")
-    params.set("d", packed)
+    params.set("d", encodeShared(nested))
   }
   return params
 }

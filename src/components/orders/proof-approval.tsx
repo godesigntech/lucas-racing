@@ -22,14 +22,19 @@ export function ProofApproval({ proof }: { proof: ProofWithUrl }) {
 
   async function answer(approved: boolean) {
     setBusy(true)
-    const result = await respondToProof({ proofId: proof.id, approved, note })
-    setBusy(false)
-    if (result.ok) {
-      toast.success(result.message)
-      setMode("idle")
-      setNote("")
-    } else {
-      toast.error(result.message)
+    try {
+      const result = await respondToProof({ proofId: proof.id, approved, note })
+      if (result.ok) {
+        toast.success(result.message)
+        setMode("idle")
+        setNote("")
+      } else {
+        toast.error(result.message)
+      }
+    } catch {
+      toast.error("Your answer didn't go through. Check your connection and try again.")
+    } finally {
+      setBusy(false)
     }
   }
 

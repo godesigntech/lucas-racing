@@ -24,16 +24,24 @@ type Row = ShopVariantRow & { shop_products: ShopProductRow & { stores: { purcha
 export function useLiveVariants(variantIds: string[]): { variants: Map<string, LiveVariant>; loaded: boolean } {
   const key = [...new Set(variantIds)].sort().join(",")
   const [state, setState] = useState<{ key: string; variants: Map<string, LiveVariant> }>({ key: "", variants: new Map() })
+  // Bumped to try again after a failed look-up (a dropped connection).
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     if (!key) return
     let cancelled = false
+    let retry: number | undefined
     createClient()
       .from("shop_variants")
       .select("*, shop_products!inner(*, stores!inner(purchasable))")
       .in("id", key.split(","))
-      .then(({ data }) => {
+      .then(({ data, error }) => {
         if (cancelled) return
+        // Not "unavailable": we just don't know yet. Stay loading and ask again shortly.
+        if (error) {
+          retry = window.setTimeout(() => setAttempt((count) => count + 1), Math.min(15000, 2000 * 2 ** Math.min(attempt, 3)))
+          return
+        }
         const variants = new Map<string, LiveVariant>()
         for (const row of (data ?? []) as unknown as Row[]) {
           variants.set(row.id, {
@@ -46,8 +54,9 @@ export function useLiveVariants(variantIds: string[]): { variants: Map<string, L
       })
     return () => {
       cancelled = true
+      window.clearTimeout(retry)
     }
-  }, [key])
+  }, [key, attempt])
 
   return { variants: state.key === key ? state.variants : new Map(), loaded: !key || state.key === key }
 }

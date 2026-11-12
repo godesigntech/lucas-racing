@@ -8,6 +8,7 @@ import { ADMIN_PAGE_SIZE, type Paged } from "@/lib/data/admin"
 import { isDemoMode } from "@/lib/demo/mode"
 import type { CompetitionEntryRow, CompetitionRow, VoucherRow } from "@/lib/supabase/database.types"
 import { createClient, createPublicClient } from "@/lib/supabase/server"
+import { countStatuses } from "./status-counts"
 import {
   competitionStatuses,
   entryStatuses,
@@ -143,12 +144,14 @@ export async function listCompetitionEntries(
   const term = (options.query ?? "").replace(/[%,()*]/g, " ").trim()
   if (term) request = request.or(`reference.ilike.%${term}%,name.ilike.%${term}%,email.ilike.%${term}%,design_name.ilike.%${term}%`)
 
-  const [{ data, count, error }, statuses] = await Promise.all([
+  const [{ data, count, error }, statusCounts] = await Promise.all([
     request,
-    supabase.from("competition_entries").select("status").eq("competition_id", competitionId),
+    countStatuses(entryStatuses, (status) =>
+      supabase.from("competition_entries").select("id", { count: "exact", head: true }).eq("competition_id", competitionId).eq("status", status),
+    ),
   ])
   if (error) throw new Error(error.message)
-  for (const row of statuses.data ?? []) if (row.status in counts) counts[row.status as EntryStatus] += 1
+  Object.assign(counts, statusCounts)
 
   const total = count ?? 0
   return { rows: (data ?? []).map(toEntry), total, page, pageCount: Math.max(1, Math.ceil(total / ADMIN_PAGE_SIZE)), counts }
@@ -174,8 +177,11 @@ export async function getCompetitionVoucherCounts(competitionId: string): Promis
   await requireAdmin()
   if (isDemoMode()) return { issued: 0, used: 0 }
   const supabase = await createClient()
-  const { data } = await supabase.from("vouchers").select("redeemed_at").eq("competition_id", competitionId)
-  return { issued: data?.length ?? 0, used: (data ?? []).filter((row) => row.redeemed_at).length }
+  const [issued, used] = await Promise.all([
+    supabase.from("vouchers").select("id", { count: "exact", head: true }).eq("competition_id", competitionId),
+    supabase.from("vouchers").select("id", { count: "exact", head: true }).eq("competition_id", competitionId).not("redeemed_at", "is", null),
+  ])
+  return { issued: issued.count ?? 0, used: used.count ?? 0 }
 }
 
 /**

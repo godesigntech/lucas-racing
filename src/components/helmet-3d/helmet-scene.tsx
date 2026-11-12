@@ -203,18 +203,44 @@ function HelmetModel({ url, tint = "#ffffff", finish = "gloss", paintFinish = "g
     setArtworkEnabled(root, false)
   }, [root, maskKey])
 
+  // Textures drawn here (the masks and the names/logos atlas) belong to this helmet: each is
+  // freed once it's replaced, and all of them when the helmet goes. Films are shared and cached.
+  const ownedRef = useRef<{
+    masks: { key: string; maps: Promise<CanvasTexture[] | null> } | null
+    shownMasks: CanvasTexture[] | null
+    decals: CanvasTexture | null
+  }>({ masks: null, shownMasks: null, decals: null })
+  useEffect(() => {
+    const owned = ownedRef.current
+    return () => {
+      owned.masks?.maps.then((maps) => maps?.forEach((texture) => texture.dispose())).catch(() => undefined)
+      owned.decals?.dispose()
+      owned.masks = null
+      owned.shownMasks = null
+      owned.decals = null
+    }
+  }, [root])
+
   useEffect(() => {
     if (regions.length === 0) return
+    const owned = ownedRef.current
     let cancelled = false
-    Promise.all([
-      buildRegionMap(regions.map((region) => region.maskUrl)),
-      ...regions.map((region) => (region.filmUrl ? loadFilmTexture(region.filmUrl) : Promise.resolve(null))),
-    ])
+    // The masks are built once per template (a per-pixel pass over every mask); picking a
+    // film only loads the film.
+    if (owned.masks?.key !== maskKey) {
+      // A template that was still loading is never shown now: free its masks when they arrive.
+      owned.masks?.maps.then((maps) => maps !== owned.shownMasks && maps?.forEach((texture) => texture.dispose())).catch(() => undefined)
+      owned.masks = { key: maskKey, maps: buildRegionMap(regions.map((region) => region.maskUrl)) }
+    }
+    Promise.all([owned.masks.maps, ...regions.map((region) => (region.filmUrl ? loadFilmTexture(region.filmUrl) : Promise.resolve(null)))])
       .then(([regionMaps, ...films]) => {
         if (cancelled || !regionMaps) return
         // Films live in /films; anything else is the customer's uploaded print.
         const prints = regions.map((region) => Boolean(region.filmUrl) && !region.filmUrl!.startsWith("/films/"))
         setRegionTextures(root, regionMaps as CanvasTexture[], films as (Texture | null)[], regions.length, prints)
+        // The previous template's masks are no longer shown: free them.
+        if (owned.shownMasks && owned.shownMasks !== regionMaps) owned.shownMasks.forEach((texture) => texture.dispose())
+        owned.shownMasks = regionMaps as CanvasTexture[]
       })
       .catch((error) => console.error("Couldn't load helmet template artwork:", error))
     return () => {
@@ -223,22 +249,31 @@ function HelmetModel({ url, tint = "#ffffff", finish = "gloss", paintFinish = "g
     // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the mask and film URLs, not the array identity
   }, [root, maskKey, filmKey, regions.length])
 
-  // Names, numbers and logos, drawn into one atlas and projected onto the shell.
+  // Names, numbers and logos, drawn into one atlas and projected onto the shell. Redrawn
+  // only when they change, not on every colour click.
+  const decalKey = useMemo(() => (design ? JSON.stringify(design.decals) : ""), [design])
   useEffect(() => {
-    if (!design) {
-      setDecals(root, null)
+    const owned = ownedRef.current
+    const replace = (texture: CanvasTexture | null) => {
+      setDecals(root, texture)
+      if (owned.decals && owned.decals !== texture) owned.decals.dispose()
+      owned.decals = texture
+    }
+    if (!decalKey) {
+      replace(null)
       return
     }
     let cancelled = false
-    buildDecalAtlas(design.decals)
+    buildDecalAtlas(JSON.parse(decalKey) as DecalInput)
       .then((texture) => {
-        if (!cancelled) setDecals(root, texture)
+        if (cancelled) texture?.dispose()
+        else replace(texture)
       })
       .catch((error) => console.error("Couldn't draw the helmet personalisation:", error))
     return () => {
       cancelled = true
     }
-  }, [root, design])
+  }, [root, decalKey])
 
   // A designer's full-colour artwork, kept off while the next one loads so two designs never mix.
   const artworkUrl = design?.artworkUrl ?? null

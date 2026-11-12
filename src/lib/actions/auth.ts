@@ -4,6 +4,7 @@ import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 
 import { DEMO_READ_ONLY, isDemoMode } from "@/lib/demo/mode"
+import { safeRedirectPath } from "@/lib/safe-redirect"
 import { createClient } from "@/lib/supabase/server"
 import { loginSchema, signupSchema, type LoginFormValues, type SignupFormValues } from "@/lib/validations/auth"
 import type { ActionResult } from "@/types/account"
@@ -34,9 +35,7 @@ function signUpErrorMessage(code: string | undefined): string {
 }
 
 /** Only allow redirects back into this site. */
-function safeNext(next: string | null | undefined, fallback: string): string {
-  return next && next.startsWith("/") && !next.startsWith("//") ? next : fallback
-}
+const safeNext = safeRedirectPath
 
 export async function signIn(values: LoginFormValues, next?: string): Promise<ActionResult> {
   if (isDemoMode()) return DEMO_READ_ONLY
