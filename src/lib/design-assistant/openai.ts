@@ -54,7 +54,31 @@ export async function paintWithOpenAi(request: ImageRequest): Promise<string> {
     headers["Content-Type"] = "application/json"
   }
 
-  const response = await fetch(`${API}/images/${photo ? "edits" : "generations"}`, {
+  return `data:image/jpeg;base64,${await requestImage(photo ? "edits" : "generations", body, headers)}`
+}
+
+/** A picture OpenAI should work from, e.g. a blank sticker layout or a logo. */
+export interface ImageInput {
+  bytes: Uint8Array
+  type: "image/png" | "image/jpeg" | "image/webp"
+  name: string
+}
+
+/**
+ * Edits pictures with OpenAI from a prompt (the first picture is the one being changed;
+ * any others are references, like logos to include). Returns the JPEG's base64.
+ * Throws ConceptImageError ("flagged", "quota" or "failed").
+ */
+export async function editWithOpenAi(prompt: string, images: ImageInput[], size: "1024x1024" | "1536x1024" | "1024x1536" = "1024x1024"): Promise<string> {
+  const form = new FormData()
+  for (const [key, value] of Object.entries({ model: model(), prompt, quality: quality(), size, output_format: "jpeg" })) form.append(key, value)
+  for (const image of images) form.append("image[]", new Blob([new Uint8Array(image.bytes)], { type: image.type }), image.name)
+  return requestImage("edits", form, { Authorization: `Bearer ${secret("OPENAI_API_KEY")}` })
+}
+
+/** One call to OpenAI's images API: the picture's base64, or a ConceptImageError saying why not. */
+async function requestImage(endpoint: "edits" | "generations", body: FormData | string, headers: Record<string, string>): Promise<string> {
+  const response = await fetch(`${API}/images/${endpoint}`, {
     method: "POST",
     headers,
     body,
@@ -66,11 +90,11 @@ export async function paintWithOpenAi(request: ImageRequest): Promise<string> {
     error?: { code?: string | null; type?: string; message?: string }
   }
   const image = result.data?.[0]?.b64_json
-  if (response.ok && image) return `data:image/jpeg;base64,${image}`
+  if (response.ok && image) return image
 
   const code = result.error?.code ?? result.error?.type ?? ""
   const message = `${code || response.status}: ${result.error?.message ?? "OpenAI returned no image"}`
   if (FLAGGED.has(code)) throw new ConceptImageError(message, "flagged")
-  if (response.status === 429 || QUOTA.has(code)) throw new ConceptImageError(message, "quota")
+  if (response.status === 429 || QUOTA.has(code) || /credit|billing|quota/i.test(code)) throw new ConceptImageError(message, "quota")
   throw new ConceptImageError(message, "failed")
 }

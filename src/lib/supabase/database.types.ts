@@ -314,6 +314,30 @@ export type OrderRow = Timestamps & {
   voucher_code: string | null
 }
 
+/** One AI kart sticker design (kart_stickers migration). */
+export type KartStickerDesignRow = {
+  id: string
+  user_id: string
+  layout: string
+  kart_model: string
+  prompt: string
+  race_number: string
+  driver_name: string
+  /** gloss, matt, holographic or chrome. */
+  finish: string
+  logos: string[]
+  image_path: string
+  created_at: string
+}
+
+/** One use of an AI feature, for its limit (claim_ai_use()). Server only. */
+export type AiUsageRow = {
+  id: string
+  visitor_key: string
+  kind: string
+  created_at: string
+}
+
 /** A percentage off one custom helmet finish, for one customer, single use. */
 export type VoucherRow = {
   id: string
@@ -687,6 +711,12 @@ export type Database = {
       quote_requests: Table<QuoteRequestRow, "name" | "email" | "helmet", keyof QuoteRequestRow>
       competitions: Table<CompetitionRow, "slug" | "title", keyof CompetitionRow>
       vouchers: Table<VoucherRow, "code" | "user_id" | "percent_off" | "expires_at", keyof VoucherRow>
+      kart_sticker_designs: Table<
+        KartStickerDesignRow,
+        "user_id" | "layout" | "kart_model" | "prompt" | "finish" | "image_path",
+        keyof KartStickerDesignRow
+      >
+      ai_usage: Table<AiUsageRow, "visitor_key" | "kind", keyof AiUsageRow>
       competition_entries: Table<
         CompetitionEntryRow,
         "competition_id" | "user_id" | "name" | "email" | "design_name" | "product_slug" | "config" | "agreed_rules_at",
@@ -845,6 +875,7 @@ export type Database = {
         Args: { p_build: Json; p_notes: string }
         Returns: { reference: string }[]
       }
+      submit_kart_sticker_request: { Args: { p_design: string; p_notes: string }; Returns: { reference: string }[] }
       issue_competition_vouchers: {
         Args: { p_competition: string }
         Returns: { code: string; percent_off: number; expires_at: string; entrant_name: string; entrant_email: string; place: number | null }[]

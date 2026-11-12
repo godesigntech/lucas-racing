@@ -8,6 +8,7 @@ import { QuoteStatusBadge } from "@/components/admin/quotes/quote-status-badge"
 import { BuildQuoteRequest } from "@/components/admin/quotes/build-quote-request"
 import { OwnHelmetRequest } from "@/components/admin/quotes/own-helmet-request"
 import { OwnHelmetSketchCard } from "@/components/admin/quotes/own-helmet-sketch"
+import { KartStickerRequest } from "@/components/admin/quotes/kart-sticker-request"
 import { QuoteUpdateForm } from "@/components/admin/quotes/quote-update-form"
 import { HelmetArt } from "@/components/helmet/helmet-art"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -32,7 +33,14 @@ async function QuoteDetail({ id }: { id: string }) {
   const { quote, photoUrl, aiImageUrl, suggestions, photoUrls, logoUrls, buildImageUrls, sketchImageUrls } = await getQuoteRequest(id)
   const ownHelmet = quote.kind === "own_helmet"
   const build = quote.kind === "build"
-  const helmet = build ? `Bespoke build: ${quote.build?.name ?? ""}` : ownHelmet ? `Their own helmet${quote.details.makeModel ? `: ${quote.details.makeModel}` : ""}` : (quoteHelmetLabels[quote.helmet as QuoteHelmet] ?? quote.helmet)
+  const kart = quote.kind === "kart_stickers"
+  const helmet = kart
+    ? `Kart stickers${quote.kart?.kartModel ? `: ${quote.kart.kartModel}` : ""}`
+    : build
+      ? `Bespoke build: ${quote.build?.name ?? ""}`
+      : ownHelmet
+        ? `Their own helmet${quote.details.makeModel ? `: ${quote.details.makeModel}` : ""}`
+        : (quoteHelmetLabels[quote.helmet as QuoteHelmet] ?? quote.helmet)
 
   return (
     <>
@@ -48,7 +56,8 @@ async function QuoteDetail({ id }: { id: string }) {
           {ownHelmet && quote.details.design && <OwnHelmetSketchCard sketch={quote.details.design} imageUrls={sketchImageUrls} designImageUrls={buildImageUrls} />}
           {ownHelmet && <OwnHelmetRequest quote={quote} photoUrls={photoUrls} logoUrls={logoUrls} />}
           {build && <BuildQuoteRequest quote={quote} imageUrls={buildImageUrls} />}
-          {!ownHelmet && !build && <div className="grid gap-6 md:grid-cols-2">
+          {kart && <KartStickerRequest quote={quote} designUrl={photoUrl} logoUrls={logoUrls} />}
+          {!ownHelmet && !build && !kart && <div className="grid gap-6 md:grid-cols-2">
             <AdminCard title="Customer's photo" flush>
               {photoUrl ? (
                 <a href={photoUrl} target="_blank" rel="noreferrer" className="block bg-carbon/5">

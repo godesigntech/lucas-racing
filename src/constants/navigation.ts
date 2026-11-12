@@ -42,6 +42,7 @@ export const mainNav: NavGroup[] = [
       { label: "Design my helmet with AI", href: "/design-my-helmet", description: "A bespoke design from our AI, free, with unlimited revisions" },
       { label: "Win a custom helmet", href: "/competition", description: "Design the best helmet and we'll make it for you" },
       { label: "MS Kart parts by HydroKarts", href: "/customisation/kart-parts", description: "Kart parts in your own finish" },
+      { label: "Kart sticker designer", href: "/kart-stickers", description: "Design your kart's sticker kit with AI and get a quote" },
     ],
   },
   { label: "Design my helmet", href: "/design-my-helmet" },

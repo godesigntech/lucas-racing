@@ -9,7 +9,7 @@ import { isDemoMode } from "@/lib/demo/mode"
 import type { QuoteRequestRow } from "@/lib/supabase/database.types"
 import { createClient } from "@/lib/supabase/server"
 import { countStatuses } from "./status-counts"
-import { quoteStatuses, type BuildQuoteDetails, type OwnHelmetDetails, type QuoteRequest, type QuoteStatus } from "@/types/design-assistant"
+import { quoteStatuses, type BuildQuoteDetails, type OwnHelmetDetails, type QuoteRequest, type QuoteStatus, type KartStickerDetails } from "@/types/design-assistant"
 import type { HelmetLook } from "@/types/helmet"
 import type { CatalogProduct } from "@/types/product"
 
@@ -35,13 +35,28 @@ function toQuoteRequest(row: QuoteRequestRow): QuoteRequest {
     status: row.status as QuoteStatus,
     adminNotes: row.admin_notes,
     createdAt: row.created_at,
-    kind: row.kind === "own_helmet" || row.kind === "build" ? row.kind : "design",
+    kind: row.kind === "own_helmet" || row.kind === "build" || row.kind === "kart_stickers" ? row.kind : "design",
     photoPaths: row.photo_paths ?? [],
     details: toOwnHelmetDetails(row.details),
     build: row.kind === "build" ? toBuildDetails(row.details) : null,
+    kart: row.kind === "kart_stickers" ? toKartDetails(row.details) : null,
     quotedPrice: row.quoted_price === null ? null : Number(row.quoted_price),
     quotedDeposit: row.quoted_deposit === null ? null : Number(row.quoted_deposit),
     quotedAt: row.quoted_at,
+  }
+}
+
+/** What a kart sticker request asked the AI for. */
+function toKartDetails(value: unknown): KartStickerDetails {
+  const details = (value && typeof value === "object" ? value : {}) as Record<string, unknown>
+  const text = (key: string) => (typeof details[key] === "string" ? (details[key] as string) : "")
+  return {
+    layout: text("layout"),
+    kartModel: text("kartModel"),
+    prompt: text("prompt"),
+    raceNumber: text("raceNumber"),
+    driverName: text("driverName"),
+    finish: text("finish"),
   }
 }
 

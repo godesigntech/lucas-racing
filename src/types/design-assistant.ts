@@ -47,7 +47,9 @@ export interface DesignAnalysis {
 export const quoteHelmets = ["arai-sk6", "bell-kc7", "own", "unsure"] as const
 export type QuoteHelmet = (typeof quoteHelmets)[number]
 
-export const quoteHelmetLabels: Record<QuoteHelmet, string> = {
+/** Labels for quote_requests.helmet, including "kart" for kart sticker kits. */
+export const quoteHelmetLabels: Record<QuoteHelmet | "kart", string> = {
+  kart: "Kart stickers",
   "arai-sk6": "New Arai SK-6",
   "bell-kc7": "New Bell KC7",
   own: "I'll send my own helmet",
@@ -76,16 +78,28 @@ export interface QuoteRequest {
   adminNotes: string
   createdAt: string
   /** "design": from the design assistant. "own_helmet": a customer sending their own helmet. "build": a bespoke build from the builder. */
-  kind: "design" | "own_helmet" | "build"
+  kind: "design" | "own_helmet" | "build" | "kart_stickers"
   /** Own-helmet requests: storage paths of the photos of their helmet. */
   photoPaths: string[]
   details: OwnHelmetDetails
   /** Bespoke builds: the design as the customer made it in the builder. */
   build: BuildQuoteDetails | null
+  /** Kart sticker kits: what the customer asked the AI for. The design is image_path; logos are details.logos. */
+  kart: KartStickerDetails | null
   /** The price the workshop sent back, and the deposit due, once priced. */
   quotedPrice: number | null
   quotedDeposit: number | null
   quotedAt: string | null
+}
+
+/** A kart sticker kit designed with AI (/kart-stickers), sent for a quote. */
+export interface KartStickerDetails {
+  layout: string
+  kartModel: string
+  prompt: string
+  raceNumber: string
+  driverName: string
+  finish: string
 }
 
 /** A bespoke build sent from the builder for a price. */
