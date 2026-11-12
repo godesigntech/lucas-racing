@@ -1,6 +1,7 @@
 import { Suspense } from "react"
 
 import { CustomerChatLauncher } from "@/components/chat/customer-chat-launcher"
+import { CompetitionPromoLoader } from "@/components/competition/competition-promo-loader"
 import { DesignAssistant } from "@/components/design-assistant/design-assistant"
 import { SiteFooter } from "@/components/layout/site-footer"
 import { SiteHeader } from "@/components/layout/site-header"
@@ -23,6 +24,9 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
         <CustomerChatLauncher />
       </Suspense>
       <DesignAssistant />
+      <Suspense fallback={null}>
+        <CompetitionPromoLoader />
+      </Suspense>
     </>
   )
 }

@@ -312,6 +312,8 @@ export function toOrder(
     rushTier: row.rush_tier,
     rushFee: num(row.rush_fee),
     depositAmount: num(row.deposit_amount ?? 0),
+    discountAmount: num(row.discount_amount ?? 0),
+    voucherCode: row.voucher_code ?? null,
     items,
     events: [...row.order_status_events]
       .sort((a, b) => a.created_at.localeCompare(b.created_at))

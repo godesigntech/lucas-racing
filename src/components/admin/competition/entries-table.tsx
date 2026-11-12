@@ -40,6 +40,7 @@ export function EntriesTable({ entries, emptyMessage, templateNames }: { entries
             <TableHead>Design</TableHead>
             <TableHead>Entrant</TableHead>
             <TableHead>Updated</TableHead>
+            <TableHead>Place</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="w-10 pr-5" />
           </TableRow>
@@ -61,6 +62,7 @@ export function EntriesTable({ entries, emptyMessage, templateNames }: { entries
                 <p className="text-xs text-muted-foreground">{entry.email}</p>
               </TableCell>
               <TableCell className="text-sm text-muted-foreground">{formatDate(entry.updatedAt)}</TableCell>
+              <TableCell className="text-sm">{entry.status === "winner" ? "1st" : entry.place ? `${entry.place}${entry.place === 2 ? "nd" : entry.place === 3 ? "rd" : "th"}` : "–"}</TableCell>
               <TableCell>
                 <EntryStatusBadge status={entry.status} />
               </TableCell>

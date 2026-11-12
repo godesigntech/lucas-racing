@@ -96,4 +96,7 @@ export interface Order extends OrderListItem {
   rushFee: number
   /** 10% of the total, plus the chrome base coat in full for each chrome helmet. */
   depositAmount: number
+  /** Taken off by a competition voucher; 0 without one. */
+  discountAmount: number
+  voucherCode: string | null
 }

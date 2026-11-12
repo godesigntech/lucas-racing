@@ -22,6 +22,9 @@ const entrySchema = z.object({
   summary: z.array(z.object({ key: z.string().max(60), label: z.string().max(80), value: z.string().max(300) })).max(120),
   agreedRules: z.literal(true, { message: "Please agree to the competition rules." }),
   marketingOptIn: z.boolean(),
+  ukResident: z.literal(true, { message: "The competition is only open to people with a UK address." }),
+  postUrl: z.string().trim().max(500).regex(/^https?:\/\/\S+$/, "Add the link to your social media post."),
+  imagePath: z.string().regex(/^quotes\/[0-9a-f-]{36}\.(jpg|png|webp)$/).optional(),
 })
 
 /**
@@ -36,6 +39,9 @@ export async function enterCompetition(values: {
   summary: { key: string; label: string; value: string }[]
   agreedRules: boolean
   marketingOptIn: boolean
+  ukResident: boolean
+  postUrl: string
+  imagePath?: string
 }): Promise<ActionResult<{ reference: string; updated: boolean }>> {
   if (isDemoMode()) return DEMO_READ_ONLY
   const user = await getCurrentUser()
@@ -55,6 +61,9 @@ export async function enterCompetition(values: {
       summary: entry.summary,
       agreedRules: entry.agreedRules,
       marketingOptIn: entry.marketingOptIn,
+      ukResident: entry.ukResident,
+      postUrl: entry.postUrl,
+      imagePath: entry.imagePath ?? null,
     },
   })
   if (error) return databaseError(error, "We couldn't save your entry. Please try again.")

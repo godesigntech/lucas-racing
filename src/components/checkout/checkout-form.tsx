@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { chromeBaseCoatPrice } from "@/lib/configurator/pricing-rules"
 import { placeOrder } from "@/lib/actions/checkout"
+import { voucherDiscount } from "@/lib/checkout/voucher"
 import { buildUsesChrome } from "@/lib/configurator/helmet-configuration"
 import { basket } from "@/lib/basket/basket-store"
 import { basketSubtotal, toOrderItems, type AvailableLine } from "@/lib/basket/resolve-basket"
@@ -34,6 +35,7 @@ import { CheckoutSection } from "./checkout-section"
 import { ProductionDates } from "./production-dates"
 import { DeliveryOptions } from "./delivery-options"
 import { OrderSummaryCard } from "./order-summary-card"
+import { type AppliedVoucher, VoucherField } from "./voucher-field"
 
 interface CheckoutFormProps {
   profile: Profile
@@ -52,6 +54,9 @@ export function CheckoutForm({ profile, deliveryMethods, products, priceBook, pr
   const subtotal = basketSubtotal(lines)
   const hasHelmets = lines.some((line) => line.kind === "helmet")
   const hasChrome = lines.some((line) => line.kind === "helmet" && buildUsesChrome(line.item.config))
+  // A competition voucher: a percentage off one helmet's custom finish.
+  const [voucher, setVoucher] = useState<AppliedVoucher | null>(null)
+  const discount = voucher ? { ...voucher, amount: voucherDiscount(lines, voucher.percentOff, priceBook) } : null
 
   const firstMethod = deliveryMethods[0]
   const {
@@ -110,6 +115,7 @@ export function CheckoutForm({ profile, deliveryMethods, products, priceBook, pr
     const result = await placeOrder({
       items: toOrderItems(lines),
       checkout: values,
+      ...(voucher ? { voucherCode: voucher.code } : {}),
     })
 
     if (!result.ok) {
@@ -306,6 +312,8 @@ export function CheckoutForm({ profile, deliveryMethods, products, priceBook, pr
           deliveryPrice={delivery?.price ?? 0}
           rushFee={rushFee}
           rushLabel={chosenTier && chosenTier.key !== "standard" ? chosenTier.label : undefined}
+          discount={discount}
+          extra={<VoucherField voucher={voucher} onChange={setVoucher} hasHelmets={hasHelmets} />}
         >
           <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? <Loader2 className="animate-spin" aria-hidden /> : null}

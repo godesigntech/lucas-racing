@@ -23,6 +23,7 @@ import { getTreatment, requiresGloss, resolveRegions, setTreatment, templateArtw
 import { buildSceneDesign, designMainColour, fittingFinishes, withShellPrint } from "@/lib/configurator/scene-design"
 import { formatMoney } from "@/lib/format"
 import { hasCustomBellParts } from "@/lib/helmet-3d/parts"
+import { designHasHydroFilm } from "@/lib/competition/prizes"
 import { OWN_HELMET_FORM_ID, setDesignReference } from "@/lib/own-helmet/design-reference"
 import { createClient } from "@/lib/supabase/browser"
 import type { PriceBook } from "@/types/catalog"
@@ -61,6 +62,14 @@ interface HelmetBuilderProps {
 
 const noSubscription = () => () => {}
 
+/** Query parameters that say how to open the builder rather than what the design is. */
+const NOT_DESIGN_PARAMS = new Set(["template", "design", "competition", "step", "resume"])
+
+/** The builder's address for this build on this step. */
+function builderAddress(config: HelmetConfiguration, step: BuilderStepId, competitionMode: boolean): string {
+  return `/helmet-builder?${configToSearchParams(config)}&step=${step}${competitionMode ? "&competition=1" : ""}`
+}
+
 /** Used until the production tables exist; the preview then shows generic wording. */
 const emptyProduction: ProductionOptions = { ready: false, weeks: [], tiers: [], standardLeadWeeks: 6 }
 
@@ -95,11 +104,14 @@ export function HelmetBuilder({
   const start = useMemo(() => {
     const slug = saved?.productSlug ?? params.get("template")
     const product = products.find((item) => item.slug === slug) ?? products[0]
-    const shared = [...params.keys()].some((key) => key !== "template" && key !== "design" && key !== "competition")
+    const shared = [...params.keys()].some((key) => !NOT_DESIGN_PARAMS.has(key))
     return {
       product,
       config: saved?.config ?? (shared ? decodeShared(params) : undefined),
       shared: shared || Boolean(saved),
+      step: params.get("step"),
+      // Back from logging in: the draft in this tab is the whole build (logos too).
+      resume: params.has("resume"),
     }
   }, [saved, params, products])
 
@@ -118,7 +130,7 @@ export function HelmetBuilder({
       competition={competition}
       sketch={sketch}
       competitionMode={!sketch && params.has("competition") && Boolean(competition)}
-      start={{ product: start.product, config: start.config, shared: start.shared }}
+      start={{ product: start.product, config: start.config, shared: start.shared, step: start.step, resume: start.resume }}
     />
   )
 }
@@ -183,7 +195,7 @@ function BuilderBody({
 }: HelmetBuilderProps & {
   /** Opened from the competition page: the build is for entering, not buying. */
   competitionMode?: boolean
-} & { start: { product: CatalogProduct; config?: HelmetConfiguration; shared?: boolean } }) {
+} & { start: { product: CatalogProduct; config?: HelmetConfiguration; shared?: boolean; step?: string | null; resume?: boolean } }) {
   // Resolved from the build's own template slug, so switching template can't be stale.
   const getExtras = useCallback(
     (current: HelmetConfiguration) => {
@@ -200,14 +212,17 @@ function BuilderBody({
   // A sketch skips choosing the helmet and the review: it's only the design.
   const steps = useMemo(() => (sketch ? builderSteps.filter((item) => item.stage === "build" && item.id !== "helmet" && item.id !== "review") : builderSteps), [sketch])
   const draftKey = sketch ? SKETCH_DRAFT_KEY : DRAFT_KEY
-  const [stepId, setStepId] = useState<BuilderStepId>(steps[0].id)
+  // The step is in the address too, so Back and Forward move between steps and a link
+  // (e.g. back from logging in) opens on the step the customer was on.
+  const isStep = useCallback((id: string | null | undefined): id is BuilderStepId => steps.some((item) => item.id === id), [steps])
+  const [stepId, setStepId] = useState<BuilderStepId>(isStep(start.step) ? start.step : steps[0].id)
   // The part being coloured in steps 4 and 6, and the last colour or film applied, which a tap on the helmet repeats.
   const [activeZone, setActiveZone] = useState("")
   const [brush, setBrush] = useState<RegionTreatment | null>(null)
   // The name, flag, logo or image being dragged into place on the helmet, if any.
   const [placing, setPlacing] = useState<PlacingTarget | null>(null)
   const placingHere = placing && ((placing.list === "personalisation" && stepId === "details") || (placing.list === "logos" && stepId === "logos")) ? placing : null
-  const [visited, setVisited] = useState<Set<BuilderStepId>>(() => new Set([steps[0].id]))
+  const [visited, setVisited] = useState<Set<BuilderStepId>>(() => new Set([steps[0].id, stepId]))
   // Signed URLs for the customer's logos, so the 3D preview can draw them.
   const [logoUrls, setLogoUrls] = useState<Record<string, string>>({})
   // Which exact build was last added, so editing it brings "Add to basket" back.
@@ -277,10 +292,10 @@ function BuilderBody({
   useEffect(() => {
     if (restored.current) return
     restored.current = true
-    if (start.shared) return
+    if (start.shared && !start.resume) return
     const draft = readDraft(draftKey)
     if (draft && draft.productSlug === product.slug) update(draft.config)
-  }, [start.shared, product.slug, update, draftKey])
+  }, [start.shared, start.resume, product.slug, update, draftKey])
 
   // Metallic and chrome are lacquered gloss, which place_order() also enforces.
   useEffect(() => {
@@ -310,9 +325,19 @@ function BuilderBody({
     }
     // A sketch stays on its own page's address.
     if (sketch) return
-    const url = `${window.location.pathname}?${configToSearchParams(config)}${competitionMode ? "&competition=1" : ""}`
-    window.history.replaceState(window.history.state, "", url)
-  }, [config, product.slug, competitionMode, draftKey, sketch])
+    window.history.replaceState(window.history.state, "", builderAddress(config, stepId, competitionMode))
+  }, [config, product.slug, competitionMode, draftKey, sketch, stepId])
+
+  // Back and Forward move between the steps the customer went through.
+  useEffect(() => {
+    if (sketch) return
+    const onPop = () => {
+      const step = new URLSearchParams(window.location.search).get("step")
+      if (isStep(step)) setStepId(step)
+    }
+    window.addEventListener("popstate", onPop)
+    return () => window.removeEventListener("popstate", onPop)
+  }, [sketch, isStep])
 
   // A sketch hands its design to the request form on the same page.
   useEffect(() => {
@@ -328,6 +353,7 @@ function BuilderBody({
 
   function go(id: BuilderStepId) {
     if (!steps.some((item) => item.id === id)) return
+    if (id !== stepId && !sketch) window.history.pushState(window.history.state, "", builderAddress(config, id, competitionMode))
     setStepId(id)
     setVisited((current) => new Set(current).add(id))
     // On phones the panel sits under the preview: bring the new step into view.
@@ -391,10 +417,13 @@ function BuilderBody({
   const bespoke = useMemo(() => quoteReasons(config, priceBook), [config, priceBook])
   const blocked = bespoke.length === 0 && pending.length > 0
   // Where this build reopens, e.g. after logging in; competition mode carries over.
-  const builderUrl = `/helmet-builder?${configToSearchParams(config)}${competitionMode ? "&competition=1" : ""}`
+  // Back to this build on this step, with the whole draft restored (logos aren't in the address).
+  const builderUrl = `${builderAddress(config, stepId, competitionMode)}&resume=1`
   const deposit = price && !blocked ? helmetDeposit(price.total, config, chromeBaseCoatPrice(priceBook)) : null
+  // Competition entries need at least one hydrographic film.
+  const hasFilm = designHasHydroFilm(fullConfig(), priceBook)
 
-  const returnTo = sketch ? "/helmet-builder/own-helmet" : `/helmet-builder?template=${product.slug}`
+  const returnTo = sketch ? "/helmet-builder/own-helmet" : builderUrl
 
   return (
     <PricesHiddenContext.Provider value={sketch}>
@@ -437,11 +466,6 @@ function BuilderBody({
                 <span className="block font-display text-2xl font-bold uppercase leading-none sm:text-3xl">Sketch</span>
                 <span className="text-xs text-muted-foreground">Sent with your request</span>
               </>
-            ) : competitionMode ? (
-              <>
-                <span className="block font-display text-2xl font-bold uppercase leading-none sm:text-3xl">Free entry</span>
-                <span className="text-xs text-muted-foreground">Competition design</span>
-              </>
             ) : bespoke.length > 0 ? (
               <>
                 <span className="block font-display text-2xl font-bold uppercase leading-none sm:text-3xl" aria-live="polite">
@@ -468,8 +492,8 @@ function BuilderBody({
                 {competition.title}
               </Link>
               {competition.accepting
-                ? ": design your helmet, then enter it from the Review step."
-                : competition.status === "upcoming"
+                ? ": design your helmet with at least one hydrographic film, then enter it from the Review step."
+                : competition.opensLater
                   ? ": entries open soon. Design your helmet now and save it to enter later."
                   : ": entries have closed."}
             </span>
@@ -532,7 +556,8 @@ function BuilderBody({
           {stepId === "review" && (
             <>
               {competitionMode ? (
-                <StepReview summary={summary} price={null} onEdit={go} competitionEntry />
+                // The retail price is shown here too, as the competition rules say; entering is free.
+                <StepReview summary={summary} price={price} onEdit={go} competitionEntry />
               ) : (
                 <StepReview summary={summary} price={price} onEdit={go} pending={bespoke.length > 0 ? [] : pending} bespoke={bespoke} deposit={deposit} chrome={config.baseCoat === "chrome"} />
               )}
@@ -549,6 +574,9 @@ function BuilderBody({
                     getConfig={fullConfig}
                     summary={summary}
                     returnTo={builderUrl}
+                    hasFilm={hasFilm}
+                    onAddFilm={() => go("colours")}
+                    getPreview={() => previewRef.current}
                   />
                 </div>
               )}
@@ -609,10 +637,13 @@ function BuilderBody({
                 getConfig={fullConfig}
                 summary={summary}
                 returnTo={builderUrl}
+                hasFilm={hasFilm}
+                onAddFilm={() => go("colours")}
+                getPreview={() => previewRef.current}
               />
             ) : (
               <Button size="lg" disabled>
-                <Trophy /> {competition.status === "upcoming" ? "Entries open soon" : "Entries have closed"}
+                <Trophy /> {competition.opensLater ? "Entries open soon" : "Entries have closed"}
               </Button>
             )
           ) : bespoke.length > 0 ? (

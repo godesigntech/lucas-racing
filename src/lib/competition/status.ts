@@ -4,7 +4,7 @@ import type { Competition, CompetitionStatus, EntryStatus } from "@/types/compet
 export const competitionStatusMeta: Record<CompetitionStatus, { label: string; description: string; tone: Tone }> = {
   upcoming: { label: "Coming soon", description: "The page is up; entries aren't open yet.", tone: "neutral" },
   open: { label: "Open for entries", description: "Customers can enter from the builder until the closing date.", tone: "success" },
-  closed: { label: "Closed, judging", description: "No more entries. Shortlist and pick a winner.", tone: "warning" },
+  closed: { label: "Closed, voting", description: "No more entries. Post the designs on Facebook for the vote (Vote & prizes tab), then record the winner and places.", tone: "warning" },
   judged: { label: "Winner announced", description: "The winner is shown on the competition page.", tone: "info" },
 }
 
@@ -23,6 +23,12 @@ export function isAcceptingEntries(competition: Pick<Competition, "status" | "op
   return true
 }
 
+/** Not taking entries yet: coming soon, or open with its opening time still ahead. */
+export function opensLater(competition: Pick<Competition, "status" | "opensAt">, now = Date.now()): boolean {
+  if (competition.status === "upcoming") return true
+  return competition.status === "open" && competition.opensAt !== null && now < Date.parse(competition.opensAt)
+}
+
 /** "Friday 12 December 2026, 6pm" in UK time. */
 export function formatClosing(value: string): string {
   return new Intl.DateTimeFormat("en-GB", {
@@ -32,6 +38,8 @@ export function formatClosing(value: string): string {
     year: "numeric",
     hour: "numeric",
     minute: "2-digit",
+    // "11:59 pm", as the rules are written.
+    hour12: true,
     timeZone: "Europe/London",
   }).format(new Date(value))
 }

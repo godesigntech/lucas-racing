@@ -17,6 +17,10 @@ interface OrderSummaryCardProps {
   rushLabel?: string
   /** The chrome base coat's price, paid in full with the deposit for each chrome helmet. */
   chromePrice?: number
+  /** A competition voucher: what it takes off, and its code. */
+  discount?: { amount: number; code: string; percentOff: number } | null
+  /** Shown above the order button: the voucher field. */
+  extra?: React.ReactNode
   children?: React.ReactNode
 }
 
@@ -62,8 +66,11 @@ export function OrderSummaryCard({
   rushFee = 0,
   rushLabel,
   chromePrice = 0,
+  discount = null,
+  extra,
   children,
 }: OrderSummaryCardProps) {
+  const total = subtotal + deliveryPrice + rushFee - (discount?.amount ?? 0)
   return (
     <aside className="space-y-5 rounded-3xl bg-carbon p-6 text-paper" aria-label="Order summary">
       <h2 className="font-display text-3xl font-bold uppercase">Your order</h2>
@@ -96,12 +103,21 @@ export function OrderSummaryCard({
             <dd className="tabular-nums">{formatMoney(rushFee)}</dd>
           </div>
         )}
+        {discount && discount.amount > 0 && (
+          <div className="flex justify-between gap-3">
+            <dt className="text-paper/60">
+              Voucher {discount.code} · {discount.percentOff}% off your helmet finish
+            </dt>
+            <dd className="tabular-nums">−{formatMoney(discount.amount)}</dd>
+          </div>
+        )}
       </dl>
       <div className="flex items-baseline justify-between border-t border-white/10 pt-4">
         <span className="text-sm text-paper/60">Total</span>
-        <span className="font-display text-4xl font-bold">{formatMoney(subtotal + deliveryPrice + rushFee)}</span>
+        <span className="font-display text-4xl font-bold">{formatMoney(total)}</span>
       </div>
-      <Deposit amount={orderDeposit(subtotal + deliveryPrice + rushFee, chromeHelmetCount(lines), chromePrice)} chrome={chromeHelmetCount(lines) > 0} />
+      <Deposit amount={orderDeposit(total, chromeHelmetCount(lines), chromePrice)} chrome={chromeHelmetCount(lines) > 0} />
+      {extra}
       {children}
     </aside>
   )

@@ -5,7 +5,7 @@ import { HelmetBuilder } from "@/components/builder/helmet-builder"
 import { Container } from "@/components/layout/container"
 import { StudioHighlights } from "@/components/studio/studio-highlights"
 import { Skeleton } from "@/components/ui/skeleton"
-import { isAcceptingEntries } from "@/lib/competition/status"
+import { isAcceptingEntries, opensLater } from "@/lib/competition/status"
 import { getBuilderCatalog } from "@/lib/data/builder"
 import { getCompetition } from "@/lib/data/competition"
 import { getPriceBook, getProducts } from "@/lib/data/products"
@@ -43,7 +43,7 @@ async function Builder({ searchParams }: { searchParams: SearchParams }) {
   ])
   // Entering is only offered while it's taking entries; enter_competition() checks the dates again.
   const builderCompetition = competition
-    ? { id: competition.id, title: competition.title, closesAt: competition.closesAt, status: competition.status, accepting: isAcceptingEntries(competition) }
+    ? { id: competition.id, title: competition.title, closesAt: competition.closesAt, status: competition.status, accepting: isAcceptingEntries(competition), opensLater: opensLater(competition) }
     : null
   // Lets the first paint open on the right template instead of flashing the default.
   const search = new URLSearchParams()

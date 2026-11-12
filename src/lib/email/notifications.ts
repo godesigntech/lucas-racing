@@ -367,10 +367,45 @@ export async function notifyCompetitionEntry(entry: {
           ["Design", entry.designName],
           ["Entries close", closes],
         ]) +
-        paragraphs("You can update your design until entries close: open the builder, change it and enter again. We'll email the winner."),
+        paragraphs("Keep your social media post up until the winner is announced. You can update your design until entries close: open the builder, change it and enter again."),
       action: { label: "See your entry", href },
     }),
     text: `${firstName}, your entry ${entry.reference} ("${entry.designName}") for ${entry.competitionTitle} is saved.${closes ? ` Entries close ${closes}.` : ""}\n\n${href}`,
+  })
+}
+
+/** Sends an entrant their voucher code once the vote is in. */
+export async function notifyCompetitionVoucher(voucher: {
+  customerName: string
+  customerEmail: string
+  code: string
+  percentOff: number
+  /** "2nd place" for the top five, empty otherwise. */
+  placeLabel: string
+  expiresAt: string
+}): Promise<void> {
+  const firstName = voucher.customerName.split(" ")[0]
+  const href = siteUrl("/helmet-builder")
+  const expires = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/London" }).format(new Date(voucher.expiresAt))
+  const intro = voucher.placeLabel
+    ? `Your design came ${voucher.placeLabel} in our helmet competition. Thank you for entering!`
+    : "Thank you for entering our helmet competition!"
+  await sendEmail({
+    to: voucher.customerEmail,
+    subject: `Your ${voucher.percentOff}% helmet voucher – Lucas Racing`,
+    html: emailLayout({
+      heading: `${firstName}, here's your voucher`,
+      body:
+        paragraphs(`${intro} Here's ${voucher.percentOff}% off your own custom helmet finish.`) +
+        detailRows([
+          ["Voucher code", voucher.code],
+          ["Discount", `${voucher.percentOff}% off one custom helmet finish`],
+          ["Use it by", expires],
+        ]) +
+        paragraphs("Design your helmet in our builder and enter the code at checkout. It's also in your account under Competition."),
+      action: { label: "Design your helmet", href },
+    }),
+    text: `${firstName}, ${intro} Your voucher ${voucher.code} gives ${voucher.percentOff}% off one custom helmet finish until ${expires}. Enter it at checkout.\n\n${href}`,
   })
 }
 
@@ -387,7 +422,7 @@ export async function notifyCompetitionWinner(winner: {
   const href = siteUrl("/account/competition")
   await sendEmail({
     to: winner.customerEmail,
-    subject: `You won ${winner.competitionTitle.replace(/^win\s+/i, "")}! – Lucas Racing`,
+    subject: "You won the Lucas Racing helmet competition!",
     html: emailLayout({
       heading: `Congratulations ${firstName}, you won!`,
       body:

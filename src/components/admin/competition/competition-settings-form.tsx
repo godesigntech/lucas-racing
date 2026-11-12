@@ -41,6 +41,8 @@ export function CompetitionSettingsForm({ competition }: { competition: Competit
   const [opensAt, setOpensAt] = useState(toLocalInput(competition.opensAt))
   const [closesAt, setClosesAt] = useState(toLocalInput(competition.closesAt))
   const [judgingDate, setJudgingDate] = useState(competition.judgingDate ?? "")
+  const [votingOpensAt, setVotingOpensAt] = useState(toLocalInput(competition.votingOpensAt))
+  const [votingClosesAt, setVotingClosesAt] = useState(toLocalInput(competition.votingClosesAt))
   const [status, setStatus] = useState<CompetitionStatus>(competition.status)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isPending, startTransition] = useTransition()
@@ -59,6 +61,8 @@ export function CompetitionSettingsForm({ competition }: { competition: Competit
         opensAt: opensAt ? new Date(opensAt).toISOString() : null,
         closesAt: closesAt ? new Date(closesAt).toISOString() : null,
         judgingDate: judgingDate || null,
+        votingOpensAt: votingOpensAt ? new Date(votingOpensAt).toISOString() : null,
+        votingClosesAt: votingClosesAt ? new Date(votingClosesAt).toISOString() : null,
         status,
       })
       setErrors(result.ok ? {} : (result.fieldErrors ?? {}))
@@ -112,6 +116,15 @@ export function CompetitionSettingsForm({ competition }: { competition: Competit
         </Field>
         <Field id="competition-judging" label="Winner announced" error={errors.judgingDate}>
           <Input id="competition-judging" type="date" value={judgingDate} onChange={(event) => setJudgingDate(event.target.value)} />
+        </Field>
+      </div>
+
+      <div className="grid gap-5 md:grid-cols-3">
+        <Field id="competition-voting-opens" label="Voting opens" hint="The public vote on Facebook." error={errors.votingOpensAt}>
+          <Input id="competition-voting-opens" type="datetime-local" value={votingOpensAt} onChange={(event) => setVotingOpensAt(event.target.value)} />
+        </Field>
+        <Field id="competition-voting-closes" label="Voting closes" error={errors.votingClosesAt}>
+          <Input id="competition-voting-closes" type="datetime-local" value={votingClosesAt} onChange={(event) => setVotingClosesAt(event.target.value)} />
         </Field>
       </div>
 

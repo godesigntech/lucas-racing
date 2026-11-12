@@ -181,6 +181,8 @@ export const basketItemSchema = z.discriminatedUnion("kind", [helmetItemSchema, 
 export const placeOrderSchema = z.object({
   items: z.array(basketItemSchema).min(1, "Your basket is empty").max(50),
   checkout: checkoutSchema,
+  /** A competition voucher, checked and applied by place_order_with_voucher(). */
+  voucherCode: z.string().trim().max(24).optional(),
 })
 
 export type PlaceOrderInput = z.infer<typeof placeOrderSchema>

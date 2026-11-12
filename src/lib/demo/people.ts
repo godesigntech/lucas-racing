@@ -96,6 +96,8 @@ function order(seed: OrderSeed): Order {
     rushTier: "standard",
     rushFee: 0,
     depositAmount: 0,
+    discountAmount: 0,
+    voucherCode: null,
     customerName: seed.customer.fullName,
     customerEmail: seed.customer.email,
     total: subtotal + deliveryPrice,

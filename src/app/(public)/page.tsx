@@ -1,5 +1,8 @@
+import { Suspense } from "react"
+
 import { TeamGrid } from "@/components/about/team-grid"
 import { HomeAiDesign } from "@/components/home/home-ai-design"
+import { HomeCompetition } from "@/components/home/home-competition"
 import { HomeContact } from "@/components/home/home-contact"
 import { HomeCustomisation } from "@/components/home/home-customisation"
 import { HomeNews } from "@/components/home/home-news"
@@ -17,6 +20,10 @@ export default function HomePage() {
     <>
       <LucasHero />
       <HomeTicker />
+      {/* The helmet competition, while it's coming up or open. */}
+      <Suspense fallback={null}>
+        <HomeCompetition />
+      </Suspense>
       <TeamGrid
         eyebrow="The team"
         title="Howard, Connor and Wendy"

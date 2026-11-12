@@ -11,6 +11,21 @@ import type { ActionResult } from "@/types/account"
 
 import { databaseError, failure, validationError } from "./result"
 
+/** Checks a voucher code for the signed-in customer: its percentage, if it can be used now. */
+export async function checkVoucher(code: string): Promise<ActionResult<{ code: string; percentOff: number }>> {
+  if (isDemoMode()) return failure("Vouchers aren't available in demo mode.")
+  const user = await getCurrentUser()
+  if (!user) return failure("Please log in to use a voucher.")
+  const trimmed = code.trim()
+  if (!/^[A-Za-z0-9-]{6,24}$/.test(trimmed)) return failure("That voucher code isn't valid.")
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc("check_voucher", { p_code: trimmed })
+  if (error) return databaseError(error, "We couldn't check that voucher. Please try again.")
+  const voucher = data?.[0]
+  if (!voucher) return failure("That voucher code isn't valid.")
+  return { ok: true, data: { code: voucher.code, percentOff: voucher.percent_off } }
+}
+
 /** Places an order. Prices are recalculated in the database by public.place_order(). */
 export async function placeOrder(input: PlaceOrderInput): Promise<ActionResult<{ orderNumber: string }>> {
   if (isDemoMode()) return { ok: false, message: "Demo mode: orders aren't saved. Connect Supabase to take real orders." }
@@ -35,7 +50,7 @@ export async function placeOrder(input: PlaceOrderInput): Promise<ActionResult<{
       ? { kind: "product", variant_id: item.variantId, quantity: item.quantity, ...(item.finish ? { finish: item.finish } : {}) }
       : { slug: item.slug, quantity: item.quantity, config: item.config },
   )
-  const { data, error } = await supabase.rpc("place_order", {
+  const orderArgs = {
     p_items: orderItems,
     p_customer: { name: checkout.name, email: checkout.email, phone: checkout.phone },
     p_shipping: checkout.requiresAddress ? checkout.address : {},
@@ -47,7 +62,13 @@ export async function placeOrder(input: PlaceOrderInput): Promise<ActionResult<{
       start_date: checkout.productionStartDate ?? null,
       rush_tier: checkout.rushTier ?? "standard",
     },
-  })
+  }
+  // With a voucher, the same order goes through place_order_with_voucher(), which applies
+  // it in the same transaction (or refuses the whole order if the voucher can't be used).
+  const voucherCode = parsed.data.voucherCode?.trim()
+  const { data, error } = voucherCode
+    ? await supabase.rpc("place_order_with_voucher", { ...orderArgs, p_voucher: voucherCode })
+    : await supabase.rpc("place_order", orderArgs)
 
   if (error) return databaseError(error, "We couldn't place your order. Please try again.")
   const order = data?.[0]

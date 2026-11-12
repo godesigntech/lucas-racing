@@ -309,6 +309,24 @@ export type OrderRow = Timestamps & {
   rush_fee: number
   /** 10% of the total, plus the chrome base coat in full for each chrome helmet. Set by order_items_set_deposit(). */
   deposit_amount: number
+  /** Taken off the total by a voucher (place_order_with_voucher()); 0 without one. */
+  discount_amount: number
+  voucher_code: string | null
+}
+
+/** A percentage off one custom helmet finish, for one customer, single use. */
+export type VoucherRow = {
+  id: string
+  code: string
+  user_id: string
+  percent_off: number
+  description: string
+  competition_id: string | null
+  competition_entry_id: string | null
+  expires_at: string
+  redeemed_at: string | null
+  order_id: string | null
+  created_at: string
 }
 
 export type OrderItemRow = {
@@ -384,6 +402,11 @@ export type CompetitionRow = Timestamps & {
   /** upcoming, open, closed or judged. */
   status: string
   winner_entry_id: string | null
+  voting_opens_at: string | null
+  voting_closes_at: string | null
+  /** The winner's first name and design, kept here once the entries are deleted. */
+  winner_name: string
+  winner_design: string
 }
 
 export type CompetitionEntryRow = Timestamps & {
@@ -402,6 +425,13 @@ export type CompetitionEntryRow = Timestamps & {
   marketing_opt_in: boolean
   agreed_rules_at: string
   admin_notes: string
+  /** The entrant's social media post sharing the design. */
+  post_url: string
+  uk_resident: boolean
+  /** A picture of the design (design-uploads), for the anonymous vote. */
+  image_path: string | null
+  /** 2nd to 5th in the vote. */
+  place: number | null
 }
 
 export type QuoteRequestRow = Timestamps & {
@@ -656,6 +686,7 @@ export type Database = {
       >
       quote_requests: Table<QuoteRequestRow, "name" | "email" | "helmet", keyof QuoteRequestRow>
       competitions: Table<CompetitionRow, "slug" | "title", keyof CompetitionRow>
+      vouchers: Table<VoucherRow, "code" | "user_id" | "percent_off" | "expires_at", keyof VoucherRow>
       competition_entries: Table<
         CompetitionEntryRow,
         "competition_id" | "user_id" | "name" | "email" | "design_name" | "product_slug" | "config" | "agreed_rules_at",
@@ -813,6 +844,22 @@ export type Database = {
       submit_build_quote: {
         Args: { p_build: Json; p_notes: string }
         Returns: { reference: string }[]
+      }
+      issue_competition_vouchers: { Args: { p_competition: string }; Returns: number }
+      delete_competition_entries: { Args: { p_competition: string }; Returns: { image_path: string | null }[] }
+      check_voucher: { Args: { p_code: string }; Returns: { code: string; percent_off: number; expires_at: string }[] }
+      place_order_with_voucher: {
+        Args: {
+          p_items: Json
+          p_customer: Json
+          p_shipping: Json
+          p_delivery_method: string
+          p_notes: string
+          p_production: Json
+          /** Empty for no voucher. */
+          p_voucher: string
+        }
+        Returns: { order_id: string; order_number: string }[]
       }
       submit_own_helmet_request: {
         Args: { p_notes: string; p_photo_paths: string[]; p_details: Json }
