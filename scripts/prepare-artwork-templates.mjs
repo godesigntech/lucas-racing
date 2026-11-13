@@ -149,6 +149,16 @@ const templates = [
     zones: ["base", "graphic", "accent", "detail"],
     zoneOf: (h, s, v) => (isLight(s, v) ? "accent" : v < 0.3 ? "graphic" : isRed(h) && s > 0.9 ? "detail" : "base"),
   },
+  // A flattened image on white rather than an SVG: royal blue with navy blades, white and
+  // silver flashes, and sky/cyan blue panels.
+  {
+    slug: "cobalt-storm",
+    file: "cobalt-storm.webp",
+    fit: true,
+    smooth: 8,
+    zones: ["base", "graphic", "accent", "detail"],
+    zoneOf: (h, s, v) => (isLight(s, v) ? "accent" : v < 0.3 ? "graphic" : h < 222 ? "detail" : "base"),
+  },
   {
     slug: "gold-line",
     file: "10.svg",
@@ -360,6 +370,7 @@ async function fillHoles(rgba, width, height) {
  * by their light outline instead, since the black around them isn't transparent.
  */
 async function renderFitted(file, base) {
+  if (!file.toLowerCase().endsWith(".svg")) return renderFittedRaster(file)
   const source = readFileSync(file, "utf8")
   const tracedOnBlack = /id="Black_background"/.test(source)
   const svg = source.replace(/<rect[^>]*id="Black_background"[^>]*\/>/g, "")
@@ -393,6 +404,79 @@ async function renderFitted(file, base) {
   )
 }
 
+/**
+ * A flattened image (PNG/WebP) of the helmet's outline on a white sheet. The white around
+ * the outline (and in the eyeport, which reaches the sheet's edge) is dropped by flooding
+ * in from the edges, so whites inside the design stay. Light pixels left on the edge by
+ * anti-aliasing or compression are peeled off too, so the shell doesn't get a pale rim.
+ */
+async function renderFittedRaster(file) {
+  const { data, info } = await sharp(file).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
+  const { width, height } = info
+  const pixels = width * height
+  const nearWhite = (index) => Math.min(data[index * 4], data[index * 4 + 1], data[index * 4 + 2]) >= 225
+  const pale = (index) => {
+    const [, s, v] = hsv(data[index * 4], data[index * 4 + 1], data[index * 4 + 2])
+    return s < 0.35 && v > 0.55
+  }
+  const outside = new Uint8Array(pixels)
+  const neighbours = (index) => {
+    const x = index % width
+    const list = []
+    if (x > 0) list.push(index - 1)
+    if (x < width - 1) list.push(index + 1)
+    if (index >= width) list.push(index - width)
+    if (index < pixels - width) list.push(index + width)
+    return list
+  }
+  const stack = []
+  for (let x = 0; x < width; x++) stack.push(x, (height - 1) * width + x)
+  for (let y = 0; y < height; y++) stack.push(y * width, y * width + width - 1)
+  while (stack.length) {
+    const index = stack.pop()
+    if (outside[index] || !nearWhite(index)) continue
+    outside[index] = 1
+    stack.push(...neighbours(index))
+  }
+  for (let pass = 0; pass < 3; pass++) {
+    const peel = []
+    for (let index = 0; index < pixels; index++) if (!outside[index] && pale(index) && neighbours(index).some((n) => outside[n])) peel.push(index)
+    for (const index of peel) outside[index] = 1
+  }
+  for (let index = 0; index < pixels; index++) if (outside[index]) data[index * 4 + 3] = 0
+
+  const outline = await sharp(data, { raw: { width, height, channels: 4 } }).trim({ threshold: 0 }).png().toBuffer()
+  const bandWidth = Math.round((SHELL_BAND.right - SHELL_BAND.left) * SIZE)
+  const bandHeight = Math.round((SHELL_BAND.bottom - SHELL_BAND.top) * SIZE)
+  const placed = await sharp(outline).resize(bandWidth, bandHeight, { fit: "fill", kernel: "lanczos3" }).png().toBuffer()
+  const raw = await sharp({ create: { width: SIZE, height: SIZE, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+    .composite([{ input: placed, left: Math.round(SHELL_BAND.left * SIZE), top: Math.round(SHELL_BAND.top * SIZE) }])
+    .raw()
+    .toBuffer()
+  // Upscaling blends the edge with transparency; keep only solid pixels so edge growth copies real colours.
+  for (let index = 0; index < SIZE * SIZE; index++) raw[index * 4 + 3] = raw[index * 4 + 3] >= 200 ? 255 : 0
+  return raw
+}
+
+/**
+ * Raster artwork (compressed, then upscaled) leaves specks and jagged steps along zone
+ * edges, which show as soon as a customer recolours a zone. Each pixel goes to the zone
+ * that dominates around it (a blurred vote), so specks smaller than about `sigma` vanish
+ * and edges follow the shapes smoothly.
+ */
+async function smoothZones(masks, zones, rgba, sigma) {
+  const votes = await Promise.all(
+    zones.map((zone) => sharp(masks[zone], { raw: { width: SIZE, height: SIZE, channels: 1 } }).blur(sigma).extractChannel(0).raw().toBuffer()),
+  )
+  for (const zone of zones) masks[zone].fill(0)
+  for (let index = 0; index < SIZE * SIZE; index++) {
+    if (rgba[index * 4 + 3] === 0) continue
+    let best = 0
+    for (let z = 1; z < zones.length; z++) if (votes[z][index] > votes[best][index]) best = z
+    masks[zones[best]][index] = 255
+  }
+}
+
 for (const template of templates.filter((item) => onlySlugs.length === 0 || onlySlugs.includes(item.slug))) {
   const file = path.join(svgDir, template.file)
   const raster = template.fit ? await renderFitted(file, template.base) : await renderSvg(file)
@@ -408,6 +492,7 @@ for (const template of templates.filter((item) => onlySlugs.length === 0 || only
     artwork[index * 3 + 2] = b
     masks[template.zoneOf(...hsv(r, g, b))][index] = 255
   }
+  if (template.smooth) await smoothZones(masks, template.zones, rgba, template.smooth)
 
   const out = path.join("public/models/templates/bell-kc7", template.slug)
   await mkdir(out, { recursive: true })
