@@ -22,7 +22,10 @@ interface AssistantConversationProps {
   onNavigate?: () => void
 }
 
-/** The assistant's steps, shown as a conversation: brief → concept → quote → done. */
+/**
+ * The assistant's steps, shown as a conversation that flows down the page:
+ * brief → concept → quote → done. Each new step scrolls into view.
+ */
 export function AssistantConversation({ onNavigate }: AssistantConversationProps) {
   const [stage, setStage] = useState<Stage>("brief")
   const [photo, setPhoto] = useState<PreparedPhoto | null>(null)
@@ -30,12 +33,17 @@ export function AssistantConversation({ onNavigate }: AssistantConversationProps
   const [analysis, setAnalysis] = useState<DesignAnalysis | null>(null)
   const [reference, setReference] = useState("")
   const conceptImage = useConceptImage()
-  const scroller = useRef<HTMLDivElement>(null)
+  /** Marks where the newest step starts. */
+  const latest = useRef<HTMLSpanElement>(null)
+  const started = useRef(false)
 
-  // Bring each new step into view.
+  // Bring each new step into view (not on the first visit: the page opens at its top).
   useEffect(() => {
-    const element = scroller.current
-    if (element) element.scrollTo({ top: element.scrollHeight, behavior: "smooth" })
+    if (!started.current) {
+      started.current = true
+      return
+    }
+    latest.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   }, [stage])
 
   async function analyse(nextPhoto: PreparedPhoto | null, nextNote: string) {
@@ -74,83 +82,83 @@ export function AssistantConversation({ onNavigate }: AssistantConversationProps
     setStage("brief")
   }
 
+  /** Where the page scrolls to when this stage begins. */
+  const marker = (at: Stage) => (stage === at ? <span ref={latest} aria-hidden className="block scroll-mt-28" /> : null)
+
   return (
-    <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-paper px-4 py-6 sm:px-8">
-      <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col justify-end gap-5" aria-live="polite">
+    <div className="flex flex-col gap-5" aria-live="polite">
+      {marker("brief")}
+      <AssistantBubble>
+        <p className="font-semibold">Let&apos;s design something just for you</p>
+        <p className="mt-1 text-carbon/80">
+          Upload a picture of a helmet you like, or describe what you want. I&apos;ll create a design in your colours, change it as
+          often as you like, and you can ask for a quote whenever you&apos;re happy.
+        </p>
+      </AssistantBubble>
+
+      {marker("analysing")}
+      {stage === "brief" ? (
+        <BriefForm onSubmit={analyse} />
+      ) : (
+        <div className="ml-auto flex max-w-[85%] flex-col items-end gap-1.5">
+          {photo && (
+            // eslint-disable-next-line @next/next/no-img-element -- local preview of the customer's photo
+            <img src={photo.previewUrl} alt="Your photo" className="max-h-72 rounded-3xl rounded-br-lg object-cover" />
+          )}
+          {note && <p className="rounded-3xl rounded-br-lg bg-carbon px-4 py-2.5 text-sm text-paper">{note}</p>}
+        </div>
+      )}
+
+      {stage === "analysing" && (
         <AssistantBubble>
-          <p className="font-semibold">Let&apos;s design something just for you</p>
-          <p className="mt-1 text-carbon/80">
-            Please upload a picture of a helmet you like, or describe what you want. I&apos;ll create a design in your
-            colours, change it as often as you like, and you can ask for a quote whenever you&apos;re happy.
-          </p>
+          <span className="flex items-center gap-2">
+            <TypingDots /> Sketching your concept…
+          </span>
         </AssistantBubble>
+      )}
 
-        {stage === "brief" ? (
-          <BriefForm onSubmit={analyse} />
-        ) : (
-          <div className="ml-auto flex max-w-[85%] flex-col items-end gap-1.5">
-            {photo && (
-              // eslint-disable-next-line @next/next/no-img-element -- local preview of the customer's photo
-              <img src={photo.previewUrl} alt="Your photo" className="max-h-72 rounded-3xl rounded-br-lg object-cover" />
-            )}
-            {note && <p className="rounded-3xl rounded-br-lg bg-carbon px-4 py-2.5 text-sm text-paper">{note}</p>}
-          </div>
-        )}
-
-        {stage === "analysing" && (
+      {marker("result")}
+      {analysis && (stage === "result" || stage === "quote" || stage === "sent") && (
+        <>
           <AssistantBubble>
-            <span className="flex items-center gap-2">
-              <TypingDots /> Sketching your concept…
-            </span>
+            {conceptImage.state.status === "idle"
+              ? "Here's a concept in your colours, plus the designs closest to it."
+              : "Here's an AI concept of your helmet, plus our templates closest to it. Pick one to request a quote."}
           </AssistantBubble>
-        )}
+          <ConceptImage state={conceptImage.state} onRetry={paintAgain} />
+          <AnalysisCard analysis={analysis} showActions={stage === "result"} onQuote={() => setStage("quote")} onRestart={restart} onNavigate={onNavigate} />
+        </>
+      )}
 
-        {analysis && (stage === "result" || stage === "quote" || stage === "sent") && (
-          <>
-            <AssistantBubble>
-              {conceptImage.state.status === "idle"
-                ? "Here's a concept in your colours, plus the designs closest to it."
-                : "Here's an AI concept of your helmet, plus our templates closest to it. Pick one to request a quote."}
-            </AssistantBubble>
-            <ConceptImage state={conceptImage.state} onRetry={paintAgain} />
-            <AnalysisCard
-              analysis={analysis}
-              showActions={stage === "result"}
-              onQuote={() => setStage("quote")}
-              onRestart={restart}
-              onNavigate={onNavigate}
-            />
-          </>
-        )}
+      {marker("quote")}
+      {stage === "quote" && analysis && (
+        <QuoteForm
+          photo={photo}
+          note={note}
+          analysis={analysis}
+          aiImage={conceptImage.state.status === "done" ? conceptImage.state.image : null}
+          onBack={() => setStage("result")}
+          onSent={(value) => {
+            setReference(value)
+            setStage("sent")
+          }}
+        />
+      )}
 
-        {stage === "quote" && analysis && (
-          <QuoteForm
-            photo={photo}
-            note={note}
-            analysis={analysis}
-            aiImage={conceptImage.state.status === "done" ? conceptImage.state.image : null}
-            onBack={() => setStage("result")}
-            onSent={(value) => {
-              setReference(value)
-              setStage("sent")
-            }}
-          />
-        )}
-
-        {stage === "sent" && (
-          <div className="rounded-3xl border border-brand-ink/20 bg-accent p-5 text-center">
-            <CheckCircle2 className="mx-auto size-8 text-brand-ink" aria-hidden />
-            <h3 className="mt-2 font-display text-2xl font-bold uppercase">Request sent</h3>
-            <p className="mt-1 text-sm">
-              Your reference is <strong className="font-semibold">{reference}</strong>. The workshop will email you with a
-              price and a proof, usually within one working day.
-            </p>
-            <Button variant="secondary" className="mt-4" onClick={restart}>
-              <Sparkles aria-hidden /> Design another
-            </Button>
-          </div>
-        )}
-      </div>
+      {marker("sent")}
+      {stage === "sent" && (
+        <div className="rounded-3xl border border-brand-ink/20 bg-accent p-6 text-center">
+          <CheckCircle2 className="mx-auto size-9 text-brand-ink" aria-hidden />
+          <h3 className="mt-2 font-display text-3xl font-bold uppercase">Request sent</h3>
+          <p className="mt-1 text-sm">
+            Your reference is <strong className="font-semibold">{reference}</strong>. The workshop will email you with a price and a
+            proof, usually within one working day.
+          </p>
+          <Button variant="secondary" className="mt-4" onClick={restart}>
+            <Sparkles aria-hidden /> Design another
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

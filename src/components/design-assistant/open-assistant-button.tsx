@@ -4,7 +4,7 @@ import { Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 /** Where the AI design assistant lives: a full page of its own. */
-export const DESIGN_ASSISTANT_HREF = "/design-my-helmet#assistant"
+export const DESIGN_ASSISTANT_HREF = "/design-my-helmet"
 
 /** Takes the customer to the AI design assistant page. */
 export function OpenAssistantButton({

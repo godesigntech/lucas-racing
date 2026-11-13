@@ -35,7 +35,7 @@ export const mainNav: NavGroup[] = [
     href: "/customisation",
     children: [
       { label: "Helmet builder", href: "/helmet-builder", description: "Design yours step by step, in 3D" },
-      { label: "Design my helmet with AI", href: "/design-my-helmet#assistant", description: "A bespoke design from our AI, free, with unlimited revisions" },
+      { label: "Design my helmet with AI", href: "/design-my-helmet", description: "A bespoke design from our AI, free, with unlimited revisions" },
       { label: "MS Kart parts by HydroKarts", href: "/customisation/kart-parts", description: "Kart parts in your own finish" },
       { label: "Kart sticker designer", href: "/kart-stickers", description: "Design your kart's sticker kit with AI and get a quote" },
     ],
@@ -52,8 +52,6 @@ export const footerNav: { title: string; items: NavItem[] }[] = [
     items: [
       { label: "About us", href: "/about" },
       { label: "Meet the team", href: "/team" },
-      { label: "Racing support", href: "/about/racing-support" },
-      { label: "News and results", href: "/news" },
       { label: "Gallery", href: "/gallery" },
     ],
   },
@@ -61,7 +59,6 @@ export const footerNav: { title: string; items: NavItem[] }[] = [
     title: "Shop",
     items: [
       { label: "MS Kart shop", href: "/shop" },
-      { label: "Custom helmets", href: "/customisation/helmets" },
       { label: "MS Kart parts by HydroKarts", href: "/customisation/kart-parts" },
       { label: "Delta Racewear", href: "/racewear" },
       { label: "Wendy's Teamwear", href: "/teamwear" },
