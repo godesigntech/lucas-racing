@@ -4,10 +4,13 @@ import Image from "next/image"
 import Link from "next/link"
 import { LayoutTemplate, PencilLine, Send, Sparkles } from "lucide-react"
 
+import { KartStickerSteps } from "@/components/kart-stickers/kart-sticker-steps"
 import { KartStickerStudio } from "@/components/kart-stickers/kart-sticker-studio"
 import { Container } from "@/components/layout/container"
+import { StudioBanner } from "@/components/shared/studio-banner"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { images } from "@/constants/images"
 import { getCurrentUser } from "@/lib/auth/session"
 import { getMyKartStudio } from "@/lib/data/kart-stickers"
 import { readyKartLayouts } from "@/lib/kart-stickers/options"
@@ -24,16 +27,24 @@ const steps = [
   { icon: Send, title: "Send it for a quote", text: "We check it, prepare it for print and send you a price." },
 ]
 
-/** Laid out like the helmet builder: the picture on the left, the steps on the right. */
+/** A slim title strip, the progress steps, then the form on the left and the results on the right. */
 export default function KartStickersPage() {
   return (
-    <section className="py-5 sm:py-10">
-      <Container className="max-sm:px-3">
-        <Suspense fallback={<StudioSkeleton />}>
-          <Studio />
-        </Suspense>
-      </Container>
-    </section>
+    <>
+      <StudioBanner
+        eyebrow="Kart sticker designer"
+        title="Design my kart stickers"
+        description="Create a custom kart sticker design with AI, then send it to our team for a print quote."
+        image={images.connor}
+      />
+      <section className="py-5 sm:py-8">
+        <Container className="max-sm:px-3">
+          <Suspense fallback={<StudioSkeleton />}>
+            <Studio />
+          </Suspense>
+        </Container>
+      </section>
+    </>
   )
 }
 
@@ -49,13 +60,14 @@ function SignInFirst() {
   const next = encodeURIComponent("/kart-stickers")
   const layout = readyKartLayouts[0]
   return (
+    <div className="space-y-5">
+    <KartStickerSteps current={1} />
     <div className="grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:items-start lg:gap-8">
       <section aria-labelledby="kart-stickers-title" className="flex min-w-0 flex-col rounded-[1.75rem] border border-carbon/10 bg-card">
         <header className="border-b border-carbon/10 px-5 py-5 sm:px-6">
-          <p className="eyebrow text-muted-foreground">Kart sticker designer</p>
-          <h1 id="kart-stickers-title" className="mt-1 font-display text-3xl font-bold uppercase leading-none sm:text-4xl">
-            Design my kart stickers
-          </h1>
+          <h2 id="kart-stickers-title" className="font-display text-2xl font-bold uppercase leading-none sm:text-3xl">
+            How it works
+          </h2>
           <p className="mt-2 text-sm text-muted-foreground">
             Pick your kart&apos;s layout, describe the look and our AI designs the whole kit. Happy with it? Send it to us for a quote.
           </p>
@@ -105,14 +117,18 @@ function SignInFirst() {
         </figure>
       )}
     </div>
+    </div>
   )
 }
 
 function StudioSkeleton() {
   return (
-    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-8" aria-busy="true" aria-label="Loading the kart sticker designer">
+    <div className="space-y-5" aria-busy="true" aria-label="Loading the kart sticker designer">
+      <Skeleton className="h-14 rounded-2xl" />
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-8">
       <Skeleton className="h-[32rem] rounded-[1.75rem]" />
       <Skeleton className="aspect-square rounded-[1.75rem]" />
+      </div>
     </div>
   )
 }

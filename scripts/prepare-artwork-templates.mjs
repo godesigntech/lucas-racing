@@ -69,9 +69,8 @@ const templates = [
     zones: ["base", "graphic", "accent"],
     zoneOf: (h, s, v) => (isCardinal(h, s, v) && isRed(h) ? "graphic" : isLight(s, v) ? "accent" : "base"),
   },
-  // The second set of ten, numbered 1-10 by the 3D artist. 1-7 were redrawn on the exact
-  // master UV sheet ("01 Pink and Silver.svg" ... "07 Red and Silver.svg"), so they're used
-  // as they are; 8-10 are still the older outline-only drawings, fitted to the shell band.
+  // The second set of ten, numbered 1-10 by the 3D artist, all drawn on the exact master UV
+  // sheet ("01 Pink and Silver.svg" ... "10 Black White and Gold.svg"), so used as they are.
   {
     slug: "pink-blade",
     file: "01 Pink and Silver.svg",
@@ -116,17 +115,13 @@ const templates = [
   },
   {
     slug: "red-fury",
-    file: "8.svg",
-    fit: true,
-    gutter: 240,
+    file: "08 Red and Black.svg",
     zones: ["base", "graphic", "accent"],
     zoneOf: (h, s, v) => (isLight(s, v) ? "accent" : isCardinal(h, s, v) && isRed(h) && s > 0.45 && v > 0.3 ? "base" : "graphic"),
   },
   {
     slug: "sky-racer",
-    file: "9.svg",
-    fit: true,
-    gutter: 64,
+    file: "09 Cyan and Red.svg",
     zones: ["base", "graphic", "accent"],
     zoneOf: (h, s, v) => (isCardinal(h, s, v) && isRed(h) && s > 0.45 ? "graphic" : between(180, 250)(h) && s > 0.3 && v > 0.25 ? "base" : isLight(s, v) ? "accent" : "base"),
   },
@@ -151,9 +146,7 @@ const templates = [
   },
   {
     slug: "gold-line",
-    file: "10.svg",
-    fit: true,
-    gutter: 64,
+    file: "10 Black White and Gold.svg",
     zones: ["base", "graphic", "accent"],
     zoneOf: (h, s, v) => (isGold(h, s, v) ? "accent" : isDark(s, v) ? "graphic" : "base"),
   },
