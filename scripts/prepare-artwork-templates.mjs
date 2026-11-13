@@ -154,6 +154,30 @@ const templates = [
     zones: ["base", "graphic", "accent", "detail"],
     zoneOf: (h, s, v) => (isLight(s, v) ? "accent" : v < 0.3 ? "graphic" : h < 222 ? "detail" : "base"),
   },
+  // Drawn for the Arai SK-6 on its own UV sheet: the shell (two lobes and chin band) and,
+  // below it, the two rim strips. Black base, yellow blades, white flashes, grey streaks.
+  // The band was fitted to the shell's UV coverage in public/models/arai-sk6.glb (97% overlap).
+  {
+    slug: "hornet",
+    model: "arai-sk6",
+    file: "araisk6.svg",
+    fit: true,
+    band: { left: 0.0228, top: 0.3219, right: 0.9792, bottom: 0.7709 },
+    zones: ["base", "graphic", "accent", "detail"],
+    zoneOf: (h, s, v) => (between(35, 60)(h) && s > 0.5 && v > 0.5 ? "graphic" : s < 0.15 && v > 0.88 ? "accent" : s < 0.15 && v > 0.55 ? "detail" : "base"),
+  },
+  // Second Arai SK-6 design, drawn on the SK-6 outline (assets/arai-sk6/arai-sk6-outline.svg),
+  // so its box is exactly the shell + rim strips box. Steel blue shell, yellow and white
+  // blades, dark pivot recesses and orange rim strips (its own zone, "rim").
+  {
+    slug: "blue-arrow",
+    model: "arai-sk6",
+    file: "araisk6-blue-arrow.svg",
+    fit: true,
+    band: { left: 0.0228, top: 0.3229, right: 0.9772, bottom: 0.7769 },
+    zones: ["base", "graphic", "accent", "detail", "rim"],
+    zoneOf: (h, s, v) => (s < 0.2 && v > 0.7 ? "accent" : v < 0.3 ? "detail" : between(35, 65)(h) && s > 0.5 ? "graphic" : h < 35 && s > 0.4 ? "rim" : "base"),
+  },
   {
     slug: "gold-line",
     file: "10 Black White and Gold.svg",
@@ -362,11 +386,17 @@ async function fillHoles(rgba, width, height) {
  * transparent sheet are trimmed to what's drawn; designs traced over black are measured
  * by their light outline instead, since the black around them isn't transparent.
  */
-async function renderFitted(file, base) {
-  if (!file.toLowerCase().endsWith(".svg")) return renderFittedRaster(file)
+async function renderFitted(file, base, band = SHELL_BAND) {
+  if (!file.toLowerCase().endsWith(".svg")) return renderFittedRaster(file, band)
   const source = readFileSync(file, "utf8")
   const tracedOnBlack = /id="Black_background"/.test(source)
-  const svg = source.replace(/<rect[^>]*id="Black_background"[^>]*\/>/g, "")
+  let svg = source.replace(/<rect[^>]*id="Black_background"[^>]*\/>/g, "")
+  // Sized in inches or mm (CorelDRAW does this): size it by its viewBox instead, so the
+  // density below means the same as for pixel-sized drawings.
+  const viewBox = svg.match(/viewBox="[\d.]+ [\d.]+ ([\d.]+) ([\d.]+)"/)
+  if (viewBox && /<svg[^>]*\swidth="[\d.]+(in|mm|cm|pt)"/.test(svg)) {
+    svg = svg.replace(/(<svg[^>]*\s)width="[^"]*"/, `$1width="${viewBox[1]}"`).replace(/(<svg[^>]*\s)height="[^"]*"/, `$1height="${viewBox[2]}"`)
+  }
   const meta = await sharp(Buffer.from(svg), { limitInputPixels: false }).metadata()
   // Rendered a little larger than it's used, then cropped to the outline.
   const density = Math.min(600, (72 * SIZE * 1.25) / meta.width)
@@ -382,8 +412,8 @@ async function renderFitted(file, base) {
   } else {
     outline = await rendered.trim({ threshold: 0 }).png().toBuffer()
   }
-  const width = Math.round((SHELL_BAND.right - SHELL_BAND.left) * SIZE)
-  const height = Math.round((SHELL_BAND.bottom - SHELL_BAND.top) * SIZE)
+  const width = Math.round((band.right - band.left) * SIZE)
+  const height = Math.round((band.bottom - band.top) * SIZE)
   const resized = await sharp(outline).resize(width, height, { fit: "fill" }).raw().toBuffer({ resolveWithObject: true })
   if (!tracedOnBlack && !base) await fillHoles(resized.data, width, height)
   let placed = await sharp(resized.data, { raw: { width, height, channels: 4 } }).png().toBuffer()
@@ -391,7 +421,7 @@ async function renderFitted(file, base) {
   if (base) placed = await sharp(placed).flatten({ background: base }).ensureAlpha().png().toBuffer()
   return (
     await sharp({ create: { width: SIZE, height: SIZE, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
-      .composite([{ input: placed, left: Math.round(SHELL_BAND.left * SIZE), top: Math.round(SHELL_BAND.top * SIZE) }])
+      .composite([{ input: placed, left: Math.round(band.left * SIZE), top: Math.round(band.top * SIZE) }])
       .raw()
       .toBuffer()
   )
@@ -403,7 +433,7 @@ async function renderFitted(file, base) {
  * in from the edges, so whites inside the design stay. Light pixels left on the edge by
  * anti-aliasing or compression are peeled off too, so the shell doesn't get a pale rim.
  */
-async function renderFittedRaster(file) {
+async function renderFittedRaster(file, band = SHELL_BAND) {
   const { data, info } = await sharp(file).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
   const { width, height } = info
   const pixels = width * height
@@ -439,11 +469,11 @@ async function renderFittedRaster(file) {
   for (let index = 0; index < pixels; index++) if (outside[index]) data[index * 4 + 3] = 0
 
   const outline = await sharp(data, { raw: { width, height, channels: 4 } }).trim({ threshold: 0 }).png().toBuffer()
-  const bandWidth = Math.round((SHELL_BAND.right - SHELL_BAND.left) * SIZE)
-  const bandHeight = Math.round((SHELL_BAND.bottom - SHELL_BAND.top) * SIZE)
+  const bandWidth = Math.round((band.right - band.left) * SIZE)
+  const bandHeight = Math.round((band.bottom - band.top) * SIZE)
   const placed = await sharp(outline).resize(bandWidth, bandHeight, { fit: "fill", kernel: "lanczos3" }).png().toBuffer()
   const raw = await sharp({ create: { width: SIZE, height: SIZE, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
-    .composite([{ input: placed, left: Math.round(SHELL_BAND.left * SIZE), top: Math.round(SHELL_BAND.top * SIZE) }])
+    .composite([{ input: placed, left: Math.round(band.left * SIZE), top: Math.round(band.top * SIZE) }])
     .raw()
     .toBuffer()
   // Upscaling blends the edge with transparency; keep only solid pixels so edge growth copies real colours.
@@ -472,7 +502,7 @@ async function smoothZones(masks, zones, rgba, sigma) {
 
 for (const template of templates.filter((item) => onlySlugs.length === 0 || onlySlugs.includes(item.slug))) {
   const file = path.join(svgDir, template.file)
-  const raster = template.fit ? await renderFitted(file, template.base) : await renderSvg(file)
+  const raster = template.fit ? await renderFitted(file, template.base, template.band) : await renderSvg(file)
   const rgba = growEdges(raster, template.gutter)
 
   const artwork = Buffer.alloc(SIZE * SIZE * 3)
@@ -487,7 +517,7 @@ for (const template of templates.filter((item) => onlySlugs.length === 0 || only
   }
   if (template.smooth) await smoothZones(masks, template.zones, rgba, template.smooth)
 
-  const out = path.join("public/models/templates/bell-kc7", template.slug)
+  const out = path.join("public/models/templates", template.model ?? "bell-kc7", template.slug)
   await mkdir(out, { recursive: true })
   await sharp(artwork, { raw: { width: SIZE, height: SIZE, channels: 3 } }).webp({ quality: 90, smartSubsample: true }).toFile(path.join(out, "artwork.webp"))
   for (const [zone, mask] of Object.entries(masks)) {

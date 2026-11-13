@@ -20,7 +20,7 @@ interface TemplatePictureProps {
 export function TemplatePicture({ slug, name, look, modelId = "bell-kc7", className }: TemplatePictureProps) {
   const artwork = getTemplateArtwork(modelId, slug)
   if (artwork) {
-    return <Image src={artwork.thumbnail} alt={`${name} on the Bell KC7, example colours`} width={900} height={900} className={cn("size-full object-contain", className)} />
+    return <Image src={artwork.thumbnail} alt={`${name} on the ${modelId === "arai-sk6" ? "Arai SK-6" : "Bell KC7"}, example colours`} width={900} height={900} className={cn("size-full object-contain", className)} />
   }
   return (
     <span

@@ -4,7 +4,7 @@ export interface HelmetTemplateArtwork {
   thumbnail: string
 }
 
-const slugs = ["emilio", "nygel", "rusinov", "pink-blade", "navy-pink", "ivory-gold", "neon-volt", "tricolore", "inferno", "strike-red", "red-fury", "sky-racer", "gold-line", "yellow-flash", "crimson-bolt", "cobalt-storm"]
+const slugs = ["emilio", "nygel", "rusinov", "pink-blade", "navy-pink", "ivory-gold", "neon-volt", "tricolore", "inferno", "strike-red", "red-fury", "sky-racer", "gold-line", "yellow-flash", "crimson-bolt", "cobalt-storm", "hornet", "blue-arrow"]
 
 /**
  * Template artwork per helmet. The Bell KC7's is drawn by the designers; the Arai SK-6's
