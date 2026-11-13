@@ -6,6 +6,7 @@ import { ExternalLink } from "lucide-react"
 import { AdminCard } from "@/components/admin/admin-card"
 import { AdminPageHeader } from "@/components/admin/admin-page-header"
 import { DeleteShopProductButton } from "@/components/admin/shop/delete-shop-product-button"
+import { PartPreviewEditor } from "@/components/admin/shop/part-preview-editor"
 import { ProductImagesManager } from "@/components/admin/shop/product-images-manager"
 import { ShopProductForm } from "@/components/admin/shop/shop-product-form"
 import { StockHistory } from "@/components/admin/shop/stock-history"
@@ -14,7 +15,9 @@ import { VariantsManager } from "@/components/admin/shop/variants-manager"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { requireShopManager } from "@/lib/auth/session"
+import { getPriceBook } from "@/lib/data/products"
 import { getAdminShopProduct, listAdminShopCategories } from "@/lib/data/shop"
+import { isCustomisable, productHref } from "@/lib/shop/part-finish"
 
 export const metadata = { title: "Shop product" }
 
@@ -29,7 +32,13 @@ export default function AdminShopProductPage({ params }: PageProps<"/admin/shop/
 }
 
 async function ProductEditor({ id }: { id: string }) {
-  const [user, { product, movements }, categories] = await Promise.all([requireShopManager(), getAdminShopProduct(id), listAdminShopCategories()])
+  const [user, { product, movements }, categories, priceBook] = await Promise.all([
+    requireShopManager(),
+    getAdminShopProduct(id),
+    listAdminShopCategories(),
+    getPriceBook(),
+  ])
+  const customPart = product.storeId === "hydrokarts-parts" && isCustomisable(product)
 
   return (
     <>
@@ -41,7 +50,7 @@ async function ProductEditor({ id }: { id: string }) {
           <>
             {product.isActive && product.storeId !== "delta" && (
               <Button asChild variant="outline">
-                <Link href={`/shop/p/${product.slug}`} target="_blank">
+                <Link href={productHref(product)} target="_blank">
                   <ExternalLink /> View in shop
                 </Link>
               </Button>
@@ -56,6 +65,14 @@ async function ProductEditor({ id }: { id: string }) {
           <AdminCard title="Options, prices and stock" description="Each size, colour or part number is an option with its own price and stock.">
             <VariantsManager product={product} />
           </AdminCard>
+          {customPart && (
+            <AdminCard
+              title="Live preview"
+              description="How customers see their paint, film or chrome on this part. Mark the area that gets the finish and save."
+            >
+              <PartPreviewEditor product={product} priceBook={priceBook} />
+            </AdminCard>
+          )}
           <AdminCard title="Details">
             <ShopProductForm product={product} categories={categories} stores={staffShop(user.role) ? [staffShop(user.role)!] : undefined} />
           </AdminCard>

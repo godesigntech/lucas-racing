@@ -52,6 +52,15 @@ export type ShopProductValues = z.infer<typeof shopProductSchema>
 const imageUrl = z.string().regex(/^(https:\/\/\S+|\/images\/[\w./-]+)$/, "Photos must be https links")
 export const productImagesSchema = z.array(imageUrl).max(12, "Up to 12 photos")
 
+/** Live preview settings for a customisable part (Admin > Shop > Live preview). */
+export const partPreviewSchema = z.object({
+  image: imageUrl,
+  mask: imageUrl.nullable(),
+  detail: z.number().min(0).max(1),
+  filmScale: z.number().min(0.25).max(4),
+})
+export type PartPreviewValues = z.infer<typeof partPreviewSchema>
+
 export const shopVariantSchema = z.object({
   options: z.record(z.string(), z.string().trim().max(60)),
   sku: z.string().trim().max(60),

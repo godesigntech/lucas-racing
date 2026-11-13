@@ -33,3 +33,12 @@ export async function uploadProductImage(productId: string, file: File): Promise
     bitmap.close()
   }
 }
+
+/** Uploads a part's finish mask (a PNG, opaque where the finish goes). Admins only. Returns its URL. */
+export async function uploadProductMask(productId: string, mask: Blob): Promise<string> {
+  const storage = createClient().storage.from(BUCKET)
+  const path = `${productId}/mask-${crypto.randomUUID()}.png`
+  const { error } = await storage.upload(path, mask, { contentType: "image/png" })
+  if (error) throw new Error(error.message)
+  return storage.getPublicUrl(path).data.publicUrl
+}

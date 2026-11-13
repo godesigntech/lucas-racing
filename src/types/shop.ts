@@ -2,6 +2,21 @@
 export type FinishType = "paint" | "film" | "chrome"
 export const finishTypes: FinishType[] = ["paint", "film", "chrome"]
 
+/**
+ * Live 2D preview of a customisable part: its photo and the area that gets the finish.
+ * Edited in Admin > Shop; stored in shop_products.custom_preview.
+ */
+export interface PartPreview {
+  /** The photo the finish is drawn onto (one of the product's photos). */
+  image: string
+  /** PNG whose opaque pixels mark the finished area. Null: found from the plain background. */
+  mask: string | null
+  /** How much of the photo's fine detail (engraving, edges) shows through the finish, 0 to 1. */
+  detail: number
+  /** Size of the hydro-dip film pattern on the part, 1 = normal. */
+  filmScale: number
+}
+
 export type StoreId = "ms-kart" | "teamwear" | "hydrokarts-parts" | "delta"
 
 export interface Store {
@@ -70,6 +85,8 @@ export interface ShopProduct {
   customFinishes: FinishType[]
   /** Added to the variant price when a finish is chosen. */
   customFee: number
+  /** Live preview settings; null uses the main photo with an automatic outline. */
+  customPreview: PartPreview | null
   /** Clicks through to the partner's site (Delta), counted per product. */
   externalClicks: number
   /** Size guide shown on the product page (Markdown, tables allowed). */

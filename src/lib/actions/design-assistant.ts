@@ -5,6 +5,7 @@ import { headers } from "next/headers"
 import { after } from "next/server"
 
 import { databaseError, failure, validationError } from "@/lib/actions/result"
+import { getCurrentUser } from "@/lib/auth/session"
 import { getProducts, getPriceBook } from "@/lib/data/products"
 import { getDesignAdvisor } from "@/lib/design-assistant/advisor"
 import { builderHref } from "@/lib/design-assistant/builder-link"
@@ -26,6 +27,9 @@ import type { HelmetLook } from "@/types/helmet"
 
 const DEFAULT_IMAGES_PER_HOUR = 5
 
+/** The AI designer needs an account: it's how we quote, and it keeps the AI limit fair. */
+const SIGN_IN_FIRST = failure("Please log in or create a free account to design with AI.")
+
 /**
  * AI images each visitor may make per hour: AI_IMAGES_PER_HOUR (1 to 100, the most
  * claim_ai_use() accepts), or 5. Raise it while testing.
@@ -41,17 +45,18 @@ function pickColourway({ finish, base, graphic, accent, trim, film }: HelmetLook
 }
 
 /**
- * Who is asking, for the AI limit: a one-way hash of their connection, never the
- * address itself. On Netlify only its own header counts (visitors can't set it); the
- * forwarded headers anyone can send are only trusted off Netlify, e.g. locally.
- * The hash is salted with a server secret, so nobody can work out another key.
+ * Who is asking, for the AI limit: a one-way hash of their account, or of their
+ * connection (never the address itself). On Netlify only its own header counts
+ * (visitors can't set it); the forwarded headers anyone can send are only trusted off
+ * Netlify, e.g. locally. Salted with a server secret, so nobody can work out another key.
  */
-async function visitorKey(): Promise<string> {
+async function visitorKey(userId?: string): Promise<string> {
+  const salt = process.env.AI_LIMIT_SALT || process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "lucas-racing-ai"
+  if (userId) return createHash("sha256").update(`${salt}:user:${userId}`).digest("hex")
   const list = await headers()
   const address = process.env.NETLIFY
     ? (list.get("x-nf-client-connection-ip") ?? "unknown")
     : (list.get("x-nf-client-connection-ip") ?? list.get("x-forwarded-for")?.split(",")[0]?.trim() ?? list.get("x-real-ip") ?? "unknown")
-  const salt = process.env.AI_LIMIT_SALT || process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "lucas-racing-ai"
   return createHash("sha256").update(`${salt}:${address}`).digest("hex")
 }
 
@@ -63,8 +68,9 @@ async function limitClient() {
   return canCreateAccounts ? createAdminClient() : await createClient()
 }
 
-/** Open to guests: suggests a concept and matching designs. Saves nothing. */
+/** Signed-in customers only: suggests a concept and matching designs. Saves nothing. */
 export async function analyseDesignBrief(brief: DesignBrief): Promise<ActionResult<DesignAnalysis>> {
+  if (!(await getCurrentUser())) return SIGN_IN_FIRST
   const parsed = designBriefSchema.safeParse(brief)
   if (!parsed.success) return validationError(parsed.error)
 
@@ -86,14 +92,16 @@ export async function analyseDesignBrief(brief: DesignBrief): Promise<ActionResu
   }
 }
 
-/** Open to guests, up to imagesPerHour() each: paints an AI concept image of the customer's design. */
+/** Signed-in customers only, up to imagesPerHour() each: paints an AI concept image of their design. */
 export async function requestConceptImage(values: ConceptImageValues): Promise<ActionResult<{ image: string }>> {
+  const user = await getCurrentUser()
+  if (!user) return SIGN_IN_FIRST
   if (!conceptImagesConfigured()) return failure("AI images aren't available right now.")
   const parsed = conceptImageSchema.safeParse(values)
   if (!parsed.success) return validationError(parsed.error)
 
   const supabase = await limitClient()
-  const visitor = await visitorKey()
+  const visitor = await visitorKey(user.id)
   const limit = imagesPerHour()
   const { data: allowed, error } = await supabase.rpc("claim_ai_use", {
     p_visitor: visitor,

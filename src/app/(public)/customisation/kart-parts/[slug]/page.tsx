@@ -3,11 +3,10 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 
 import { KartPartsBrand } from "@/components/kart-parts/kart-parts-brand"
+import { PartCustomiser } from "@/components/kart-parts/part-customiser"
 import { PreviewNotice } from "@/components/kart-parts/preview-notice"
 import { Container } from "@/components/layout/container"
 import { Breadcrumbs } from "@/components/shared/breadcrumbs"
-import { AddToBasket } from "@/components/shop/add-to-basket"
-import { ShopProductGallery } from "@/components/shop/product-gallery"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getPriceBook } from "@/lib/data/products"
 import { canSeeKartParts, getShopProductBySlug } from "@/lib/data/shop"
@@ -45,25 +44,23 @@ async function CustomPart({ slug }: { slug: string }) {
               { label: product.title },
             ]}
           />
-          <div className="grid gap-10 lg:grid-cols-2 lg:gap-14">
-            <div className="space-y-5 lg:sticky lg:top-28 lg:self-start">
-              <ShopProductGallery images={product.images} title={product.title} />
+          <PartCustomiser product={product} priceBook={priceBook}>
+            <KartPartsBrand className="px-4 py-2.5 [&_img]:h-8 sm:[&_img]:h-9" />
+            <div className="space-y-2">
+              {product.brand && <p className="eyebrow text-brand-ink">{product.brand}</p>}
+              <h1 className="display text-5xl sm:text-6xl">{product.title}</h1>
             </div>
-            <div className="space-y-6">
-              <KartPartsBrand className="px-4 py-2.5 [&_img]:h-8 sm:[&_img]:h-9" />
-              <div className="space-y-2">
-                {product.brand && <p className="eyebrow text-brand-ink">{product.brand}</p>}
-                <h1 className="display text-5xl sm:text-6xl">{product.title}</h1>
-              </div>
-              <AddToBasket product={product} priceBook={priceBook} />
+          </PartCustomiser>
+          {(product.description || product.specs.length > 0) && (
+            <div className="grid gap-10 border-t border-carbon/10 pt-10 lg:grid-cols-2 lg:gap-14">
               {product.description && (
-                <div className="space-y-3 border-t border-carbon/10 pt-6">
+                <div className="space-y-3">
                   <h2 className="font-display text-2xl font-bold uppercase">Description</h2>
                   <p className="whitespace-pre-line leading-relaxed text-carbon/80">{product.description}</p>
                 </div>
               )}
               {product.specs.length > 0 && (
-                <div className="space-y-3 border-t border-carbon/10 pt-6">
+                <div className="space-y-3">
                   <h2 className="font-display text-2xl font-bold uppercase">Specifications</h2>
                   <dl className="divide-y divide-carbon/10 text-sm">
                     {product.specs.map((spec) => (
@@ -76,7 +73,7 @@ async function CustomPart({ slug }: { slug: string }) {
                 </div>
               )}
             </div>
-          </div>
+          )}
         </Container>
       </section>
     </>

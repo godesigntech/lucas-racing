@@ -587,6 +587,7 @@ export type ShopProductRow = Timestamps & {
   customisable: boolean
   custom_finishes: string[]
   custom_fee: number
+  custom_preview: Json | null
   external_clicks: number
   size_guide: string
   sort_order: number

@@ -12,10 +12,14 @@ const ideas = ["Matte black with lime", "Chrome with red stripes", "Navy and whi
 
 interface BriefFormProps {
   onSubmit: (photo: PreparedPhoto | null, note: string) => void
+  /** The AI is working: the button waits. */
+  busy?: boolean
+  /** "Design my helmet" first, "Update my design" once there's a result. */
+  submitLabel?: string
 }
 
-/** Step one: a photo (their helmet or an inspiration) and/or a short description. */
-export function BriefForm({ onSubmit }: BriefFormProps) {
+/** The brief: a photo (their helmet or an inspiration) and/or a short description. Stays editable to try again. */
+export function BriefForm({ onSubmit, busy = false, submitLabel = "Design my helmet" }: BriefFormProps) {
   const inputId = useId()
   const noteId = useId()
   const [photo, setPhoto] = useState<PreparedPhoto | null>(null)
@@ -50,7 +54,7 @@ export function BriefForm({ onSubmit }: BriefFormProps) {
   }
 
   const trimmed = note.trim()
-  const canSubmit = !reading && (photo !== null || trimmed.length >= 3) && note.length <= 500
+  const canSubmit = !reading && !busy && (photo !== null || trimmed.length >= 3) && note.length <= 500
 
   return (
     <form
@@ -58,17 +62,25 @@ export function BriefForm({ onSubmit }: BriefFormProps) {
         event.preventDefault()
         if (canSubmit) onSubmit(photo, trimmed)
       }}
-      className="space-y-3 rounded-3xl border border-carbon/10 bg-card p-3"
+      className="space-y-5"
     >
+      <p className="flex items-center gap-2.5">
+        <span className="grid size-7 shrink-0 place-items-center rounded-full bg-carbon font-display text-xs font-bold text-paper">1</span>
+        <span className="font-display text-xl font-bold uppercase leading-tight">Show us a helmet you like</span>
+      </p>
       {photo ? (
-        <div className="relative overflow-hidden rounded-2xl bg-carbon/5">
+        <div className="relative overflow-hidden rounded-2xl border border-carbon/10 bg-[#f4f3ef]">
+          {/* Shown whole (never cropped), so the customer sees exactly what the AI gets. */}
           {/* eslint-disable-next-line @next/next/no-img-element -- local preview of the picked photo */}
-          <img src={photo.previewUrl} alt="Your photo" className="max-h-56 w-full object-cover" />
-          <div className="absolute inset-x-0 bottom-0 flex items-center gap-1.5 bg-gradient-to-t from-carbon/80 to-transparent p-3 pt-8">
-            {photo.palette.map((hex) => (
-              <span key={hex} className="size-5 rounded-full ring-2 ring-white/80" style={{ backgroundColor: hex }} aria-hidden />
-            ))}
-            <span className="sr-only">Colours found in your photo</span>
+          <img src={photo.previewUrl} alt="Your photo" className="mx-auto block h-64 w-full object-contain sm:h-72" />
+          <div className="flex items-center gap-2 border-t border-carbon/10 bg-card px-3 py-2">
+            <span className="text-xs text-muted-foreground">Colours we found</span>
+            <span className="flex gap-1.5">
+              {photo.palette.map((hex) => (
+                <span key={hex} className="size-5 rounded-full ring-1 ring-carbon/15" style={{ backgroundColor: hex }} title={hex} aria-hidden />
+              ))}
+            </span>
+            <span className="sr-only">{photo.palette.join(", ")}</span>
           </div>
           <Button
             type="button"
@@ -121,12 +133,14 @@ export function BriefForm({ onSubmit }: BriefFormProps) {
       )}
 
       <div className="space-y-2">
-        <label htmlFor={noteId} className="text-sm font-medium">
-          Tell us what you&apos;d like <span className="font-normal text-muted-foreground">(optional with a photo)</span>
+        <label htmlFor={noteId} className="flex items-center gap-2.5">
+          <span className="grid size-7 shrink-0 place-items-center rounded-full bg-carbon font-display text-xs font-bold text-paper">2</span>
+          <span className="font-display text-xl font-bold uppercase leading-tight">Describe your design</span>
+          <span className="text-xs text-muted-foreground">(optional with a photo)</span>
         </label>
         <textarea
           id={noteId}
-          rows={2}
+          rows={3}
           value={note}
           onChange={(event) => setNote(event.target.value)}
           onPaste={(event) => {
@@ -138,7 +152,7 @@ export function BriefForm({ onSubmit }: BriefFormProps) {
           }}
           maxLength={500}
           placeholder="Colours, finish, your race number…"
-          className="field-sizing-content max-h-32 min-h-16 w-full resize-none rounded-2xl border border-input bg-paper px-3.5 py-2.5 text-base outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
+          className="field-sizing-content max-h-40 min-h-24 w-full resize-none rounded-2xl border border-input bg-paper px-3.5 py-2.5 text-base outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
         />
         <div className="flex flex-wrap gap-1.5">
           {ideas.map((idea) => (
@@ -154,9 +168,10 @@ export function BriefForm({ onSubmit }: BriefFormProps) {
         </div>
       </div>
 
-      <Button type="submit" className="w-full" disabled={!canSubmit}>
-        <Wand2 aria-hidden /> Show me ideas
+      <Button type="submit" size="lg" className="w-full" disabled={!canSubmit}>
+        {busy ? <Loader2 className="animate-spin" aria-hidden /> : <Wand2 aria-hidden />} {busy ? "Designing…" : submitLabel}
       </Button>
+      <p className="text-center text-xs text-muted-foreground">Free, and you can change it as often as you like.</p>
     </form>
   )
 }

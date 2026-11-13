@@ -23,17 +23,27 @@ function optionValues(variants: ShopVariant[], name: string): string[] {
   return [...new Set(variants.map((variant) => variant.options[name]).filter(Boolean))]
 }
 
+interface AddToBasketProps {
+  product: ShopProduct
+  priceBook?: PriceBook
+  /** The chosen finish, when a parent shows it (the part customiser's live preview). */
+  finish?: PartFinish | null
+  onFinishChange?: (finish: PartFinish) => void
+}
+
 /**
  * Option picker (size, colour…), live price and stock, quantity and Add to basket.
  * Customisable parts also pick a finish, priced from the helmet price list (`priceBook`).
  */
-export function AddToBasket({ product, priceBook }: { product: ShopProduct; priceBook?: PriceBook }) {
+export function AddToBasket({ product, priceBook, finish: controlledFinish, onFinishChange }: AddToBasketProps) {
   const variants = product.variants
   const firstBuyable = variants.find((variant) => canBuy(variant)) ?? variants[0]
   const [selected, setSelected] = useState<Record<string, string>>(firstBuyable?.options ?? {})
   const [quantity, setQuantity] = useState(1)
   const customisable = Boolean(priceBook) && isCustomisable(product)
-  const [finish, setFinish] = useState<PartFinish | null>(() => (customisable && priceBook ? defaultFinish(product, priceBook) : null))
+  const [ownFinish, setOwnFinish] = useState<PartFinish | null>(() => (customisable && priceBook ? defaultFinish(product, priceBook) : null))
+  const finish = controlledFinish === undefined ? ownFinish : controlledFinish
+  const setFinish = (next: PartFinish) => (onFinishChange ? onFinishChange(next) : setOwnFinish(next))
   const finishPrice = customisable && priceBook && finish ? priceFinish(product, finish, priceBook) : null
 
   const variant =
