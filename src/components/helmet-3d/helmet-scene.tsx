@@ -555,7 +555,8 @@ export default function HelmetScene({
         <directionalLight position={[3, 5, 4]} intensity={1.4} />
         <Suspense fallback={null}>
           <StudioLights />
-          <Bounds fit clip observe margin={1.15}>
+          {/* Keyed by model, so a different helmet is measured and framed afresh. */}
+          <Bounds key={url} fit clip observe margin={1.15}>
             <Center>
               <HelmetModel url={url} tint={tint} finish={finish} paintFinish={paintFinish} film={film} trim={trim} spoiler={spoiler} accessories={accessories} design={design} visor={visor} visorStrip={visorStrip} visorStripFilmUrl={visorStripFilmUrl} spoilerFinish={spoilerFinish} aeroMesh={aeroMesh} onPickRegion={onPickRegion} placing={placing} onPlace={onPlace} />
             </Center>

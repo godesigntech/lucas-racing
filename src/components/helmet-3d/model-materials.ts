@@ -40,6 +40,11 @@ export function cloneHelmet(scene: Object3D): Object3D {
   const size = new Box3().setFromObject(copy).getSize(new Vector3())
   copy.scale.multiplyScalar(0.8 / Math.max(size.y, 0.001))
   copy.updateMatrixWorld(true)
+  // Every model sits centred on the origin, whatever the artist's own origin (the Bell's is
+  // mid-helmet, the Arai's at its base). Otherwise switching helmets keeps the previous
+  // model's centring and the new one floats off-centre.
+  copy.position.sub(new Box3().setFromObject(copy).getCenter(new Vector3()))
+  copy.updateMatrixWorld(true)
   const displaySize = new Box3().setFromObject(copy).getSize(new Vector3())
   // A film tile is about 6 cm of the real sheet, so it repeats about six times along a helmet.
   film.filmScale.value = FILM_TILES_PER_HELMET / Math.max(displaySize.x, displaySize.y, displaySize.z, 0.001)
