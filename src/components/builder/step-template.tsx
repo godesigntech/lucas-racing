@@ -1,20 +1,16 @@
 "use client"
 
-import { Check, Sparkles } from "lucide-react"
-import Image from "next/image"
+import { Check, Sparkles, WandSparkles } from "lucide-react"
+import Link from "next/link"
 
-import { OPEN_ASSISTANT_EVENT } from "@/components/design-assistant/design-assistant"
-import { HelmetArt } from "@/components/helmet/helmet-art"
+import { DESIGN_ASSISTANT_HREF } from "@/components/design-assistant/open-assistant-button"
+import { TemplatePicture } from "@/components/helmet/template-picture"
 import { getCategory } from "@/lib/catalog/categories"
 import { formatPrice } from "@/lib/format"
 import { usePricesHidden } from "@/components/builder/prices-context"
 import { getTemplateArtwork } from "@/lib/helmet-3d/templates"
 import { cn } from "@/lib/utils"
-import type { HelmetLook } from "@/types/helmet"
 import type { CatalogProduct } from "@/types/product"
-
-/** A plain white helmet, for the AI design tile. */
-const blankLook: HelmetLook = { layout: "blank", finish: "gloss", base: "#f4f3ee", graphic: "#f4f3ee", accent: "#d9d8d2", film: "none", trim: "#111412", spoiler: false }
 
 interface StepTemplateProps {
   products: CatalogProduct[]
@@ -33,13 +29,15 @@ export function StepTemplate({ products, value, modelId, onChange }: StepTemplat
       <legend className="sr-only">Template</legend>
       {/* A blank helmet first: the AI designs something unique instead of starting from a template. */}
       {!sketch && (
-      <button
-        type="button"
-        onClick={() => window.dispatchEvent(new Event(OPEN_ASSISTANT_EVENT))}
+      <Link
+        href={DESIGN_ASSISTANT_HREF}
         className="flex h-full flex-col overflow-hidden rounded-2xl border border-dashed border-brand-ink/50 text-left transition-colors hover:border-brand-ink"
       >
-        <span className="grid aspect-[4/3] place-items-center bg-[radial-gradient(circle_at_50%_35%,#ffffff,#e8e7e0_80%)] p-3">
-          <HelmetArt look={blankLook} className="max-h-full" />
+        <span className="relative grid aspect-[4/3] place-items-center overflow-hidden bg-carbon">
+          <span aria-hidden className="absolute -inset-1/4 bg-[conic-gradient(from_0deg,#f95312,#ffd000,#c6f432,#2f6bff,#f95312)] opacity-35 blur-2xl" />
+          <span aria-hidden className="relative grid size-16 place-items-center rounded-2xl bg-brand text-carbon shadow-[0_12px_32px_-8px_rgb(0_0_0/0.6)] ring-4 ring-white/15">
+            <WandSparkles className="size-8" />
+          </span>
         </span>
         <span className="flex flex-1 flex-col gap-0.5 bg-card p-3">
           <span className="flex items-center gap-1 text-[0.68rem] font-semibold text-brand-ink">
@@ -48,7 +46,7 @@ export function StepTemplate({ products, value, modelId, onChange }: StepTemplat
           <span className="font-display text-lg font-bold uppercase leading-tight">Design it with AI</span>
           <span className="text-xs text-muted-foreground">Let AI design a helmet unique to you. Free, with unlimited changes.</span>
         </span>
-      </button>
+      </Link>
       )}
       {products.map((product) => {
         const checked = product.slug === value
@@ -64,13 +62,13 @@ export function StepTemplate({ products, value, modelId, onChange }: StepTemplat
               )}
             >
               <span className="grid aspect-[4/3] place-items-center bg-[radial-gradient(circle_at_50%_35%,#ffffff,#e8e7e0_80%)] p-3">
-                {artwork ? <Image src={artwork.thumbnail} alt={`${product.name} on the Bell KC7, example colours`} width={900} height={900} className="size-full object-contain" /> : <HelmetArt look={product.look} className="max-h-full" />}
+                <TemplatePicture slug={product.slug} name={product.name} look={product.look} modelId={modelId} />
               </span>
               <span className="flex flex-1 flex-col gap-0.5 bg-card p-3">
                 <span className="text-[0.68rem] text-muted-foreground">{getCategory(product.category).label}</span>
                 <span className="font-display text-lg font-bold uppercase leading-tight">{product.name}</span>
                 {!sketch && <span className="text-xs font-semibold">{formatPrice(product.startingPrice)}</span>}
-                <span className="text-[0.68rem] text-muted-foreground">{artwork ? "3D racing template · example colours" : "Illustrated preview"}</span>
+                <span className="text-[0.68rem] text-muted-foreground">{artwork ? "3D racing template · example colours" : "Example colours"}</span>
                 {!fits && <span className="text-[0.68rem] text-muted-foreground">Not available on this helmet</span>}
               </span>
               {checked && (

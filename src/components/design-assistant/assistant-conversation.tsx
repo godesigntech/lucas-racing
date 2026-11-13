@@ -19,7 +19,7 @@ type Stage = "brief" | "analysing" | "result" | "quote" | "sent"
 
 interface AssistantConversationProps {
   /** Called when a link takes the customer to another page. */
-  onNavigate: () => void
+  onNavigate?: () => void
 }
 
 /** The assistant's steps, shown as a conversation: brief → concept → quote → done. */
@@ -75,8 +75,8 @@ export function AssistantConversation({ onNavigate }: AssistantConversationProps
   }
 
   return (
-    <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-paper px-4 py-5">
-      <div className="flex min-h-full flex-col justify-end gap-4" aria-live="polite">
+    <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-paper px-4 py-6 sm:px-8">
+      <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col justify-end gap-5" aria-live="polite">
         <AssistantBubble>
           <p className="font-semibold">Let&apos;s design something just for you</p>
           <p className="mt-1 text-carbon/80">
@@ -91,7 +91,7 @@ export function AssistantConversation({ onNavigate }: AssistantConversationProps
           <div className="ml-auto flex max-w-[85%] flex-col items-end gap-1.5">
             {photo && (
               // eslint-disable-next-line @next/next/no-img-element -- local preview of the customer's photo
-              <img src={photo.previewUrl} alt="Your photo" className="max-h-40 rounded-3xl rounded-br-lg object-cover" />
+              <img src={photo.previewUrl} alt="Your photo" className="max-h-72 rounded-3xl rounded-br-lg object-cover" />
             )}
             {note && <p className="rounded-3xl rounded-br-lg bg-carbon px-4 py-2.5 text-sm text-paper">{note}</p>}
           </div>

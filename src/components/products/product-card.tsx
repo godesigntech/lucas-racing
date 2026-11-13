@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { ArrowUpRight } from "lucide-react"
 
-import { HelmetArt } from "@/components/helmet/helmet-art"
+import { TemplatePicture } from "@/components/helmet/template-picture"
 import { Badge } from "@/components/ui/badge"
 import { getCategory } from "@/lib/catalog/categories"
 import { formatPrice } from "@/lib/format"
@@ -25,7 +25,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-[radial-gradient(circle_at_50%_35%,#ffffff,#e8e7e0_70%)]">
         <div className="absolute inset-0 flex items-center justify-center p-6 transition-transform duration-500 ease-out group-hover:scale-[1.04]">
-          <HelmetArt look={product.look} className="max-h-full" />
+          <TemplatePicture slug={product.slug} name={product.name} look={product.look} modelId={product.models.includes("bell-kc7") ? "bell-kc7" : product.models[0]} />
         </div>
         {product.badge && (
           <Badge className="absolute left-4 top-4 h-6 rounded-full bg-carbon px-3 text-[0.7rem] text-paper">

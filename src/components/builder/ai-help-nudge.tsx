@@ -1,9 +1,10 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import { Sparkles, X } from "lucide-react"
 
-import { OPEN_ASSISTANT_EVENT } from "@/components/design-assistant/design-assistant"
+import { DESIGN_ASSISTANT_HREF } from "@/components/design-assistant/open-assistant-button"
 import { Button } from "@/components/ui/button"
 
 /** How long someone designs (with the page in view) before we offer AI help. */
@@ -56,16 +57,10 @@ export function AiHelpNudge({ engaged }: { engaged: boolean }) {
         <p className="mt-0.5 text-sm text-paper/75">
           Upload a few pictures of helmets you like, or describe what you want, and our AI will design one just for you. Free, with as many changes as you need.
         </p>
-        <Button
-          type="button"
-          size="sm"
-          className="mt-3"
-          onClick={() => {
-            window.dispatchEvent(new Event(OPEN_ASSISTANT_EVENT))
-            dismiss()
-          }}
-        >
-          <Sparkles /> Design it with AI
+        <Button asChild size="sm" className="mt-3">
+          <Link href={DESIGN_ASSISTANT_HREF} onClick={dismiss}>
+            <Sparkles /> Design it with AI
+          </Link>
         </Button>
       </div>
       <button type="button" onClick={dismiss} className="grid size-8 shrink-0 place-items-center rounded-lg text-paper/70 hover:bg-white/10 hover:text-paper" aria-label="No thanks">

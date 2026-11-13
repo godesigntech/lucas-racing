@@ -23,7 +23,7 @@ const entrySchema = z.object({
   agreedRules: z.literal(true, { message: "Please agree to the competition rules." }),
   marketingOptIn: z.boolean(),
   ukResident: z.literal(true, { message: "The competition is only open to people with a UK address." }),
-  postUrl: z.string().trim().max(500).regex(/^https?:\/\/\S+$/, "Add the link to your social media post."),
+  postUrl: z.string().trim().max(500).regex(/^https?:\/\/\S+$/, "Add the link to your story."),
   imagePath: z.string().regex(/^quotes\/[0-9a-f-]{36}\.(jpg|png|webp)$/).optional(),
 })
 

@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { ArrowRight, FileText, RotateCcw } from "lucide-react"
 
-import { HelmetArt } from "@/components/helmet/helmet-art"
+import { TemplatePicture } from "@/components/helmet/template-picture"
 import { Button } from "@/components/ui/button"
 import { formatPrice } from "@/lib/format"
 import type { DesignAnalysis } from "@/types/design-assistant"
@@ -12,19 +12,15 @@ interface AnalysisCardProps {
   showActions: boolean
   onQuote: () => void
   onRestart: () => void
-  onNavigate: () => void
+  onNavigate?: () => void
 }
 
 /** The concept, the colours it uses, and the closest designs from the catalogue. */
 export function AnalysisCard({ analysis, showActions, onQuote, onRestart, onNavigate }: AnalysisCardProps) {
   return (
     <div className="overflow-hidden rounded-3xl border border-carbon/10 bg-card">
-      <div className="bg-[radial-gradient(circle_at_50%_35%,#ffffff,#e8e7e0_70%)] px-6 pt-5 pb-3">
-        <p className="eyebrow text-brand-ink">Your concept</p>
-        <HelmetArt look={analysis.concept} title="Concept helmet in your colours" className="mx-auto mt-1 max-h-48" />
-      </div>
-
       <div className="space-y-4 p-4">
+        <p className="eyebrow text-brand-ink">Your concept</p>
         <ul className="flex flex-wrap gap-1.5" aria-label="Colours in this concept">
           {analysis.palette.map((colour) => (
             <li key={colour.hex} className="flex items-center gap-1.5 rounded-full bg-carbon/[0.05] py-1 pl-1 pr-2.5 text-xs">
@@ -45,8 +41,8 @@ export function AnalysisCard({ analysis, showActions, onQuote, onRestart, onNavi
                   onClick={onNavigate}
                   className="group flex items-center gap-3 rounded-2xl border border-carbon/10 p-2 transition-colors hover:border-carbon/30 hover:bg-carbon/[0.02]"
                 >
-                  <span className="grid size-16 shrink-0 place-items-center rounded-xl bg-[radial-gradient(circle_at_50%_35%,#ffffff,#e8e7e0_80%)] p-1.5">
-                    <HelmetArt look={suggestion.look} />
+                  <span className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-xl bg-[radial-gradient(circle_at_50%_35%,#ffffff,#e8e7e0_80%)]">
+                    <TemplatePicture slug={suggestion.slug} name={suggestion.name} look={suggestion.look} />
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block font-display text-lg font-bold uppercase leading-tight">{suggestion.name}</span>

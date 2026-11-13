@@ -367,7 +367,7 @@ export async function notifyCompetitionEntry(entry: {
           ["Design", entry.designName],
           ["Entries close", closes],
         ]) +
-        paragraphs("Keep your social media post up until the winner is announced. You can update your design until entries close: open the builder, change it and enter again."),
+        paragraphs("You can update your design until entries close: open the builder, change it and enter again."),
       action: { label: "See your entry", href },
     }),
     text: `${firstName}, your entry ${entry.reference} ("${entry.designName}") for ${entry.competitionTitle} is saved.${closes ? ` Entries close ${closes}.` : ""}\n\n${href}`,

@@ -1,12 +1,12 @@
-"use client"
-
+import Link from "next/link"
 import { Sparkles } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 
-import { OPEN_ASSISTANT_EVENT } from "./design-assistant"
+/** Where the AI design assistant lives: a full page of its own. */
+export const DESIGN_ASSISTANT_HREF = "/design-my-helmet#assistant"
 
-/** Opens the AI design assistant from anywhere on the site. */
+/** Takes the customer to the AI design assistant page. */
 export function OpenAssistantButton({
   children = "Design my helmet with AI",
   size = "lg",
@@ -19,8 +19,10 @@ export function OpenAssistantButton({
   className?: string
 }) {
   return (
-    <Button type="button" size={size} variant={variant} className={className} onClick={() => window.dispatchEvent(new Event(OPEN_ASSISTANT_EVENT))}>
-      <Sparkles /> {children}
+    <Button asChild size={size} variant={variant} className={className}>
+      <Link href={DESIGN_ASSISTANT_HREF}>
+        <Sparkles aria-hidden /> {children}
+      </Link>
     </Button>
   )
 }
