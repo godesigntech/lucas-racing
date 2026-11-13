@@ -2,6 +2,7 @@ import type { Json, ShopCategoryRow, ShopProductRow, ShopVariantRow, StoreRow } 
 import {
   finishTypes,
   type FinishType,
+  type PartPreview,
   type ShopCategory,
   type ShopProduct,
   type ShopProductSource,
@@ -14,6 +15,25 @@ import {
 // Shared by server data loaders and the browser (basket), so no server-only imports.
 
 const num = (value: unknown): number => (value === null || value === undefined ? 0 : Number(value))
+
+const clamp = (value: unknown, min: number, max: number, fallback: number) => {
+  const number = typeof value === "number" && Number.isFinite(value) ? value : fallback
+  return Math.min(max, Math.max(min, number))
+}
+
+/** Preview settings saved in Admin, or null when none (or not valid) are saved. */
+function toPartPreview(value: Json | null | undefined): PartPreview | null {
+  if (!value || typeof value !== "object" || Array.isArray(value) || typeof value.image !== "string" || !value.image) return null
+  return {
+    image: value.image,
+    mask: typeof value.mask === "string" && value.mask ? value.mask : null,
+    detail: clamp(value.detail, 0, 1, DEFAULT_PREVIEW_DETAIL),
+    filmScale: clamp(value.filmScale, 0.25, 4, 1),
+  }
+}
+
+/** How much fine detail shows through a finish when nothing else is set. */
+export const DEFAULT_PREVIEW_DETAIL = 0.3
 
 function toOptions(value: Json): Record<string, string> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {}
@@ -90,6 +110,7 @@ export function toShopProduct(row: ShopProductRow & { shop_variants?: ShopVarian
     customisable: row.customisable,
     customFinishes: (row.custom_finishes ?? []).filter((type): type is FinishType => (finishTypes as string[]).includes(type)),
     customFee: Number(row.custom_fee ?? 0),
+    customPreview: toPartPreview(row.custom_preview),
     externalClicks: row.external_clicks ?? 0,
     sizeGuide: row.size_guide ?? "",
     sortOrder: row.sort_order,

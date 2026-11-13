@@ -240,6 +240,13 @@ function withPersonalisation(look: HelmetLook, values: Record<string, Json | und
   return { ...look, number, name }
 }
 
+function toPartFinish(value: Json | undefined): OrderItem["finish"] {
+  const finish = asObject(value)
+  const type = finish.type
+  if (type !== "paint" && type !== "film" && type !== "chrome") return null
+  return { type, value: str(finish.value), lacquer: str(finish.lacquer) }
+}
+
 export function toOrderItem(row: OrderItemRow): OrderItem {
   const configuration = asObject(row.configuration)
   return {
@@ -255,6 +262,7 @@ export function toOrderItem(row: OrderItemRow): OrderItem {
       return { label: str(item.label), value: str(item.value) } satisfies OrderSummaryLine
     }),
     look: configuration.look ? withPersonalisation(toLook(configuration.look), asObject(configuration.values)) : null,
+    finish: toPartFinish(configuration.finish),
     unitPrice: num(row.unit_price),
     quantity: row.quantity,
     lineTotal: num(row.line_total),

@@ -5,12 +5,14 @@ import Link from "next/link"
 import { AlertTriangle, Package, Trash2 } from "lucide-react"
 
 import { HelmetArt } from "@/components/helmet/helmet-art"
+import { PartPreviewCanvas } from "@/components/kart-parts/part-preview-canvas"
 import { StockBadge } from "@/components/shop/stock-badge"
 import { basket } from "@/lib/basket/basket-store"
 import type { ResolvedBasketLine, ResolvedHelmetLine, ResolvedProductLine } from "@/lib/basket/resolve-basket"
 import { formatMoney } from "@/lib/format"
 import { isExternalImage } from "@/lib/shop/images"
-import { productHref } from "@/lib/shop/part-finish"
+import { partPreview, productHref } from "@/lib/shop/part-finish"
+import type { PriceBook } from "@/types/catalog"
 
 import { QuantityStepper } from "./quantity-stepper"
 
@@ -26,7 +28,8 @@ function RemoveButton({ id }: { id: string }) {
   )
 }
 
-export function BasketLine({ line }: { line: ResolvedBasketLine }) {
+/** `priceBook` lets customised parts show their finish instead of the plain photo. */
+export function BasketLine({ line, priceBook }: { line: ResolvedBasketLine; priceBook?: PriceBook }) {
   if (!line.available) {
     return (
       <li className="flex items-center gap-4 rounded-3xl border border-dashed border-destructive/40 bg-card p-5">
@@ -45,7 +48,7 @@ export function BasketLine({ line }: { line: ResolvedBasketLine }) {
       </li>
     )
   }
-  return line.kind === "product" ? <ProductLine line={line} /> : <HelmetLine line={line} />
+  return line.kind === "product" ? <ProductLine line={line} priceBook={priceBook} /> : <HelmetLine line={line} />
 }
 
 function HelmetLine({ line }: { line: ResolvedHelmetLine }) {
@@ -96,15 +99,18 @@ function HelmetLine({ line }: { line: ResolvedHelmetLine }) {
   )
 }
 
-function ProductLine({ line }: { line: ResolvedProductLine }) {
+function ProductLine({ line, priceBook }: { line: ResolvedProductLine; priceBook?: PriceBook }) {
   const { item, product, variant } = line
   const image = product.images[0]
+  const preview = item.finish && priceBook ? partPreview(product) : null
   const href = productHref(product)
 
   return (
     <li className="grid gap-5 rounded-3xl border border-carbon/10 bg-card p-5 sm:grid-cols-[10rem_minmax(0,1fr)] sm:p-6">
       <Link href={href} className="relative grid aspect-[4/3] place-items-center overflow-hidden rounded-2xl bg-carbon/5" aria-label={`View ${product.title}`}>
-        {image ? (
+        {preview && item.finish && priceBook ? (
+          <PartPreviewCanvas preview={preview} finish={item.finish} priceBook={priceBook} label={`${product.title} in your finish`} className="absolute inset-0 p-2" />
+        ) : image ? (
           <Image src={image} alt="" fill sizes="160px" unoptimized={isExternalImage(image)} className="object-contain p-2" />
         ) : (
           <Package className="size-8 text-muted-foreground" aria-hidden />

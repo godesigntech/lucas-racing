@@ -87,7 +87,7 @@ export function QuoteForm({ photo, note, analysis, aiImage, onSent, onBack }: Qu
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4 rounded-3xl border border-carbon/10 bg-card p-4">
+    <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
       <div className="flex items-center gap-2">
         <Button type="button" variant="ghost" size="icon-sm" onClick={onBack} aria-label="Back to the concept">
           <ArrowLeft />

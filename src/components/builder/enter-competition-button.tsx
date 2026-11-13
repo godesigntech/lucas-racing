@@ -145,7 +145,7 @@ export function EnterCompetitionButton({ competition, slug, productName, getConf
                 <CheckCircle2 className="size-5 text-emerald-600" aria-hidden /> {done.updated ? "Entry updated" : "You're in!"}
               </DialogTitle>
               <DialogDescription>
-                Your entry is {done.reference}. Keep your post up until the winner is announced. You can change your design and enter again until
+                Your entry is {done.reference}. You can change your design and enter again until
                 entries close; your latest design is the one in the vote.
               </DialogDescription>
             </DialogHeader>
@@ -201,8 +201,7 @@ export function EnterCompetitionButton({ competition, slug, productName, getConf
               <div className="space-y-2 rounded-2xl border border-carbon/10 p-3">
                 <p className="text-sm font-semibold">1. Share your design</p>
                 <p className="text-xs text-muted-foreground">
-                  Post it on social media from your own account and tag both Lucas Racing and HydroKarts. Keep the post up until the winner is announced;
-                  stories that disappear don&apos;t count.
+                  Share your helmet on your story, and tag two people plus us, @hydro.karts.
                 </p>
                 <div className="flex items-center gap-3">
                   <span className="grid h-20 w-28 shrink-0 place-items-center overflow-hidden rounded-xl bg-[radial-gradient(circle_at_50%_35%,#ffffff,#e8e7e0_80%)] ring-1 ring-carbon/10">
@@ -225,19 +224,19 @@ export function EnterCompetitionButton({ competition, slug, productName, getConf
 
               <div className="space-y-1.5">
                 <label htmlFor={postId} className="text-sm font-semibold">
-                  2. Link to your post
+                  2. Link to your story
                 </label>
                 <Input
                   id={postId}
                   type="url"
                   inputMode="url"
-                  placeholder="https://www.instagram.com/p/…"
+                  placeholder="https://www.instagram.com/stories/…"
                   value={postUrl}
                   maxLength={500}
                   onChange={(event) => setPostUrl(event.target.value)}
                   aria-invalid={postUrl.length > 0 && !postValid}
                 />
-                <p className="text-xs text-muted-foreground">Copy the link from your post on Instagram, Facebook, TikTok or X.</p>
+                <p className="text-xs text-muted-foreground">Copy the link to your story on Instagram or Facebook.</p>
               </div>
 
               <div className="flex items-start gap-2.5 text-sm">

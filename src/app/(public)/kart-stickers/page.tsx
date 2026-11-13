@@ -4,11 +4,13 @@ import Image from "next/image"
 import Link from "next/link"
 import { LayoutTemplate, PencilLine, Send, Sparkles } from "lucide-react"
 
+import { KartStickerSteps } from "@/components/kart-stickers/kart-sticker-steps"
 import { KartStickerStudio } from "@/components/kart-stickers/kart-sticker-studio"
 import { Container } from "@/components/layout/container"
-import { PageHero } from "@/components/shared/page-hero"
+import { StudioBanner } from "@/components/shared/studio-banner"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { images } from "@/constants/images"
 import { getCurrentUser } from "@/lib/auth/session"
 import { getMyKartStudio } from "@/lib/data/kart-stickers"
 import { readyKartLayouts } from "@/lib/kart-stickers/options"
@@ -25,29 +27,19 @@ const steps = [
   { icon: Send, title: "Send it for a quote", text: "We check it, prepare it for print and send you a price." },
 ]
 
+/** A slim title strip, the progress steps, then the form on the left and the results on the right. */
 export default function KartStickersPage() {
   return (
     <>
-      <PageHero
-        eyebrow="Kart stickers"
-        title="Design your kart stickers with AI"
-        description="Pick your kart's sticker layout, describe the look you want and our AI designs the whole kit: nassau, side pods and front bumper. Happy with it? Send it to us for a quote."
+      <StudioBanner
+        eyebrow="Kart sticker designer"
+        title="Design my kart stickers"
+        description="Create a custom kart sticker design with AI, then send it to our team for a print quote."
+        image={images.connor}
       />
-      <section className="py-10 sm:py-14">
-        <Container className="space-y-10">
-          <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {steps.map(({ icon: Icon, title, text }, index) => (
-              <li key={title} className="rounded-2xl border border-carbon/10 bg-card p-4">
-                <span className="grid size-10 place-items-center rounded-xl bg-accent text-brand-ink">
-                  <Icon className="size-5" aria-hidden />
-                </span>
-                <p className="mt-3 text-xs font-semibold text-muted-foreground">Step {index + 1}</p>
-                <h2 className="font-display text-lg font-bold uppercase leading-tight">{title}</h2>
-                <p className="mt-1 text-sm text-muted-foreground">{text}</p>
-              </li>
-            ))}
-          </ol>
-          <Suspense fallback={<Skeleton className="h-[40rem] rounded-3xl" />}>
+      <section className="py-5 sm:py-8">
+        <Container className="max-sm:px-3">
+          <Suspense fallback={<StudioSkeleton />}>
             <Studio />
           </Suspense>
         </Container>
@@ -66,28 +58,77 @@ async function Studio() {
 /** Designing needs an account: the AI's designs are kept in it, and it's how we quote. */
 function SignInFirst() {
   const next = encodeURIComponent("/kart-stickers")
+  const layout = readyKartLayouts[0]
   return (
-    <div className="grid items-center gap-8 rounded-3xl border border-carbon/10 bg-card p-6 sm:p-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-      <div>
-        <h2 className="font-display text-3xl font-bold uppercase leading-tight">Log in to start designing</h2>
-        <p className="mt-2 text-muted-foreground">
-          A free account keeps all your designs together and lets you send your favourite for a quote. It takes a minute.
-        </p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Button asChild size="lg">
-            <Link href={`/signup?next=${next}`}>Create an account</Link>
-          </Button>
-          <Button asChild size="lg" variant="outline">
-            <Link href={`/login?next=${next}`}>Log in</Link>
-          </Button>
-        </div>
-      </div>
-      {readyKartLayouts[0] && (
-        <div className="overflow-hidden rounded-2xl border border-carbon/10 bg-white">
-          <Image src={readyKartLayouts[0].image} alt={`${readyKartLayouts[0].name} blank sticker layout`} width={readyKartLayouts[0].width} height={readyKartLayouts[0].height} className="h-auto w-full" />
-          <p className="border-t border-carbon/10 px-4 py-2 text-xs text-muted-foreground">{readyKartLayouts[0].name} layout: nassau, side pods and front bumper</p>
-        </div>
+    <div className="space-y-5">
+    <KartStickerSteps current={1} />
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:items-start lg:gap-8">
+      <section aria-labelledby="kart-stickers-title" className="flex min-w-0 flex-col rounded-[1.75rem] border border-carbon/10 bg-card">
+        <header className="border-b border-carbon/10 px-5 py-5 sm:px-6">
+          <h2 id="kart-stickers-title" className="font-display text-2xl font-bold uppercase leading-none sm:text-3xl">
+            How it works
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Pick your kart&apos;s layout, describe the look and our AI designs the whole kit. Happy with it? Send it to us for a quote.
+          </p>
+        </header>
+        <ol className="space-y-4 px-5 py-5 sm:px-6">
+          {steps.map(({ icon: Icon, title, text }, index) => (
+            <li key={title} className="flex gap-3">
+              <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-accent text-brand-ink">
+                <Icon className="size-4" aria-hidden />
+              </span>
+              <span className="text-sm">
+                <span className="block text-[0.7rem] font-semibold text-muted-foreground">Step {index + 1}</span>
+                <span className="block font-semibold">{title}</span>
+                <span className="block text-muted-foreground">{text}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
+        <footer className="space-y-3 rounded-b-[1.75rem] border-t border-carbon/10 bg-carbon/[0.03] px-5 py-5 sm:px-6">
+          <p className="text-sm">
+            <span className="font-semibold">Log in to start designing.</span>{" "}
+            <span className="text-muted-foreground">A free account keeps your designs together so you can send your favourite for a quote.</span>
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <Button asChild size="lg">
+              <Link href={`/signup?next=${next}`}>Create a free account</Link>
+            </Button>
+            <Button asChild size="lg" variant="outline">
+              <Link href={`/login?next=${next}`}>Log in</Link>
+            </Button>
+          </div>
+        </footer>
+      </section>
+
+      {layout && (
+        <figure className="overflow-hidden rounded-[1.75rem] border border-carbon/10 bg-card lg:sticky lg:top-24">
+          <div className="relative aspect-square bg-white lg:aspect-[5/4]">
+            <Image src={layout.image} alt={`${layout.name} blank sticker layout`} fill sizes="(min-width: 1024px) 50vw, 100vw" className="object-contain p-4" preload />
+            <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-carbon px-3 py-1 text-xs font-semibold text-paper">
+              <LayoutTemplate className="size-3.5 text-brand" aria-hidden /> {layout.name} layout
+            </span>
+          </div>
+          <figcaption className="px-4 py-3 text-xs text-muted-foreground">
+            <span className="font-semibold text-carbon">One of {readyKartLayouts.length} kart layouts.</span> The AI fills these panels with your design:
+            nassau, side pods and front bumper.
+          </figcaption>
+        </figure>
       )}
+    </div>
+    </div>
+  )
+}
+
+function StudioSkeleton() {
+  return (
+    <div className="space-y-5" aria-busy="true" aria-label="Loading the kart sticker designer">
+      <Skeleton className="h-14 rounded-2xl" />
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-8">
+      <Skeleton className="h-[32rem] rounded-[1.75rem]" />
+      <Skeleton className="aspect-square rounded-[1.75rem]" />
+      </div>
     </div>
   )
 }

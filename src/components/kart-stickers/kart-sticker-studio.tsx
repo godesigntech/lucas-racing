@@ -4,7 +4,7 @@ import { useState, useTransition } from "react"
 import Image from "next/image"
 import { Controller, useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Check, LayoutTemplate, Loader2, Plus, RotateCcw, Send, Sparkles, Trash2 } from "lucide-react"
+import { Check, Download, Flag, Flame, Layers, LayoutTemplate, Loader2, Plus, RotateCcw, Send, Sparkles, Trash2, Zap } from "lucide-react"
 import { toast } from "react-toastify"
 
 import { ConfirmDialog } from "@/components/admin/confirm-dialog"
@@ -20,37 +20,51 @@ import { cn } from "@/lib/utils"
 import { kartDesignSchema, type KartDesignValues } from "@/lib/validations/kart-stickers"
 import type { KartDesign } from "@/types/kart-stickers"
 
+import { KartStickerStage } from "./kart-sticker-stage"
+import { KartStickerSteps } from "./kart-sticker-steps"
+
 const RETURN_TO = "/kart-stickers"
 
 const ideas = [
-  "Black and fluoro yellow lightning bolts with a chequered flag fade",
-  "Retro Gulf-style light blue and orange stripes",
-  "Red and white tiger stripes with gold pinstripes",
-  "Dark navy with neon pink geometric shards",
+  { icon: Zap, label: "Black & fluoro lightning", prompt: "Black and fluoro yellow lightning bolts with a chequered flag fade" },
+  { icon: Flag, label: "Retro racing stripes", prompt: "Retro Gulf-style light blue and orange stripes" },
+  { icon: Flame, label: "Tiger stripes & gold", prompt: "Red and white tiger stripes with gold pinstripes" },
+  { icon: Sparkles, label: "Navy with neon shards", prompt: "Dark navy with neon pink geometric shards" },
 ]
+
+/** A small picture of each vinyl finish for its tile. */
+const finishSwatches: Record<string, string> = {
+  gloss: "bg-[radial-gradient(circle_at_30%_25%,#ffffff_0,#3a3f3c_28%,#111412_70%)]",
+  matt: "bg-[#2b2f2d]",
+  holographic: "bg-[linear-gradient(135deg,#ff9ad5,#9be7ff_35%,#c6f432_60%,#ffd000_80%,#b38bff)]",
+  chrome: "bg-[linear-gradient(160deg,#ffffff,#a9aeb3_35%,#f4f5f6_55%,#6b7075_80%,#d9dcdf)]",
+}
 
 function Section({ step, title, description, children }: { step: number; title: string; description?: string; children: React.ReactNode }) {
   return (
-    <fieldset className="space-y-3">
-      <legend className="flex items-center gap-2.5">
-        <span className="grid size-7 shrink-0 place-items-center rounded-full bg-carbon font-display text-xs font-bold text-paper">{step}</span>
-        <span className="font-display text-xl font-bold uppercase leading-tight">{title}</span>
+    <fieldset className="space-y-3 border-t border-carbon/10 pt-5 first:border-t-0 first:pt-0">
+      <legend className="flex items-start gap-3">
+        <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-full bg-carbon font-display text-xs font-bold text-paper">{step}</span>
+        <span>
+          <span className="block font-display text-xl font-bold uppercase leading-tight">{title}</span>
+          {description && <span className="mt-0.5 block text-sm text-muted-foreground">{description}</span>}
+        </span>
       </legend>
-      {description && <p className="text-sm text-muted-foreground">{description}</p>}
       {children}
     </fieldset>
   )
 }
 
 /**
- * The kart sticker designer: pick a blank layout, describe the design, add a number, name,
- * logos and finish, and the AI paints it. Every design is kept below; the customer sends
- * the one they like for a quote.
+ * The kart sticker designer, laid out like the helmet builder: the picture on the left
+ * (the blank layout, then the AI's designs, with every saved design underneath) and the
+ * steps in a card on the right: layout, kart, description, number/name/logos, finish.
  */
 export function KartStickerStudio({ initialDesigns, initialRemaining, limit }: { initialDesigns: KartDesign[]; initialRemaining: number; limit: number }) {
   const [designs, setDesigns] = useState(initialDesigns)
   const [remaining, setRemaining] = useState(initialRemaining)
-  const [latest, setLatest] = useState<string | null>(null)
+  /** The design shown in the big picture; null shows the chosen blank layout. */
+  const [shownId, setShownId] = useState<string | null>(initialDesigns[0]?.id ?? null)
   const [logoSlots, setLogoSlots] = useState(1)
   const [pending, startTransition] = useTransition()
 
@@ -66,6 +80,16 @@ export function KartStickerStudio({ initialDesigns, initialRemaining, limit }: {
     defaultValues: { layout: readyKartLayouts[0]?.id ?? "", kartModel: "", prompt: "", raceNumber: "", driverName: "", finish: "gloss", logos: [] },
   })
   const prompt = useWatch({ control, name: "prompt" })
+  const layoutId = useWatch({ control, name: "layout" })
+  const layout = findKartLayout(layoutId)
+  const shown = designs.find((item) => item.id === shownId) ?? null
+  // Progress: describe once a layout is picked, review once there's a design to look at.
+  const currentStep = shown ? 4 : designs.length > 0 || pending ? 3 : prompt?.trim() ? 2 : 1
+
+  /** Bring the results into view (they may be off screen, above or below the form). */
+  function showStage() {
+    document.getElementById("kart-stage")?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }
 
   function design(values: KartDesignValues) {
     startTransition(async () => {
@@ -77,9 +101,9 @@ export function KartStickerStudio({ initialDesigns, initialRemaining, limit }: {
       const created = result.data.design
       setDesigns((current) => [created, ...current])
       setRemaining(result.data.remaining)
-      setLatest(created.id)
-      toast.success("Your design is ready. Scroll down to see it.")
-      document.getElementById("kart-designs")?.scrollIntoView({ behavior: "smooth", block: "start" })
+      setShownId(created.id)
+      toast.success("Your design is ready.")
+      showStage()
     })
   }
 
@@ -87,18 +111,53 @@ export function KartStickerStudio({ initialDesigns, initialRemaining, limit }: {
   function reuse(item: KartDesign) {
     reset({ layout: item.layout, kartModel: item.kartModel, prompt: item.prompt, raceNumber: item.raceNumber, driverName: item.driverName, finish: item.finish, logos: item.logos })
     setLogoSlots(Math.max(1, item.logos.length))
+    toast.info("Its choices are back in the form. Change what you like and design again.")
     document.getElementById("kart-design-form")?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
 
+  function removed(id: string) {
+    setDesigns((current) => current.filter((entry) => entry.id !== id))
+    if (shownId === id) setShownId(null)
+  }
+
   return (
-    <div className="space-y-10">
-      <form id="kart-design-form" onSubmit={handleSubmit(design)} noValidate className="scroll-mt-24 space-y-8 rounded-3xl border border-carbon/10 bg-card p-5 sm:p-8">
-        <Section step={1} title="Choose your layout" description="The sticker panels for your kart's bodywork. The AI designs inside these exact shapes.">
+    <div className="space-y-5">
+    <KartStickerSteps current={currentStep} />
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:items-start lg:gap-8">
+      {/* data-helmet-builder hides the floating chat buttons on phones (globals.css): they would cover the button. */}
+      <form
+        id="kart-design-form"
+        data-helmet-builder
+        onSubmit={handleSubmit(design)}
+        noValidate
+        aria-label="Design your kart stickers"
+        className="flex min-w-0 scroll-mt-24 flex-col rounded-[1.75rem] border border-carbon/10 bg-card"
+      >
+        <header className="flex items-start justify-between gap-3 border-b border-carbon/10 px-5 py-5 sm:px-6">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent text-brand-ink">
+              <Layers className="size-5" aria-hidden />
+            </span>
+            <div className="min-w-0">
+              <h2 className="font-display text-2xl font-bold uppercase leading-none sm:text-3xl">Build your design</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Follow the steps to create your kart stickers.</p>
+            </div>
+          </div>
+          <p className="shrink-0 text-right">
+            <span className="block font-display text-2xl font-bold leading-none sm:text-3xl" aria-live="polite">
+              {remaining}/{limit}
+            </span>
+            <span className="text-xs text-muted-foreground">Designs left today</span>
+          </p>
+        </header>
+
+        <div className="space-y-5 px-5 py-5 sm:px-6">
+        <Section step={1} title="Choose your layout" description={`The sticker panels for your kart's bodywork. Scroll to see all ${kartLayouts.length}.`}>
           <Controller
             control={control}
             name="layout"
             render={({ field }) => (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+              <div className="grid max-h-[24rem] grid-cols-3 gap-2 overflow-y-auto overscroll-contain rounded-2xl border border-carbon/10 bg-carbon/[0.03] p-2">
                 {kartLayouts.map((layout) => {
                   const ready = isReadyLayout(layout)
                   const selected = field.value === layout.id
@@ -108,26 +167,26 @@ export function KartStickerStudio({ initialDesigns, initialRemaining, limit }: {
                       type="button"
                       // Layouts without a blank yet are listed so customers see what's coming.
                       disabled={!ready}
-                      onClick={() => field.onChange(layout.id)}
+                      onClick={() => {
+                        field.onChange(layout.id)
+                        setShownId(null)
+                      }}
                       aria-pressed={selected}
                       className={cn(
-                        "flex flex-col overflow-hidden rounded-2xl border text-left transition disabled:cursor-not-allowed",
+                        "flex flex-col overflow-hidden rounded-xl border bg-card text-left transition disabled:cursor-not-allowed",
                         selected ? "border-brand-ink ring-2 ring-brand-ink/25" : ready ? "border-carbon/15 hover:border-carbon/40" : "border-dashed border-carbon/15",
                       )}
                     >
                       {ready ? (
-                        <Image src={layout.image} alt={`${layout.name} blank sticker layout`} width={layout.width} height={layout.height} sizes="(min-width: 1024px) 20vw, (min-width: 640px) 33vw, 50vw" className="aspect-square h-auto w-full bg-white object-cover" />
+                        <Image src={layout.image} alt={`${layout.name} blank sticker layout`} width={layout.width} height={layout.height} sizes="(min-width: 1024px) 10vw, 30vw" className="aspect-square h-auto w-full bg-white object-cover" />
                       ) : (
                         <span className="grid aspect-square w-full place-items-center bg-paper/60 text-muted-foreground">
                           <LayoutTemplate className="size-7 opacity-40" aria-hidden />
                         </span>
                       )}
-                      <span className="flex flex-1 items-start justify-between gap-2 p-2.5">
-                        <span>
-                          <span className={cn("block text-sm font-semibold", !ready && "text-muted-foreground")}>{layout.name}</span>
-                          <span className="block text-xs text-muted-foreground">{ready ? "Ready to design" : "Layout coming soon"}</span>
-                        </span>
-                        {selected && <Check className="size-4 shrink-0 text-brand-ink" aria-hidden />}
+                      <span className="flex flex-1 items-center justify-between gap-1 px-2 py-1.5">
+                        <span className={cn("truncate text-xs font-semibold", !ready && "text-muted-foreground")}>{ready ? layout.name : `${layout.name} (soon)`}</span>
+                        {selected && <Check className="size-3.5 shrink-0 text-brand-ink" aria-hidden />}
                       </span>
                     </button>
                   )
@@ -140,33 +199,36 @@ export function KartStickerStudio({ initialDesigns, initialRemaining, limit }: {
           </p>
         </Section>
 
-        <Section step={2} title="Your kart">
+        <Section step={2} title="Your kart" description="Tell us the make and model of your kart.">
           <FormField id="kart-model" label="Kart make and model" error={errors.kartModel?.message}>
             <Input {...register("kartModel")} {...fieldA11y("kart-model", errors.kartModel?.message)} placeholder="e.g. MS Kart Rookie, Kosmic Mercury R" maxLength={80} />
           </FormField>
         </Section>
 
-        <Section step={3} title="Describe your design" description="Colours, style, patterns, anything you love. The more you say, the closer the AI gets.">
+        <Section step={3} title="Describe your design" description="Colours, style and any ideas you have. The more detail, the better the AI gets.">
           <FormField id="kart-prompt" label="Design description" error={errors.prompt?.message}>
             <Textarea {...register("prompt")} {...fieldA11y("kart-prompt", errors.prompt?.message)} rows={4} maxLength={1000} placeholder="e.g. Matte black with fluoro green lightning bolts and a chequered flag fade on the side pods" />
           </FormField>
-          {!prompt && (
-            <div className="flex flex-wrap gap-2">
-              {ideas.map((idea) => (
-                <button
-                  key={idea}
-                  type="button"
-                  onClick={() => setValue("prompt", idea, { shouldValidate: true })}
-                  className="rounded-full border border-carbon/15 px-3 py-1.5 text-xs text-muted-foreground transition hover:border-carbon/40 hover:text-carbon"
-                >
-                  {idea}
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="grid grid-cols-2 gap-2">
+            {ideas.map(({ icon: Icon, label, prompt: idea }) => (
+              <button
+                key={label}
+                type="button"
+                title={idea}
+                onClick={() => setValue("prompt", idea, { shouldValidate: true })}
+                className={cn(
+                  "flex items-center gap-2 rounded-full border px-3 py-2 text-left text-xs font-medium transition",
+                  prompt === idea ? "border-brand-ink bg-accent text-carbon" : "border-carbon/15 text-carbon/80 hover:border-carbon/40 hover:text-carbon",
+                )}
+              >
+                <Icon className="size-3.5 shrink-0 text-brand-ink" aria-hidden />
+                <span className="truncate">{label}</span>
+              </button>
+            ))}
+          </div>
         </Section>
 
-        <Section step={4} title="Number, name and logos" description="Optional. The AI places them on the panels of your kit.">
+        <Section step={4} title="Number, name and logos" description="Optional. Your race number, driver name and any sponsor logos.">
           <div className="grid gap-4 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
             <FormField id="kart-number" label="Race number" optional error={errors.raceNumber?.message}>
               <Input {...register("raceNumber")} {...fieldA11y("kart-number", errors.raceNumber?.message)} maxLength={4} inputMode="numeric" placeholder="43" />
@@ -205,12 +267,12 @@ export function KartStickerStudio({ initialDesigns, initialRemaining, limit }: {
           />
         </Section>
 
-        <Section step={5} title="Finish">
+        <Section step={5} title="Finish" description="Choose the vinyl finish for your stickers.">
           <Controller
             control={control}
             name="finish"
             render={({ field }) => (
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid grid-cols-2 gap-2">
                 {kartFinishes.map((finish) => {
                   const selected = field.value === finish
                   return (
@@ -220,12 +282,20 @@ export function KartStickerStudio({ initialDesigns, initialRemaining, limit }: {
                       onClick={() => field.onChange(finish)}
                       aria-pressed={selected}
                       className={cn(
-                        "flex flex-col items-start rounded-2xl border px-4 py-3 text-left transition-colors",
+                        "relative flex items-center gap-3 rounded-2xl border p-2.5 text-left transition-colors",
                         selected ? "border-carbon bg-carbon text-paper" : "border-carbon/15 hover:border-carbon/40",
                       )}
                     >
-                      <span className="font-semibold">{kartFinishLabels[finish].label}</span>
-                      <span className={cn("text-xs", selected ? "text-paper/70" : "text-muted-foreground")}>{kartFinishLabels[finish].hint}</span>
+                      <span aria-hidden className={cn("size-10 shrink-0 rounded-xl ring-1 ring-black/10", finishSwatches[finish])} />
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold leading-tight">{kartFinishLabels[finish].label}</span>
+                        <span className={cn("block text-xs leading-snug", selected ? "text-paper/70" : "text-muted-foreground")}>{kartFinishLabels[finish].hint}</span>
+                      </span>
+                      {selected && (
+                        <span className="absolute -right-1.5 -top-1.5 grid size-5 place-items-center rounded-full bg-brand text-carbon">
+                          <Check className="size-3" aria-hidden />
+                        </span>
+                      )}
                     </button>
                   )
                 })}
@@ -233,85 +303,70 @@ export function KartStickerStudio({ initialDesigns, initialRemaining, limit }: {
             )}
           />
         </Section>
-
-        <div className="flex flex-col gap-3 border-t border-carbon/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-muted-foreground">
-            {remaining > 0 ? `${remaining} of ${limit} designs left today.` : `You've used today's ${limit} designs. Come back tomorrow for more.`} Each design
-            takes about half a minute.
-          </p>
-          <Button type="submit" size="lg" disabled={pending || remaining === 0}>
-            {pending ? <Loader2 className="animate-spin" aria-hidden /> : <Sparkles aria-hidden />}
-            {pending ? "Designing your stickers…" : "Design my stickers"}
-          </Button>
         </div>
+
+        <footer className="sticky bottom-0 z-10 flex flex-col gap-2 rounded-b-[1.75rem] border-t border-carbon/10 bg-card px-4 py-3 shadow-[0_-8px_20px_-14px_rgb(0_0_0/0.25)] sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <p className="text-xs text-muted-foreground">
+            {remaining > 0 ? "About half a minute per design. Try as many versions as you like." : `You've used today's ${limit} designs. Come back tomorrow for more.`}
+          </p>
+          <Button type="submit" size="lg" className="shrink-0" disabled={pending || remaining === 0}>
+            {pending ? <Loader2 className="animate-spin" aria-hidden /> : <Sparkles aria-hidden />}
+            {pending ? "Designing…" : "Design my stickers"}
+          </Button>
+        </footer>
       </form>
 
-      <section id="kart-designs" aria-labelledby="kart-designs-heading" className="scroll-mt-24 space-y-4">
-        <h2 id="kart-designs-heading" className="font-display text-3xl font-bold uppercase">
-          Your designs
-        </h2>
-        {designs.length === 0 ? (
-          <p className="rounded-3xl border border-dashed border-carbon/20 p-8 text-center text-sm text-muted-foreground">
-            Your designs appear here. Make as many versions as you like, then send your favourite for a quote.
-          </p>
-        ) : (
-          <ul className="grid gap-5 md:grid-cols-2">
-            {designs.map((item) => (
-              <DesignCard
-                key={item.id}
-                design={item}
-                highlighted={item.id === latest}
-                onReuse={() => reuse(item)}
-                onDeleted={() => setDesigns((current) => current.filter((entry) => entry.id !== item.id))}
-              />
-            ))}
-          </ul>
-        )}
-      </section>
+      {/* Results: the chosen layout, then each AI design. */}
+      <div id="kart-stage" className="scroll-mt-24">
+        <KartStickerStage
+          layout={layout}
+          design={shown}
+          designs={designs}
+          pending={pending}
+          onShow={setShownId}
+          actions={
+            shown && (
+              <>
+                <SendForQuote designId={shown.id} />
+                <Button type="button" variant="outline" onClick={() => reuse(shown)}>
+                  <RotateCcw /> Try another version
+                </Button>
+                {shown.imageUrl && (
+                  <Button asChild variant="outline" size="icon" aria-label="Save the design">
+                    <a href={shown.imageUrl} target="_blank" rel="noreferrer" download>
+                      <Download />
+                    </a>
+                  </Button>
+                )}
+                <DeleteDesign id={shown.id} onDeleted={() => removed(shown.id)} />
+              </>
+            )
+          }
+        />
+      </div>
+    </div>
     </div>
   )
 }
 
-function DesignCard({ design, highlighted, onReuse, onDeleted }: { design: KartDesign; highlighted: boolean; onReuse: () => void; onDeleted: () => void }) {
-  const layout = findKartLayout(design.layout)
+/** Deletes a saved design, after asking. */
+function DeleteDesign({ id, onDeleted }: { id: string; onDeleted: () => void }) {
   return (
-    <li className={cn("overflow-hidden rounded-3xl border bg-card", highlighted ? "border-brand-ink ring-2 ring-brand-ink/25" : "border-carbon/10")}>
-      {design.imageUrl ? (
-        <a href={design.imageUrl} target="_blank" rel="noreferrer" className="block bg-paper">
-          {/* eslint-disable-next-line @next/next/no-img-element -- signed, short-lived link to a private picture */}
-          <img src={design.imageUrl} alt={`Kart sticker design: ${design.prompt}`} className="aspect-square w-full object-contain" />
-        </a>
-      ) : (
-        <p className="grid aspect-square place-items-center bg-paper text-sm text-muted-foreground">Picture unavailable</p>
-      )}
-      <div className="space-y-3 p-4">
-        <p className="line-clamp-2 text-sm">{design.prompt}</p>
-        <p className="text-xs text-muted-foreground">
-          {[design.kartModel, layout?.name, kartFinishLabels[design.finish]?.label, design.raceNumber && `#${design.raceNumber}`, design.driverName].filter(Boolean).join(" · ")}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <SendForQuote designId={design.id} />
-          <Button type="button" variant="outline" size="sm" onClick={onReuse}>
-            <RotateCcw /> Try a variation
-          </Button>
-          <ConfirmDialog
-            trigger={
-              <Button type="button" variant="ghost" size="sm" aria-label="Delete design">
-                <Trash2 />
-              </Button>
-            }
-            title="Delete this design?"
-            description="It's removed from your designs. Designs you've already sent for a quote stay with your request."
-            confirmLabel="Delete"
-            onConfirm={async () => {
-              const result = await deleteKartDesign(design.id)
-              if (result.ok) onDeleted()
-              return result
-            }}
-          />
-        </div>
-      </div>
-    </li>
+    <ConfirmDialog
+      trigger={
+        <Button type="button" variant="ghost" size="icon" aria-label="Delete design">
+          <Trash2 />
+        </Button>
+      }
+      title="Delete this design?"
+      description="It's removed from your designs. Designs you've already sent for a quote stay with your request."
+      confirmLabel="Delete"
+      onConfirm={async () => {
+        const result = await deleteKartDesign(id)
+        if (result.ok) onDeleted()
+        return result
+      }}
+    />
   )
 }
 
@@ -325,7 +380,7 @@ function SendForQuote({ designId }: { designId: string }) {
   return (
     <Dialog open={open} onOpenChange={(next) => !pending && setOpen(next)}>
       <DialogTrigger asChild>
-        <Button type="button" size="sm">
+        <Button type="button">
           <Send /> Send for a quote
         </Button>
       </DialogTrigger>

@@ -25,12 +25,12 @@ const steps = [
   {
     icon: Share2,
     title: "Share it",
-    text: "Post your design on social media from your own account and tag both Lucas Racing and HydroKarts. Keep the post up until the winner is announced; stories that disappear don't count.",
+    text: "Share your helmet on your story, and tag two people plus us, @hydro.karts.",
   },
   {
     icon: Send,
     title: "Enter it",
-    text: "On the Review step, press Enter the competition and paste the link to your post. One entry per person; you can change your design until entries close.",
+    text: "On the Review step, press Enter the competition and paste the link to your story. One entry per person; you can change your design until entries close.",
   },
   {
     icon: Vote,

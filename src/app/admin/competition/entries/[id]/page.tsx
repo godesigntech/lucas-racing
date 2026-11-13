@@ -45,7 +45,7 @@ async function EntryDetail({ id }: { id: string }) {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="min-w-0 space-y-6">
-          <AdminCard title="Rule checks" description="What the rules ask of every entry. The film and UK confirmation are checked when they enter; check the post yourself.">
+          <AdminCard title="Rule checks" description="What the rules ask of every entry. The film and UK confirmation are checked when they enter; check their story yourself (stories only last 24 hours).">
             <div className="grid gap-5 sm:grid-cols-[12rem_minmax(0,1fr)]">
               {pictureUrl ? (
                 <a href={pictureUrl} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-xl bg-carbon/5 ring-1 ring-carbon/10">
@@ -61,7 +61,7 @@ async function EntryDetail({ id }: { id: string }) {
                 <dd className={hasFilm ? "" : "font-medium text-destructive"}>{hasFilm ? "Yes" : "None found"}</dd>
                 <dt className="text-muted-foreground">Lives in the UK</dt>
                 <dd className={entry.ukResident ? "" : "font-medium text-destructive"}>{entry.ukResident ? "Confirmed" : "Not confirmed"}</dd>
-                <dt className="text-muted-foreground">Social media post</dt>
+                <dt className="text-muted-foreground">Their story</dt>
                 <dd className="min-w-0">
                   {entry.postUrl ? (
                     <a href={entry.postUrl} target="_blank" rel="noreferrer" className="inline-flex max-w-full items-center gap-1 font-medium underline-offset-4 hover:underline">

@@ -55,7 +55,7 @@ export function BasketView({ products, priceBook }: BasketViewProps) {
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-10">
       <ul className="space-y-4" aria-label="Basket items">
         {lines.map((line) => (
-          <BasketLine key={line.item.id} line={line} />
+          <BasketLine key={line.item.id} line={line} priceBook={priceBook} />
         ))}
       </ul>
 

@@ -1,16 +1,25 @@
 import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
-import { Camera, Images } from "lucide-react"
+import { ExternalLink, Images } from "lucide-react"
 
+import { FacebookPageFeed } from "@/components/gallery/facebook-page-feed"
 import { Container } from "@/components/layout/container"
 import { ComingSoon } from "@/components/shared/coming-soon"
 import { PageHero } from "@/components/shared/page-hero"
-import { Button } from "@/components/ui/button"
 import { images } from "@/constants/images"
 import { getGalleryAlbums } from "@/lib/data/gallery"
 import { getSiteSettings } from "@/lib/data/settings"
 import { formatDate } from "@/lib/format"
+
+/**
+ * Facebook pages shown on the gallery. Facebook only lets a page's posts show on other sites
+ * when the page allows it: BPEC's settings don't, so it links to its photos instead.
+ */
+const facebookPages = [
+  { name: "Lucas Racing", url: "https://www.facebook.com/lucasracingmskart", embed: true },
+  { name: "BPEC Karting", url: "https://www.facebook.com/BPECKARTING/photos", embed: false },
+]
 
 export const metadata: Metadata = {
   title: "Gallery",
@@ -41,17 +50,8 @@ export default async function GalleryPage() {
         image={images.teamAwning}
       />
       <section className="py-12 sm:py-16">
-        <Container>
-          {albums.length === 0 ? (
-            <div className="flex flex-col items-center rounded-[2rem] border border-dashed border-carbon/20 px-6 py-16 text-center">
-              <Camera className="size-10 text-muted-foreground" aria-hidden />
-              <h2 className="mt-4 font-display text-3xl font-bold uppercase">Photos coming soon</h2>
-              <p className="mt-2 max-w-md text-muted-foreground">We&apos;re putting together albums from this season&apos;s race weekends.</p>
-              <Button asChild variant="outline" className="mt-6">
-                <Link href="/news">Read the latest news</Link>
-              </Button>
-            </div>
-          ) : (
+        <Container className="space-y-14">
+          {albums.length > 0 && (
             <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {albums.map((album, index) => (
                 <li key={album.id} className="reveal">
@@ -82,6 +82,51 @@ export default async function GalleryPage() {
               ))}
             </ul>
           )}
+
+          <div>
+            <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="eyebrow text-brand-ink">Latest from Facebook</p>
+                <h2 className="mt-1 font-display text-4xl font-bold uppercase leading-none">Photos and news from the paddock</h2>
+              </div>
+            </div>
+            <ul className="grid gap-6 lg:grid-cols-2 lg:items-start">
+              {facebookPages.map((page) => (
+                <li key={page.url} className="rounded-3xl border border-carbon/10 bg-card p-4 sm:p-5">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <h3 className="font-display text-2xl font-bold uppercase leading-none">{page.name}</h3>
+                    <a
+                      href={page.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-brand-ink underline-offset-4 hover:underline"
+                    >
+                      Open on Facebook <ExternalLink className="size-3.5" aria-hidden />
+                    </a>
+                  </div>
+                  {page.embed ? (
+                    <FacebookPageFeed pageUrl={page.url} name={page.name} />
+                  ) : (
+                    <a
+                      href={page.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="group flex items-center gap-4 rounded-2xl bg-carbon p-5 text-paper transition-colors hover:bg-carbon/90"
+                    >
+                      <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-brand text-carbon">
+                        <Images className="size-6" aria-hidden />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block font-semibold">See their race photos</span>
+                        <span className="block text-sm text-paper/70">Opens their photo albums on Facebook.</span>
+                      </span>
+                      <ExternalLink className="size-5 shrink-0 transition-transform group-hover:translate-x-0.5" aria-hidden />
+                    </a>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
         </Container>
       </section>
     </>

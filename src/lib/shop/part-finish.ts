@@ -1,6 +1,7 @@
 import type { PriceBook } from "@/types/catalog"
 import type { ConfigSummaryLine } from "@/types/configurator"
-import type { FinishType, ShopProduct } from "@/types/shop"
+import { DEFAULT_PREVIEW_DETAIL } from "@/lib/shop/mappers"
+import type { FinishType, PartPreview, ShopProduct } from "@/types/shop"
 
 // Custom finishes for MS Kart parts by HydroKarts. Prices come from the helmet price
 // list, so this mirrors place_order() (migration 1500), which has the final say.
@@ -106,6 +107,18 @@ export function lowestFinishExtra(product: Pick<ShopProduct, "customFinishes" | 
   if (product.customFinishes.includes("chrome") && chrome?.price != null) options.push(chrome.price)
   const lowest = Math.min(...options.filter(Number.isFinite))
   return product.customFee + (Number.isFinite(lowest) ? lowest : 0)
+}
+
+/** The live preview for a part: its saved settings, or its main photo with an automatic outline. */
+export function partPreview(product: Pick<ShopProduct, "customPreview" | "images">): PartPreview | null {
+  if (product.customPreview) return product.customPreview
+  const image = product.images[0]
+  return image ? { image, mask: null, detail: DEFAULT_PREVIEW_DETAIL, filmScale: 1 } : null
+}
+
+/** "Paint · Race red, Gloss": the finish in words, for labels. */
+export function describeFinish(product: Pick<ShopProduct, "customFinishes" | "customFee">, finish: PartFinish, priceBook: PriceBook): string {
+  return (priceFinish(product, finish, priceBook)?.summary ?? []).map((line) => line.value).join(", ")
 }
 
 /** Where a product's page lives: HydroKarts parts under Customisation, Delta under Racewear, the rest in the shop. */

@@ -1,82 +1,71 @@
 import Link from "next/link"
-import { ArrowRight, FileText, RotateCcw } from "lucide-react"
+import { ArrowRight } from "lucide-react"
 
-import { HelmetArt } from "@/components/helmet/helmet-art"
-import { Button } from "@/components/ui/button"
+import { TemplatePicture } from "@/components/helmet/template-picture"
 import { formatPrice } from "@/lib/format"
+import { cn } from "@/lib/utils"
 import type { DesignAnalysis } from "@/types/design-assistant"
 
-interface AnalysisCardProps {
-  analysis: DesignAnalysis
-  /** Hide the next-step buttons once the customer has moved on to the quote form. */
-  showActions: boolean
-  onQuote: () => void
-  onRestart: () => void
-  onNavigate: () => void
+/** The concept in words, with the colours it uses. */
+export function ConceptDetails({ analysis }: { analysis: DesignAnalysis }) {
+  return (
+    <div className="space-y-3">
+      <p className="eyebrow text-brand-ink">Your concept</p>
+      <p className="text-sm leading-relaxed">{analysis.summary}</p>
+      <ul className="flex flex-wrap gap-1.5" aria-label="Colours in this concept">
+        {analysis.palette.map((colour) => (
+          <li key={colour.hex} className="flex items-center gap-1.5 rounded-full bg-carbon/[0.05] py-1 pl-1 pr-2.5 text-xs">
+            <span className="size-4 rounded-full ring-1 ring-carbon/15" style={{ backgroundColor: colour.hex }} aria-hidden />
+            {colour.name}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
 }
 
-/** The concept, the colours it uses, and the closest designs from the catalogue. */
-export function AnalysisCard({ analysis, showActions, onQuote, onRestart, onNavigate }: AnalysisCardProps) {
+/** Templates from our range closest to the concept, each opening in the 3D builder. */
+export function MatchingTemplates({ analysis, onNavigate }: { analysis: DesignAnalysis; onNavigate?: () => void }) {
+  if (analysis.suggestions.length === 0) return null
   return (
-    <div className="overflow-hidden rounded-3xl border border-carbon/10 bg-card">
-      <div className="bg-[radial-gradient(circle_at_50%_35%,#ffffff,#e8e7e0_70%)] px-6 pt-5 pb-3">
-        <p className="eyebrow text-brand-ink">Your concept</p>
-        <HelmetArt look={analysis.concept} title="Concept helmet in your colours" className="mx-auto mt-1 max-h-48" />
-      </div>
-
-      <div className="space-y-4 p-4">
-        <ul className="flex flex-wrap gap-1.5" aria-label="Colours in this concept">
-          {analysis.palette.map((colour) => (
-            <li key={colour.hex} className="flex items-center gap-1.5 rounded-full bg-carbon/[0.05] py-1 pl-1 pr-2.5 text-xs">
-              <span className="size-4 rounded-full ring-1 ring-carbon/15" style={{ backgroundColor: colour.hex }} aria-hidden />
-              {colour.name}
-            </li>
-          ))}
-        </ul>
-        <p className="text-sm leading-relaxed">{analysis.summary}</p>
-
+    <section aria-labelledby="matching-templates" className="space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Closest designs</h3>
-          <ul className="space-y-2">
-            {analysis.suggestions.map((suggestion) => (
-              <li key={suggestion.slug}>
-                <Link
-                  href={suggestion.builderHref ?? `/helmet-builder?template=${suggestion.slug}`}
-                  onClick={onNavigate}
-                  className="group flex items-center gap-3 rounded-2xl border border-carbon/10 p-2 transition-colors hover:border-carbon/30 hover:bg-carbon/[0.02]"
-                >
-                  <span className="grid size-16 shrink-0 place-items-center rounded-xl bg-[radial-gradient(circle_at_50%_35%,#ffffff,#e8e7e0_80%)] p-1.5">
-                    <HelmetArt look={suggestion.look} />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-display text-lg font-bold uppercase leading-tight">{suggestion.name}</span>
-                    <span className="block truncate text-xs text-muted-foreground">{suggestion.reason}</span>
-                    <span className="mt-0.5 block text-xs font-semibold">{formatPrice(suggestion.startingPrice)}</span>
-                  </span>
-                  <span className="flex shrink-0 items-center gap-1 pr-1 text-xs font-semibold text-carbon">
-                    <span className="max-[380px]:sr-only">Try it</span>
-                    <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-2 text-[0.7rem] text-muted-foreground">
-            &ldquo;Try it&rdquo; opens the design in the builder with the closest colours we offer.
-          </p>
+          <p className="eyebrow text-brand-ink">From our range</p>
+          <h2 id="matching-templates" className="font-display text-3xl font-bold uppercase leading-none">
+            Templates that match your concept
+          </h2>
         </div>
-
-        {showActions && (
-          <div className="flex flex-col gap-2 pt-1">
-            <Button onClick={onQuote}>
-              <FileText aria-hidden /> Get a quote for this concept
-            </Button>
-            <Button variant="ghost" onClick={onRestart}>
-              <RotateCcw aria-hidden /> Start again
-            </Button>
-          </div>
-        )}
+        <p className="text-sm text-muted-foreground">Opens in the 3D builder with the closest colours we offer.</p>
       </div>
-    </div>
+      <ul className={cn("grid gap-4 sm:grid-cols-2", analysis.suggestions.length >= 4 ? "lg:grid-cols-4" : "lg:grid-cols-3")}>
+        {analysis.suggestions.map((suggestion, index) => (
+          <li key={suggestion.slug}>
+            <Link
+              href={suggestion.builderHref ?? `/helmet-builder?template=${suggestion.slug}`}
+              onClick={onNavigate}
+              className="group flex h-full flex-col overflow-hidden rounded-3xl border border-carbon/10 bg-card transition-[translate,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-[0_24px_48px_-28px_rgb(17_20_18/0.45)]"
+            >
+              <span className="relative grid aspect-square place-items-center bg-[radial-gradient(circle_at_50%_35%,#ffffff,#e8e7e0_80%)] p-6">
+                <TemplatePicture slug={suggestion.slug} name={suggestion.name} look={suggestion.look} />
+                {index === 0 && (
+                  <span className="absolute left-3 top-3 rounded-full bg-carbon px-2.5 py-1 text-[0.65rem] font-semibold text-paper">Closest match</span>
+                )}
+              </span>
+              <span className="flex flex-1 flex-col gap-1 p-4">
+                <span className="font-display text-xl font-bold uppercase leading-tight">{suggestion.name}</span>
+                <span className="line-clamp-2 text-xs text-muted-foreground">{suggestion.reason}</span>
+                <span className="mt-auto flex items-center justify-between pt-2 text-sm">
+                  <span className="font-semibold">{formatPrice(suggestion.startingPrice)}</span>
+                  <span className="flex items-center gap-1 text-xs font-semibold text-brand-ink">
+                    Try it <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+                  </span>
+                </span>
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }

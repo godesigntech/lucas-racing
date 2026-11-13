@@ -1,4 +1,5 @@
 import type { HelmetLook } from "@/types/helmet"
+import type { FinishType } from "@/types/shop"
 
 /**
  * In workshop order. "confirmed" predates the proof workflow and is kept so older
@@ -51,6 +52,8 @@ export interface OrderItem {
   values: Record<string, string | undefined>
   summary: OrderSummaryLine[]
   look: HelmetLook | null
+  /** The finish on a customised part (MS Kart parts by HydroKarts). */
+  finish?: { type: FinishType; value: string; lacquer: string } | null
   unitPrice: number
   quantity: number
   lineTotal: number

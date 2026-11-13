@@ -46,7 +46,7 @@ export interface CompetitionEntry {
   marketingOptIn: boolean
   agreedRulesAt: string
   adminNotes: string
-  /** The entrant's social media post sharing the design. */
+  /** The entrant's story sharing the design. */
   postUrl: string
   ukResident: boolean
   /** A picture of the design (design-uploads), for the anonymous vote. */

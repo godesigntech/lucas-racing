@@ -8,6 +8,7 @@ import { AdminPageHeader } from "@/components/admin/admin-page-header"
 import { OrderStatusForm } from "@/components/admin/order-status-form"
 import { OrderDesign } from "@/components/admin/orders/order-design"
 import { OrderProofs } from "@/components/admin/orders/order-proofs"
+import { PartPreviewCanvas } from "@/components/kart-parts/part-preview-canvas"
 import { DeliveryDetails } from "@/components/orders/delivery-details"
 import { OrderItems } from "@/components/orders/order-items"
 import { OrderTimeline } from "@/components/orders/order-timeline"
@@ -19,6 +20,8 @@ import { getAdminOrder, getOrderDesigns, getOrderLogos } from "@/lib/data/admin"
 import { getBuilderCatalog } from "@/lib/data/builder"
 import { getPriceBook } from "@/lib/data/products"
 import { listOrderProofs } from "@/lib/data/proofs"
+import { getShopProductBySlug } from "@/lib/data/shop"
+import { partPreview } from "@/lib/shop/part-finish"
 import { formatDateTime } from "@/lib/format"
 
 export const metadata = { title: "Order" }
@@ -44,6 +47,14 @@ async function OrderDetail({ id }: { id: string }) {
     getBuilderCatalog(),
     getPriceBook(),
   ])
+  // Customised kart parts, drawn in the finish the customer chose.
+  const partItems = order.items.filter((item) => item.kind === "product" && item.storeId === "hydrokarts-parts" && item.finish)
+  const partProducts = await Promise.all(partItems.map((item) => getShopProductBySlug(item.productSlug)))
+  const parts = partItems.flatMap((item, index) => {
+    const product = partProducts[index]
+    const preview = product ? partPreview(product) : null
+    return preview && item.finish ? [{ item, preview, finish: item.finish }] : []
+  })
 
   return (
     <>
@@ -89,6 +100,30 @@ async function OrderDetail({ id }: { id: string }) {
               </AdminCard>
             )
           })}
+
+          {parts.length > 0 && (
+            <AdminCard title="Custom parts" description="Each part drawn in the finish the customer chose.">
+              <ul className="grid gap-4 sm:grid-cols-2">
+                {parts.map(({ item, preview, finish }) => (
+                  <li key={item.id} className="overflow-hidden rounded-2xl border border-carbon/10">
+                    <PartPreviewCanvas preview={preview} finish={finish} priceBook={priceBook} label={`${item.productName} in the customer's finish`} className="aspect-square bg-white p-4" />
+                    <div className="space-y-0.5 border-t border-carbon/10 p-3 text-sm">
+                      <p className="font-semibold">
+                        {item.productName} × {item.quantity}
+                      </p>
+                      {item.summary
+                        .filter((line) => line.label === "Finish" || line.label === "Lacquer")
+                        .map((line) => (
+                          <p key={line.label} className="text-muted-foreground">
+                            {line.label}: {line.value}
+                          </p>
+                        ))}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </AdminCard>
+          )}
 
           {logos.length > 0 && (
             <AdminCard title="Customer logos" description="Uploaded in the builder. Links work for an hour; reload to refresh them.">

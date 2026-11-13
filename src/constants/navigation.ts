@@ -18,8 +18,6 @@ export const mainNav: NavGroup[] = [
     children: [
       { label: "About Lucas Racing", href: "/about", description: "A family-run racing team since day one" },
       { label: "Meet the team", href: "/team", description: "Howard, Connor, Wendy and the people behind the team" },
-      { label: "Racing support", href: "/about/racing-support", description: "Coaching, race weekends and driver development" },
-      { label: "News and results", href: "/news", description: "What's happening at Lucas Racing" },
       { label: "Gallery", href: "/gallery", description: "Race weekends, the team and the paddock" },
     ],
   },
@@ -36,16 +34,12 @@ export const mainNav: NavGroup[] = [
     label: "Customisation",
     href: "/customisation",
     children: [
-      { label: "Customisation by HydroKarts", href: "/customisation", description: "Helmets and kart parts in your own finish" },
-      { label: "Custom helmets", href: "/customisation/helmets", description: "Arai SK-6 and Bell KC7 designs by HydroKarts" },
       { label: "Helmet builder", href: "/helmet-builder", description: "Design yours step by step, in 3D" },
       { label: "Design my helmet with AI", href: "/design-my-helmet", description: "A bespoke design from our AI, free, with unlimited revisions" },
-      { label: "Win a custom helmet", href: "/competition", description: "Design the best helmet and we'll make it for you" },
       { label: "MS Kart parts by HydroKarts", href: "/customisation/kart-parts", description: "Kart parts in your own finish" },
       { label: "Kart sticker designer", href: "/kart-stickers", description: "Design your kart's sticker kit with AI and get a quote" },
     ],
   },
-  { label: "Design my helmet", href: "/design-my-helmet" },
   { label: "Racewear", href: "/racewear" },
   { label: "Teamwear", href: "/teamwear" },
   { label: "Contact", href: "/contact" },
@@ -58,8 +52,6 @@ export const footerNav: { title: string; items: NavItem[] }[] = [
     items: [
       { label: "About us", href: "/about" },
       { label: "Meet the team", href: "/team" },
-      { label: "Racing support", href: "/about/racing-support" },
-      { label: "News and results", href: "/news" },
       { label: "Gallery", href: "/gallery" },
     ],
   },
@@ -67,7 +59,6 @@ export const footerNav: { title: string; items: NavItem[] }[] = [
     title: "Shop",
     items: [
       { label: "MS Kart shop", href: "/shop" },
-      { label: "Custom helmets", href: "/customisation/helmets" },
       { label: "MS Kart parts by HydroKarts", href: "/customisation/kart-parts" },
       { label: "Delta Racewear", href: "/racewear" },
       { label: "Wendy's Teamwear", href: "/teamwear" },

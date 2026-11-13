@@ -8,12 +8,14 @@ import { DEMO_READ_ONLY, isDemoMode } from "@/lib/demo/mode"
 import { createClient } from "@/lib/supabase/server"
 import {
   newShopProductSchema,
+  partPreviewSchema,
   productImagesSchema,
   shopCategorySchema,
   shopProductSchema,
   shopVariantSchema,
   stockCountSchema,
   type NewShopProductValues,
+  type PartPreviewValues,
   type ShopCategoryValues,
   type ShopProductValues,
   type ShopVariantValues,
@@ -133,6 +135,31 @@ export async function setShopProductImages(id: string, images: string[]): Promis
 
   refreshShop(`/admin/shop/${id}`)
   return { ok: true, message: "Photos saved." }
+}
+
+/**
+ * Saves a customisable part's live preview (photo, finished area, detail, film size),
+ * or clears it with null so the preview uses the main photo and finds the outline itself.
+ */
+export async function saveShopPartPreview(id: string, values: PartPreviewValues | null): Promise<ActionResult> {
+  if (isDemoMode()) return DEMO_READ_ONLY
+  if (!(await getShopManager(await productStore(id)))) return NOT_ALLOWED
+  const parsed = values === null ? null : partPreviewSchema.safeParse(values)
+  if (parsed && !parsed.success) return failure(parsed.error.issues[0]?.message ?? "Those preview settings aren't valid.")
+
+  const supabase = await createClient()
+  const { data: product } = await supabase.from("shop_products").select("slug, images").eq("id", id).maybeSingle()
+  if (!product) return failure("That product no longer exists.")
+  if (parsed && !product.images.includes(parsed.data.image)) return failure("Choose one of the product's photos for the preview.")
+
+  const { error } = await supabase
+    .from("shop_products")
+    .update({ custom_preview: parsed ? parsed.data : null })
+    .eq("id", id)
+  if (error) return databaseError(error, "We couldn't save the preview.")
+
+  refreshShop(`/admin/shop/${id}`, `/customisation/kart-parts/${product.slug}`, "/customisation/kart-parts")
+  return { ok: true, message: parsed ? "Preview saved." : "Preview reset to automatic." }
 }
 
 /** Has any of these variants been ordered? Ordered products are hidden, not deleted, so orders keep their links. */
