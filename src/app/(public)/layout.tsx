@@ -4,6 +4,7 @@ import { CustomerChatLauncher } from "@/components/chat/customer-chat-launcher"
 import { CompetitionPromoLoader } from "@/components/competition/competition-promo-loader"
 import { SiteFooter } from "@/components/layout/site-footer"
 import { SiteHeader } from "@/components/layout/site-header"
+import { WhatsAppButton } from "@/components/layout/whatsapp-button"
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -21,6 +22,9 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       <SiteFooter />
       <Suspense fallback={null}>
         <CustomerChatLauncher />
+      </Suspense>
+      <Suspense fallback={null}>
+        <WhatsAppButton />
       </Suspense>
       <Suspense fallback={null}>
         <CompetitionPromoLoader />

@@ -29,6 +29,7 @@ const socialLabels: Record<SocialIconName, string> = {
   facebook: "Facebook",
   youtube: "YouTube",
   tiktok: "TikTok",
+  whatsapp: "WhatsApp",
 }
 
 const roleNames: Record<StaffRole, string> = { admin: "an admin", sales: "sales", teamwear: "Teamwear", delta: "Delta Racewear" }

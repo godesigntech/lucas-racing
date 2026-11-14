@@ -20,6 +20,7 @@ const platformLabels: Record<(typeof socialIcons)[number], string> = {
   facebook: "Facebook",
   youtube: "YouTube",
   tiktok: "TikTok",
+  whatsapp: "WhatsApp (https://wa.me/44…)",
 }
 
 export function SocialLinksForm({ links }: { links: SocialLink[] }) {

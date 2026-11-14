@@ -1,4 +1,4 @@
-export const socialIcons = ["instagram", "facebook", "youtube", "tiktok"] as const
+export const socialIcons = ["instagram", "facebook", "youtube", "tiktok", "whatsapp"] as const
 export type SocialIconName = (typeof socialIcons)[number]
 
 export interface SocialLink {

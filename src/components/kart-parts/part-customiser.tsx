@@ -161,7 +161,7 @@ export function PartCustomiser({ product, priceBook, children }: { product: Shop
         aria-hidden={!(showingPreview && frameHidden)}
         onClick={() => frame.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
         className={cn(
-          "fixed bottom-4 right-4 z-40 grid size-28 place-items-center rounded-2xl border border-carbon/10 bg-white p-2 shadow-[0_16px_40px_-16px_rgb(17_20_18/0.5)] transition-[opacity,translate] duration-300 lg:hidden",
+          "fixed bottom-24 right-4 z-40 grid size-28 place-items-center rounded-2xl border border-carbon/10 bg-white p-2 shadow-[0_16px_40px_-16px_rgb(17_20_18/0.5)] transition-[opacity,translate] duration-300 lg:hidden",
           showingPreview && frameHidden ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-4 opacity-0",
         )}
       >
