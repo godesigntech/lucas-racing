@@ -9,6 +9,7 @@ import { NodeIO, PropertyType } from "@gltf-transform/core"
 import { ALL_EXTENSIONS, EXTMeshoptCompression, KHRMaterialsClearcoat, KHRMaterialsIOR, KHRMaterialsTransmission } from "@gltf-transform/extensions"
 import { dedup, prune, quantize, reorder, simplifyPrimitive, weld } from "@gltf-transform/functions"
 import { MeshoptDecoder, MeshoptEncoder, MeshoptSimplifier } from "meshoptimizer"
+import { Box3, BufferGeometry, DoubleSide, Matrix4, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from "three"
 
 const [source, target = "public/models/arai-sk6.glb"] = process.argv.slice(2)
 if (!source) throw new Error("Usage: node scripts/prepare-arai-sk6.mjs <artist file.glb> [output.glb]")
@@ -100,6 +101,115 @@ for (const primitive of findNode("Shell").getMesh().listPrimitives()) {
 {
   const vent = findNode("ChinVent").getMesh().listPrimitives()[0]
   if (!vent.getMaterial()) vent.setMaterial(document.createMaterial("ChinVent").setBaseColorFactor([0.06, 0.06, 0.07, 1]).setRoughnessFactor(0.6))
+}
+
+// The artist's sticker band ("tape 2") runs straight back and ends in mid-air at the sides,
+// clear of the visor's curved top edge. A new band is traced on the visor's own outer
+// surface instead: along its top edge, round to the same points at the sides and as deep
+// as the artist's at the front, a hair proud of the glass.
+{
+  const visorNode = findNode("Visor")
+  const stripNode = findNode("VisorStrip")
+  const worldPoints = (node) => {
+    const matrix = new Matrix4().fromArray(node.getWorldMatrix())
+    const primitive = node.getMesh().listPrimitives()[0]
+    const position = primitive.getAttribute("POSITION")
+    const points = []
+    for (let index = 0; index < position.getCount(); index++) points.push(new Vector3().fromArray(position.getElement(index, [])).applyMatrix4(matrix))
+    return { points, indices: primitive.getIndices()?.getArray() }
+  }
+  const visor = worldPoints(visorNode)
+  const visorGeometry = new BufferGeometry().setFromPoints(visor.points)
+  if (visor.indices) visorGeometry.setIndex(Array.from(visor.indices))
+  const visorMesh = new Mesh(visorGeometry, new MeshBasicMaterial({ side: DoubleSide }))
+  const visorBox = new Box3().setFromPoints(visor.points)
+  const shellBox = new Box3().setFromPoints(worldPoints(findNode("Shell")).points)
+  const axis = shellBox.getCenter(new Vector3())
+  const angleOf = (point) => Math.atan2(point.x - axis.x, point.z - axis.z)
+
+  // The artist's band: how far round it goes, and how deep it is at the front.
+  const old = worldPoints(stripNode).points
+  const oldAngles = old.map(angleOf)
+  const reach = Math.min(-Math.min(...oldAngles), Math.max(...oldAngles))
+  const oldBox = new Box3().setFromPoints(old)
+  const front = old.filter((point) => Math.abs(point.x - axis.x) < (oldBox.max.x - oldBox.min.x) * 0.04)
+  const depth = Math.max(...front.map((point) => point.y)) - Math.min(...front.map((point) => point.y))
+
+  const raycaster = new Raycaster()
+  /** The outermost point of the visor straight out from the axis at this height, or null. */
+  const visorAt = (angle, y) => {
+    const direction = new Vector3(Math.sin(angle), 0, Math.cos(angle))
+    raycaster.set(new Vector3(axis.x, y, axis.z), direction)
+    const hits = raycaster.intersectObject(visorMesh)
+    return hits.length ? hits[hits.length - 1] : null
+  }
+  // The visor's top edge slides under the shell and its rubber trim, so the band starts
+  // where the visor first shows from outside, not at the glass's own (hidden) edge.
+  const cover = ["Shell", "RubberEyeport"].map((name) => {
+    const part = worldPoints(findNode(name))
+    const geometry = new BufferGeometry().setFromPoints(part.points)
+    if (part.indices) geometry.setIndex(Array.from(part.indices))
+    return new Mesh(geometry, new MeshBasicMaterial({ side: DoubleSide }))
+  })
+  const outside = shellBox.getSize(new Vector3()).length()
+  /** True when, looking in from outside at this angle and height, the first thing seen is the visor. */
+  const visorShows = (angle, y) => {
+    const outward = new Vector3(Math.sin(angle), 0, Math.cos(angle))
+    raycaster.set(new Vector3(axis.x, y, axis.z).addScaledVector(outward, outside), outward.clone().negate())
+    const [first] = raycaster.intersectObjects([visorMesh, ...cover], false)
+    return first?.object === visorMesh
+  }
+  /** The top of the visible visor at this angle. */
+  const topAt = (angle) => {
+    const step = (visorBox.max.y - visorBox.min.y) / 300
+    let y = visorBox.max.y
+    while (y > visorBox.min.y && !visorShows(angle, y)) y -= step
+    let [low, high] = [y, y + step]
+    for (let k = 0; k < 14; k++) {
+      const middle = (low + high) / 2
+      if (visorShows(angle, middle)) low = middle
+      else high = middle
+    }
+    return low
+  }
+
+  const COLUMNS = 160
+  const ROWS = 8
+  // A small gap below the trim, like a sticker applied by hand.
+  const inset = (visorBox.max.y - visorBox.min.y) * 0.012
+  const proud = (visorBox.max.x - visorBox.min.x) * 0.0015
+  const positions = []
+  for (let column = 0; column <= COLUMNS; column++) {
+    const angle = -reach + (2 * reach * column) / COLUMNS
+    const top = topAt(angle) - inset
+    for (let row = 0; row <= ROWS; row++) {
+      const hit = visorAt(angle, top - (depth * row) / ROWS) ?? visorAt(angle, top)
+      const normal = hit.face.normal.clone()
+      const outward = new Vector3(Math.sin(angle), 0, Math.cos(angle))
+      if (normal.dot(outward) < 0) normal.negate()
+      positions.push(hit.point.clone().addScaledVector(normal, proud))
+    }
+  }
+  const indices = []
+  const at = (column, row) => column * (ROWS + 1) + row
+  for (let column = 0; column < COLUMNS; column++) {
+    for (let row = 0; row < ROWS; row++) {
+      indices.push(at(column, row), at(column, row + 1), at(column + 1, row), at(column + 1, row), at(column, row + 1), at(column + 1, row + 1))
+    }
+  }
+  const band = new BufferGeometry().setFromPoints(positions)
+  band.setIndex(indices)
+  // Into the strip part's own space, where the website looks for it.
+  band.applyMatrix4(new Matrix4().fromArray(stripNode.getWorldMatrix()).invert())
+  band.computeVertexNormals()
+
+  const primitive = stripNode.getMesh().listPrimitives()[0]
+  const buffer = primitive.getAttribute("POSITION").getBuffer()
+  for (const semantic of primitive.listSemantics()) primitive.setAttribute(semantic, null)
+  primitive.setAttribute("POSITION", document.createAccessor().setType("VEC3").setArray(new Float32Array(band.getAttribute("position").array)).setBuffer(buffer))
+  primitive.setAttribute("NORMAL", document.createAccessor().setType("VEC3").setArray(new Float32Array(band.getAttribute("normal").array)).setBuffer(buffer))
+  primitive.setIndices(document.createAccessor().setType("SCALAR").setArray(new Uint32Array(indices)).setBuffer(buffer))
+  console.log(`Visor sticker band: ${COLUMNS}×${ROWS} on the visor, ${((reach * 180) / Math.PI).toFixed(0)}° each side.`)
 }
 
 await document.transform(weld())

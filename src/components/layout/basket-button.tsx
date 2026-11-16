@@ -12,6 +12,9 @@ export function BasketButton({ className }: { className?: string }) {
   return (
     <Link
       href="/basket"
+      // The basket page carries the whole product list and price book: fetch it on click,
+      // not in the background on every page the header is on.
+      prefetch={false}
       aria-label={count ? `Basket, ${count} ${count === 1 ? "item" : "items"}` : "Basket, empty"}
       className={cn(
         "relative grid size-10 place-items-center rounded-full border border-carbon/15 text-carbon transition-colors hover:border-carbon/40 hover:bg-foreground/5",

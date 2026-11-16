@@ -1,7 +1,7 @@
 import { getCurrentUser } from "@/lib/auth/session"
 import { isDemoMode } from "@/lib/demo/mode"
 
-import { CustomerChat } from "./customer-chat"
+import { CustomerChatLazy } from "./customer-chat-lazy"
 
 /** Live chat for signed-in customers. Admins answer from the admin panel instead. Reads the session: render in <Suspense>. */
 export async function CustomerChatLauncher() {
@@ -10,5 +10,5 @@ export async function CustomerChatLauncher() {
   if (!user || user.isStaff) return null
 
   const firstName = user.fullName.trim().split(/\s+/)[0] ?? ""
-  return <CustomerChat customerId={user.id} firstName={firstName} />
+  return <CustomerChatLazy customerId={user.id} firstName={firstName} />
 }

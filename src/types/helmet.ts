@@ -1,4 +1,4 @@
-import type { BellPartColours } from "@/lib/helmet-3d/parts"
+import type { HelmetPartColours } from "@/lib/helmet-3d/parts"
 
 export type HelmetModelId = string
 
@@ -51,7 +51,7 @@ export interface HelmetLook {
   accentTexture?: string
   /** Rubber trim colour (eye-port and base). */
   trim: string
-  accessories?: BellPartColours
+  accessories?: HelmetPartColours
   spoiler: boolean
   number?: string
   name?: string

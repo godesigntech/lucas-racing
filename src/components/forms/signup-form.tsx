@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { signUp } from "@/lib/actions/auth"
+import { resendConfirmation, signUp } from "@/lib/actions/auth"
 import { isRedirectError } from "@/lib/is-redirect"
 import { cn } from "@/lib/utils"
 import { passwordRules, signupSchema, type SignupFormValues } from "@/lib/validations/auth"
@@ -25,6 +25,21 @@ export function SignupForm() {
   const next = useSearchParams().get("next") ?? undefined
   const loginHref = next ? `/login?next=${encodeURIComponent(next)}` : "/login"
   const [confirmEmail, setConfirmEmail] = useState<string | null>(null)
+  const [resending, setResending] = useState(false)
+
+  async function resend() {
+    if (!confirmEmail) return
+    setResending(true)
+    try {
+      const result = await resendConfirmation(confirmEmail, next)
+      if (result.ok) toast.success(result.message)
+      else toast.error(result.message)
+    } catch {
+      toast.error("We couldn't reach the server. Check your connection and try again.")
+    } finally {
+      setResending(false)
+    }
+  }
   const {
     register,
     control,
@@ -63,11 +78,17 @@ export function SignupForm() {
         <h2 className="font-display text-3xl font-bold uppercase">Check your inbox</h2>
         <p className="text-sm text-muted-foreground">
           We sent a confirmation link to <strong className="text-carbon">{confirmEmail}</strong>. Click it to activate
-          your account, then log in.
+          your account. Check your spam folder if it hasn&apos;t arrived in a few minutes.
         </p>
-        <Button asChild variant="outline">
-          <Link href={loginHref}>Go to login</Link>
-        </Button>
+        <div className="flex flex-wrap justify-center gap-2">
+          <Button type="button" variant="outline" disabled={resending} onClick={resend}>
+            {resending && <Loader2 className="animate-spin" aria-hidden />}
+            Send it again
+          </Button>
+          <Button asChild variant="ghost">
+            <Link href={loginHref}>Go to login</Link>
+          </Button>
+        </div>
       </div>
     )
   }

@@ -1,0 +1,487 @@
+[
+  {
+    "id": "crosscut",
+    "name": "Crosscut",
+    "file": "/stickers/designs/crosscut.svg?v=1",
+    "shaped": true,
+    "parts": [
+      {
+        "key": "s0",
+        "label": "Background",
+        "colour": "#edff00"
+      },
+      {
+        "key": "s1",
+        "label": "Black",
+        "colour": "#111211"
+      }
+    ]
+  },
+  {
+    "id": "switchback",
+    "name": "Switchback",
+    "file": "/stickers/designs/switchback.svg?v=1",
+    "shaped": true,
+    "parts": [
+      {
+        "key": "s0",
+        "label": "Background",
+        "colour": "#24164a"
+      },
+      {
+        "key": "s1",
+        "label": "Purple",
+        "colour": "#a88aff"
+      },
+      {
+        "key": "s2",
+        "label": "Light green",
+        "colour": "#a5ffdd"
+      }
+    ]
+  },
+  {
+    "id": "afterburn",
+    "name": "Afterburn",
+    "file": "/stickers/designs/afterburn.svg?v=1",
+    "shaped": true,
+    "parts": [
+      {
+        "key": "s0",
+        "label": "Background",
+        "colour": "#971e27"
+      },
+      {
+        "key": "s1",
+        "label": "Red",
+        "colour": "#ff6541"
+      },
+      {
+        "key": "s2",
+        "label": "Orange",
+        "colour": "#ffd88b"
+      }
+    ]
+  },
+  {
+    "id": "tension",
+    "name": "Tension",
+    "file": "/stickers/designs/tension.svg?v=1",
+    "shaped": true,
+    "parts": [
+      {
+        "key": "s0",
+        "label": "Background",
+        "colour": "#222b36"
+      },
+      {
+        "key": "s1",
+        "label": "Orange",
+        "colour": "#ef8d5b"
+      },
+      {
+        "key": "s2",
+        "label": "White",
+        "colour": "#cec9b7"
+      }
+    ]
+  },
+  {
+    "id": "finish-line",
+    "name": "Finish Line",
+    "file": "/stickers/designs/finish-line.svg?v=1",
+    "shaped": true,
+    "parts": [
+      {
+        "key": "s0",
+        "label": "Background",
+        "colour": "#f4f0e5"
+      },
+      {
+        "key": "s1",
+        "label": "Dark blue",
+        "colour": "#182126"
+      },
+      {
+        "key": "s2",
+        "label": "Red",
+        "colour": "#ed4636"
+      }
+    ]
+  },
+  {
+    "id": "grand-prix",
+    "name": "Grand Prix",
+    "file": "/stickers/designs/grand-prix.svg?v=1",
+    "shaped": true,
+    "parts": [
+      {
+        "key": "s0",
+        "label": "Background",
+        "colour": "#111a19"
+      },
+      {
+        "key": "s1",
+        "label": "Orange",
+        "colour": "#dab276"
+      }
+    ]
+  },
+  {
+    "id": "pit-lane",
+    "name": "Pit Lane",
+    "file": "/stickers/designs/pit-lane.svg?v=1",
+    "shaped": true,
+    "parts": [
+      {
+        "key": "s0",
+        "label": "Background",
+        "colour": "#8ed9eb"
+      },
+      {
+        "key": "s1",
+        "label": "Orange",
+        "colour": "#f57128"
+      },
+      {
+        "key": "s2",
+        "label": "Dark blue",
+        "colour": "#132c43"
+      },
+      {
+        "key": "s3",
+        "label": "Brown",
+        "colour": "#fff0d6"
+      }
+    ]
+  },
+  {
+    "id": "slipstream",
+    "name": "Slipstream",
+    "file": "/stickers/designs/slipstream.svg?v=1",
+    "shaped": true,
+    "parts": [
+      {
+        "key": "s0",
+        "label": "Background",
+        "colour": "#172744"
+      },
+      {
+        "key": "s1",
+        "label": "Blue",
+        "colour": "#5ea9e2"
+      },
+      {
+        "key": "s2",
+        "label": "White",
+        "colour": "#f7eddb"
+      },
+      {
+        "key": "s3",
+        "label": "Red",
+        "colour": "#ed493e"
+      }
+    ]
+  },
+  {
+    "id": "speedway",
+    "name": "Speedway",
+    "file": "/stickers/designs/speedway.svg?v=1",
+    "shaped": true,
+    "parts": [
+      {
+        "key": "s0",
+        "label": "Background",
+        "colour": "#efe9ce"
+      },
+      {
+        "key": "s1",
+        "label": "Blue",
+        "colour": "#225faf"
+      },
+      {
+        "key": "s2",
+        "label": "Red",
+        "colour": "#d74b30"
+      }
+    ]
+  },
+  {
+    "id": "tricolore",
+    "name": "Tricolore",
+    "file": "/stickers/designs/tricolore.svg?v=1",
+    "shaped": true,
+    "parts": [
+      {
+        "key": "s0",
+        "label": "Background",
+        "colour": "#f4f1e8"
+      },
+      {
+        "key": "s1",
+        "label": "Green",
+        "colour": "#15765a"
+      },
+      {
+        "key": "s2",
+        "label": "Red",
+        "colour": "#d94841"
+      }
+    ]
+  },
+  {
+    "id": "undertow",
+    "name": "Undertow",
+    "file": "/stickers/designs/undertow.svg?v=1",
+    "shaped": true,
+    "parts": [
+      {
+        "key": "s0",
+        "label": "Background",
+        "colour": "#152f49"
+      },
+      {
+        "key": "s1",
+        "label": "Teal",
+        "colour": "#13a9a1"
+      },
+      {
+        "key": "s2",
+        "label": "Teal 2",
+        "colour": "#74efd9"
+      }
+    ]
+  },
+  {
+    "id": "firebird",
+    "name": "Firebird",
+    "file": "/stickers/designs/firebird.svg?v=1",
+    "shaped": true,
+    "parts": [
+      {
+        "key": "s0",
+        "label": "Background",
+        "colour": "#fff1d2"
+      },
+      {
+        "key": "s1",
+        "label": "Orange",
+        "colour": "#fa8633"
+      },
+      {
+        "key": "s2",
+        "label": "Red",
+        "colour": "#982423"
+      }
+    ]
+  },
+  {
+    "id": "honeycomb",
+    "name": "Honeycomb",
+    "file": "/stickers/designs/honeycomb.svg?v=1",
+    "shaped": true,
+    "parts": [
+      {
+        "key": "s0",
+        "label": "Background",
+        "colour": "#232324"
+      },
+      {
+        "key": "s1",
+        "label": "Brown",
+        "colour": "#70665b"
+      },
+      {
+        "key": "s2",
+        "label": "Orange",
+        "colour": "#ea9943"
+      }
+    ]
+  },
+  {
+    "id": "contour",
+    "name": "Contour",
+    "file": "/stickers/designs/contour.svg?v=1",
+    "shaped": true,
+    "parts": [
+      {
+        "key": "s0",
+        "label": "Background",
+        "colour": "#103b3c"
+      },
+      {
+        "key": "s1",
+        "label": "Teal",
+        "colour": "#5cb9a5"
+      },
+      {
+        "key": "s2",
+        "label": "Lime",
+        "colour": "#caf67f"
+      }
+    ]
+  },
+  {
+    "id": "prism",
+    "name": "Prism",
+    "file": "/stickers/designs/prism.svg?v=1",
+    "shaped": true,
+    "parts": [
+      {
+        "key": "s0",
+        "label": "Background",
+        "colour": "#201f42"
+      },
+      {
+        "key": "s1",
+        "label": "Purple",
+        "colour": "#9f69f1"
+      },
+      {
+        "key": "s2",
+        "label": "Teal",
+        "colour": "#68dfdf"
+      },
+      {
+        "key": "s3",
+        "label": "Purple 2",
+        "colour": "#6348a4"
+      },
+      {
+        "key": "s4",
+        "label": "Light purple",
+        "colour": "#c6a1ff"
+      },
+      {
+        "key": "s5",
+        "label": "Blue",
+        "colour": "#4a80af"
+      },
+      {
+        "key": "s6",
+        "label": "Blue 2",
+        "colour": "#474276"
+      }
+    ]
+  },
+  {
+    "id": "orbital",
+    "name": "Orbital",
+    "file": "/stickers/designs/orbital.svg?v=1",
+    "shaped": true,
+    "parts": [
+      {
+        "key": "s0",
+        "label": "Background",
+        "colour": "#454c2b"
+      },
+      {
+        "key": "s1",
+        "label": "Lime",
+        "colour": "#c4dc63"
+      },
+      {
+        "key": "s2",
+        "label": "Light yellow",
+        "colour": "#eceec6"
+      }
+    ]
+  },
+  {
+    "id": "pixel-rush",
+    "name": "Pixel Rush",
+    "file": "/stickers/designs/pixel-rush.svg?v=1",
+    "shaped": true,
+    "parts": [
+      {
+        "key": "s0",
+        "label": "Background",
+        "colour": "#1c1b2d"
+      },
+      {
+        "key": "s1",
+        "label": "Light blue",
+        "colour": "#8d9aff"
+      },
+      {
+        "key": "s2",
+        "label": "Red",
+        "colour": "#ff597a"
+      }
+    ]
+  },
+  {
+    "id": "wet-track",
+    "name": "Wet Track",
+    "file": "/stickers/designs/wet-track.svg?v=1",
+    "shaped": true,
+    "parts": [
+      {
+        "key": "s0",
+        "label": "Background",
+        "colour": "#1740ac"
+      },
+      {
+        "key": "s1",
+        "label": "Dark blue",
+        "colour": "#081b4b"
+      },
+      {
+        "key": "s2",
+        "label": "Blue",
+        "colour": "#73ceff"
+      }
+    ]
+  },
+  {
+    "id": "halftone",
+    "name": "Halftone",
+    "file": "/stickers/designs/halftone.svg?v=1",
+    "shaped": true,
+    "parts": [
+      {
+        "key": "s0",
+        "label": "Background",
+        "colour": "#fa7eb8"
+      },
+      {
+        "key": "s1",
+        "label": "Pink",
+        "colour": "#74215e"
+      },
+      {
+        "key": "s2",
+        "label": "Light pink",
+        "colour": "#ffcbe0"
+      }
+    ]
+  },
+  {
+    "id": "silver-arrow",
+    "name": "Silver Arrow",
+    "file": "/stickers/designs/silver-arrow.svg?v=1",
+    "shaped": true,
+    "parts": [
+      {
+        "key": "s0",
+        "label": "Background",
+        "colour": "#e1e6e9"
+      },
+      {
+        "key": "s1",
+        "label": "Dark blue",
+        "colour": "#344554"
+      },
+      {
+        "key": "s2",
+        "label": "Blue",
+        "colour": "#9aaeb8"
+      },
+      {
+        "key": "s3",
+        "label": "Orange",
+        "colour": "#fc783e"
+      }
+    ]
+  }
+]

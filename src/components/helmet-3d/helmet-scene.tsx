@@ -8,7 +8,7 @@ import type { OrbitControls as OrbitControlsImpl } from "three-stdlib"
 
 import { BackSide, Box3, Vector3, type CanvasTexture } from "three"
 
-import type { BellPartColours } from "@/lib/helmet-3d/parts"
+import type { HelmetPartColours } from "@/lib/helmet-3d/parts"
 
 import type { VisorStrip } from "@/types/configurator"
 import type { HelmetFinish } from "@/types/helmet"
@@ -52,7 +52,7 @@ export interface HelmetSceneProps {
   finish?: HelmetFinish
   paintFinish?: "gloss" | "satin" | "matte"
   trim?: string
-  accessories?: BellPartColours
+  accessories?: HelmetPartColours
   spoiler?: boolean
   /** Photo of a hydro-dip film to wrap around the shell, or null for plain paint. */
   film?: string | null

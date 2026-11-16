@@ -13,7 +13,7 @@ import type { FinishId, HelmetConfiguration } from "@/types/configurator"
 import type { HelmetModel } from "@/types/helmet"
 
 import { SwatchGrid } from "./swatch-grid"
-import { BellPartOptions } from "./bell-part-options"
+import { PartOptions } from "./part-options"
 
 type Update = (changes: Partial<HelmetConfiguration>) => void
 
@@ -248,7 +248,7 @@ function BaseCoat({ priceBook, config, update }: { priceBook: PriceBook; config:
   )
 }
 
-/** Step 11: rubber trims and, on the Bell KC7, its accessory colours. Spoilers are aero kits (step 3). */
+/** Step 9: rubber trims and each helmet's own accessory colours. Spoilers are aero kits (step 3). */
 export function StepTrims({ priceBook, config, update }: { priceBook: PriceBook; config: HelmetConfiguration; update: Update }) {
   const trims = priceBook.options.trim.filter((option) => option.isActive && option.value !== "bespoke")
   const bespoke = priceBook.options.trim.find((option) => option.value === "bespoke" && option.isActive)
@@ -286,7 +286,7 @@ export function StepTrims({ priceBook, config, update }: { priceBook: PriceBook;
         </div>
       ))}
       </section>
-      {config.model === "bell-kc7" && <BellPartOptions config={config} priceBook={priceBook} update={update} />}
+      <PartOptions key={config.model} config={config} priceBook={priceBook} update={update} />
     </div>
   )
 }

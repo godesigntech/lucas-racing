@@ -9,6 +9,10 @@ export const loginSchema = z.object({
 
 export type LoginFormValues = z.infer<typeof loginSchema>
 
+export const forgotPasswordSchema = z.object({ email })
+
+export type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>
+
 export const passwordRules = [
   { test: (value: string) => value.length >= 8, label: "At least 8 characters" },
   { test: (value: string) => /[A-Z]/.test(value), label: "One capital letter" },

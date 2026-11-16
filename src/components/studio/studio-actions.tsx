@@ -5,6 +5,7 @@ import { Download, Link2, Loader2 } from "lucide-react"
 import { toast } from "react-toastify"
 
 import { Button } from "@/components/ui/button"
+import { shareTags } from "@/constants/brand"
 import { downloadPreviewImage } from "@/lib/studio/export-image"
 
 interface StudioActionsProps {
@@ -36,7 +37,7 @@ export function StudioActions({ shareUrl, imageName, imageCaption, getPreviewSvg
     setDownloading(true)
     try {
       await downloadPreviewImage(svg, imageName, imageCaption)
-      toast.success("Image downloaded. Share it with the #LucasRacing tag.")
+      toast.success(`Image downloaded. Share it and tag ${shareTags}.`)
     } catch {
       toast.error("We couldn't create the image. Please try again.")
     } finally {

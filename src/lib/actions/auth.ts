@@ -6,7 +6,14 @@ import { redirect } from "next/navigation"
 import { DEMO_READ_ONLY, isDemoMode } from "@/lib/demo/mode"
 import { safeRedirectPath } from "@/lib/safe-redirect"
 import { createClient } from "@/lib/supabase/server"
-import { loginSchema, signupSchema, type LoginFormValues, type SignupFormValues } from "@/lib/validations/auth"
+import {
+  forgotPasswordSchema,
+  loginSchema,
+  signupSchema,
+  type ForgotPasswordValues,
+  type LoginFormValues,
+  type SignupFormValues,
+} from "@/lib/validations/auth"
 import type { ActionResult } from "@/types/account"
 
 import { failure, validationError } from "./result"
@@ -50,7 +57,8 @@ export async function signIn(values: LoginFormValues, next?: string): Promise<Ac
 
   if (error) {
     if (error.code === "email_not_confirmed") {
-      return failure("Please confirm your email first. Check your inbox for the link we sent.")
+      // The form offers to send the link again.
+      return { ok: false, code: "email_not_confirmed", message: "Please confirm your email first. Check your inbox for the link we sent." }
     }
     return failure("That email and password don't match an account.")
   }
@@ -94,6 +102,56 @@ export async function signUp(values: SignupFormValues, next?: string): Promise<A
   }
 
   redirect(destination)
+}
+
+/** Where an email link lands: /auth/confirm signs the customer in, then sends them on to `next`. */
+async function emailLink(next: string) {
+  const origin = (await headers()).get("origin") ?? ""
+  return `${origin}/auth/confirm?next=${encodeURIComponent(next)}`
+}
+
+const emailLimitMessage = "We've sent a few emails already. Please wait a few minutes and try again."
+const isRateLimited = (code: string | undefined) => code === "over_email_send_rate_limit" || code === "over_request_rate_limit"
+
+/** Sends the sign-up confirmation link again (from login, or the "check your inbox" screen). */
+export async function resendConfirmation(emailAddress: string, next?: string): Promise<ActionResult> {
+  if (isDemoMode()) return DEMO_READ_ONLY
+  const parsed = forgotPasswordSchema.safeParse({ email: emailAddress })
+  if (!parsed.success) return failure("Enter the email you signed up with.")
+
+  const supabase = await createClient()
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email: parsed.data.email,
+    options: { emailRedirectTo: await emailLink(safeNext(next, "/account")) },
+  })
+  if (error) {
+    console.error("Resend confirmation failed:", { code: error.code, status: error.status, message: error.message })
+    if (isRateLimited(error.code)) return failure(emailLimitMessage)
+    return failure("We couldn't send the email. Please try again.")
+  }
+  return { ok: true, message: "We've sent a new confirmation link. Check your inbox." }
+}
+
+/**
+ * Emails a link to choose a new password. The answer is the same whether or not the email
+ * has an account, so the form can't be used to find out who has one.
+ */
+export async function requestPasswordReset(values: ForgotPasswordValues): Promise<ActionResult> {
+  if (isDemoMode()) return DEMO_READ_ONLY
+  const parsed = forgotPasswordSchema.safeParse(values)
+  if (!parsed.success) return validationError(parsed.error)
+
+  const supabase = await createClient()
+  const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
+    redirectTo: await emailLink("/reset-password"),
+  })
+  if (error) {
+    console.error("Password reset email failed:", { code: error.code, status: error.status, message: error.message })
+    if (isRateLimited(error.code)) return failure(emailLimitMessage)
+    if (error.code !== "user_not_found") return failure("We couldn't send the email. Please try again.")
+  }
+  return { ok: true, message: "If that email has an account, a reset link is on its way." }
 }
 
 export async function signOut(): Promise<void> {

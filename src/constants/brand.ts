@@ -27,3 +27,6 @@ export const brandLogos = {
   /** MS Kart shop and distributor sections only. */
   msKart: { src: "/images/brand/ms-kart-logo.png", alt: "MS Kart Racing Technology", width: 734, height: 216 },
 } satisfies Record<string, BrandLogo>
+
+/** The Instagram accounts people tag when they share their helmet design (competition, builder). */
+export const shareTags = "@hydro.karts and @ms.lucasracing"

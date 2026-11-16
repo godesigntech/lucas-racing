@@ -1,9 +1,11 @@
 import type { Metadata, Viewport } from "next"
 import { Barlow_Condensed, Geist, Geist_Mono } from "next/font/google"
+import Script from "next/script"
 
 import { ToastProvider } from "@/components/providers/toast-provider"
 import { DemoBanner } from "@/components/shared/demo-banner"
 import { siteConfig } from "@/config/site"
+import { customisationFlagScript } from "@/lib/customisation-pages"
 
 import "./globals.css"
 
@@ -53,8 +55,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en-GB"
       className={`${geistSans.variable} ${geistMono.variable} ${barlow.variable} h-full`}
+      // Customisation pages flag <html> before React loads (lib/customisation-pages.ts).
+      suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col">
+        {/* Runs as the page loads, before React (Next.js puts it in the <head>). */}
+        <Script id="customisation-flag" strategy="beforeInteractive">
+          {customisationFlagScript}
+        </Script>
         {children}
         <DemoBanner />
         <ToastProvider />

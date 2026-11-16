@@ -52,4 +52,4 @@ export interface AdminUser {
 /** Result shape returned by every Server Action. */
 export type ActionResult<T = undefined> =
   | { ok: true; message?: string; data?: T }
-  | { ok: false; message: string; fieldErrors?: Record<string, string> }
+  | { ok: false; message: string; fieldErrors?: Record<string, string>; code?: string }

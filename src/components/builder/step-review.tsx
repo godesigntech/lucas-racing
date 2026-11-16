@@ -28,6 +28,10 @@ const stepFor: Record<string, BuilderStepId> = {
   grille2: "exterior",
   visorScrewLeft: "exterior",
   visorScrewRight: "exterior",
+  chinVent: "exterior",
+  visorPivot: "exterior",
+  sideVents: "exterior",
+  screws: "exterior",
 
   spoiler: "aero",
   visor: "visor",

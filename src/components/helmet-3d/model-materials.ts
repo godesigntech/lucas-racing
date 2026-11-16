@@ -1,6 +1,6 @@
 import { Box3, type Material, type Mesh, MeshPhysicalMaterial, MeshStandardMaterial, type Object3D, type Texture, Vector3 } from "three"
 
-import { bellParts, type BellPartColours } from "@/lib/helmet-3d/parts"
+import { partForMesh, type HelmetPartColours } from "@/lib/helmet-3d/parts"
 
 import type { HelmetFinish } from "@/types/helmet"
 
@@ -134,6 +134,10 @@ export function updateVisor(root: Object3D, visor: VisorSettings | null) {
     const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
     for (const material of materials) {
       if (!(material instanceof MeshStandardMaterial)) continue
+      // The visor sticker sits partly just under the glass on some models (the Arai SK-6);
+      // drawn after the glass, it shows whole instead of being cut where the glass is above it.
+      material.depthWrite = false
+      material.needsUpdate = true
       if (!visor) continue
       material.color.set(visor.tint)
       material.transparent = true
@@ -152,7 +156,7 @@ export function updateHelmetSurface(
   finish: HelmetFinish,
   trim: string,
   spoiler: boolean,
-  accessories?: BellPartColours,
+  accessories?: HelmetPartColours,
   /** Mesh of the chosen aero kit; null for the standard shell. Falls back to `spoiler`. */
   aeroMesh?: string | string[] | null,
 ) {
@@ -164,7 +168,7 @@ export function updateHelmetSurface(
       const shown = aeroMesh === undefined ? (spoiler ? [aeroMeshNames[0]] : []) : [aeroMesh ?? []].flat()
       mesh.visible = shown.some((name) => mesh.name.startsWith(name))
     }
-    const part = bellParts.find((item) => item.mesh === mesh.name)
+    const part = partForMesh(mesh.name)
     const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
     for (const material of materials) {
       if (!(material instanceof MeshStandardMaterial)) continue

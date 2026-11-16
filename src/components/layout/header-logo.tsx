@@ -1,10 +1,14 @@
+"use client"
+
+import { useEffect } from "react"
+
 import { Logo } from "./logo"
 
 /**
  * The header logo: Lucas Racing, or Lucas Racing by HydroKarts on the customisation pages.
- * Both are in the header; a customisation page renders <CustomisationPage /> and CSS
- * (globals.css) shows the HydroKarts one. Plain CSS, so the header stays prerendered
- * and the right logo shows on first paint with no flicker.
+ * Both are in the header; CSS (globals.css) shows one according to a flag on <html>,
+ * set as the page loads (customisationFlagScript, root layout) and kept up to date by
+ * <CustomisationPage />. Plain CSS, so the header stays prerendered.
  */
 export function HeaderLogo() {
   return (
@@ -16,7 +20,23 @@ export function HeaderLogo() {
   )
 }
 
-/** Marks a page as part of Customisation, so the header shows the Lucas Racing by HydroKarts logo. */
+/**
+ * Marks the page as part of Customisation while it's on screen, keeping the flag on <html>
+ * in step with client-side navigation. Next.js keeps pages you've left in the page,
+ * hidden, and runs their effect clean-ups, so a hidden page never keeps the flag on.
+ */
 export function CustomisationPage() {
-  return <span hidden data-customisation-page />
+  useEffect(() => {
+    const root = document.documentElement
+    // From here on the effect owns the flag (the load-time one would outlive the page).
+    delete root.dataset.customisationInitial
+    root.dataset.customisation = String(Number(root.dataset.customisation ?? 0) + 1)
+    return () => {
+      const remaining = Number(root.dataset.customisation ?? 1) - 1
+      if (remaining > 0) root.dataset.customisation = String(remaining)
+      else delete root.dataset.customisation
+    }
+  }, [])
+
+  return null
 }

@@ -210,32 +210,96 @@ export function StepVisor({ visors, config, update }: UpdateProps & { visors: Vi
 
 const defaultStrip: VisorStrip = { enabled: false, colour: "#101114", text: "", textColour: "#ffffff", font: "racing" }
 
-/** Step 13: the free Lucas Racing visor sticker, or a bespoke one matched to the design. */
+/** A big choice card with a picture of the sticker. */
+function StickerChoice({ selected, onSelect, title, summary, price, preview }: {
+  selected: boolean
+  onSelect: () => void
+  title: string
+  summary: string
+  price: number
+  preview: React.ReactNode
+}) {
+  const pricesHidden = usePricesHidden()
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={selected}
+      className={cn(
+        "flex flex-col gap-3 rounded-2xl border p-3 text-left transition",
+        selected ? "border-brand-ink ring-2 ring-brand-ink/20" : "border-carbon/15 hover:border-carbon/35",
+      )}
+    >
+      <span aria-hidden className="block h-14 overflow-hidden rounded-xl bg-[radial-gradient(circle_at_50%_40%,#ffffff,#e6e5df_85%)] p-2 ring-1 ring-carbon/10">
+        {preview}
+      </span>
+      <span>
+        <span className="flex items-center gap-2 text-sm font-semibold">
+          {title}
+          {selected && <Check className="size-4 text-brand-ink" aria-hidden />}
+        </span>
+        <span className="mt-0.5 block text-xs text-muted-foreground">{summary}</span>
+        {!pricesHidden && <span className="mt-1 block text-sm font-semibold text-brand-ink">{price ? optionPriceLabel(price) : "Free"}</span>}
+      </span>
+    </button>
+  )
+}
+
+/** One design in the sticker gallery. */
+function DesignTile({ selected, name, onSelect, children }: { selected: boolean; name: string; onSelect: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={selected}
+      className={cn("rounded-xl border p-2 text-left text-sm transition", selected ? "border-brand-ink bg-accent ring-2 ring-brand-ink/20" : "border-carbon/15 hover:border-carbon/35")}
+    >
+      <span aria-hidden className="grid h-10 place-items-center overflow-hidden rounded-md bg-[radial-gradient(circle_at_50%_40%,#ffffff,#e6e5df_85%)] px-1 ring-1 ring-carbon/10">
+        {children}
+      </span>
+      <span className="mt-1.5 flex items-center gap-1 font-medium">
+        {name}
+        {selected && <Check className="size-3.5 text-brand-ink" aria-hidden />}
+      </span>
+    </button>
+  )
+}
+
+/** Step 11: every helmet's free visor sticker: the Lucas Racing holographic one, or one of the designs in the customer's colours. */
 export function StepVisorStrip({ priceBook, config, update }: UpdateProps & { priceBook: PriceBook }) {
   const strip = config.visorStrip ?? defaultStrip
   const option = priceBook.options.visor_strip?.find((item) => item.value === "printed" && item.isActive)
-  const holographic = priceBook.options.visor_strip?.find((item) => item.value === "holographic" && item.isActive)
   const colours = priceBook.options.base.filter((item) => item.isActive)
-  const set = (changes: Partial<VisorStrip>) => update({ v: "2", visorStrip: { ...strip, ...changes } })
+  // Holographic is only on the Lucas Racing sticker, so a designed one never carries it.
+  const set = (changes: Partial<VisorStrip>) => update({ v: "2", visorStrip: { ...strip, ...changes, holographic: undefined } })
   const design = findStickerDesign(strip.design)
+  const designPrice = option?.price ?? 0
 
   return (
     <div className="space-y-5">
-      <div className="grid gap-2 sm:grid-cols-2">
-        <ChoiceCard
+      <div className="grid gap-3 sm:grid-cols-2">
+        <StickerChoice
           selected={!strip.enabled}
-          title="Lucas Racing sticker"
-          summary="Our holographic visor sticker, free with every helmet we make."
-          price={0}
           onSelect={() => set({ enabled: false })}
+          title="Lucas Racing holographic"
+          summary="Our name on holographic film. Only our sticker comes in holographic."
+          price={0}
+          preview={
+            // eslint-disable-next-line @next/next/no-img-element -- the sticker's own artwork
+            <img src="/stickers/lucas-racing-visor.webp?v=straight-2" alt="" className="h-full w-full object-contain" />
+          }
         />
         {option && (
-          <ChoiceCard
+          <StickerChoice
             selected={strip.enabled}
-            title="Bespoke sticker"
-            summary={`Designed to match your helmet, with your name, number or sponsor.${holographic?.price ? ` Holographic ${optionPriceLabel((option.price ?? 0) + holographic.price).replace("+", "")}.` : ""}`}
-            price={option.price}
             onSelect={() => set({ enabled: true })}
+            title="Design your own"
+            summary={`Choose from ${stickerDesigns.length + 1} designs, in your colours, with your name or number.`}
+            price={designPrice}
+            preview={
+              // eslint-disable-next-line @next/next/no-img-element -- a sample design
+              <img src={(design ?? stickerDesigns[stickerDesigns.length - 1]).file} alt="" className="h-full w-full object-contain" />
+            }
           />
         )}
       </div>
@@ -243,45 +307,46 @@ export function StepVisorStrip({ priceBook, config, update }: UpdateProps & { pr
       {strip.enabled && (
         <div className="space-y-5">
           <fieldset className="space-y-2">
-            <legend className="text-sm font-semibold">Start from a design</legend>
-            <p className="text-xs text-muted-foreground">Pick a ready-made sticker and make it yours with your own colours and text, or start with a plain band.</p>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <button
-                type="button"
-                onClick={() => set({ design: undefined, designColours: undefined })}
-                aria-pressed={!design}
-                className={cn("rounded-xl border p-2 text-left text-sm transition", !design ? "border-brand-ink bg-accent" : "border-carbon/15 hover:border-carbon/35")}
-              >
-                <span className="block h-7 rounded-md ring-1 ring-carbon/10" style={{ backgroundColor: strip.colour }} aria-hidden />
-                <span className="mt-1.5 block font-medium">Plain band</span>
-              </button>
+            <legend className="text-sm font-semibold">Choose a design</legend>
+            <p className="text-xs text-muted-foreground">Every design can be changed to your own colours below. The 3D view shows it on your visor.</p>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              <DesignTile selected={!design} name="Plain band" onSelect={() => set({ design: undefined, designColours: undefined })}>
+                <span className="block h-4 w-full rounded-sm" style={{ backgroundColor: strip.colour }} aria-hidden />
+              </DesignTile>
               {stickerDesigns.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => set({ design: item.id, designColours: undefined })}
-                  aria-pressed={design?.id === item.id}
-                  className={cn("rounded-xl border p-2 text-left text-sm transition", design?.id === item.id ? "border-brand-ink bg-accent" : "border-carbon/15 hover:border-carbon/35")}
-                >
+                <DesignTile key={item.id} selected={design?.id === item.id} name={item.name} onSelect={() => set({ design: item.id, designColours: undefined })}>
                   {/* eslint-disable-next-line @next/next/no-img-element -- the design's own SVG */}
-                  <img src={item.file} alt="" className="h-7 w-full rounded-md object-fill ring-1 ring-carbon/10" />
-                  <span className="mt-1.5 block font-medium">{item.name}</span>
-                </button>
+                  <img src={item.file} alt="" loading="lazy" className={cn("h-full w-full", item.shaped ? "object-contain" : "object-fill")} />
+                </DesignTile>
               ))}
             </div>
           </fieldset>
 
-          {design &&
-            design.parts.map((part) => (
-              <ColourChooser
-                key={part.key}
-                label={`${design.name}: ${part.label.toLowerCase()}`}
-                options={colours}
-                value={stickerColours(design, strip.designColours)[part.key]}
-                onChange={(colour) => set({ designColours: { ...strip.designColours, [part.key]: colour } })}
-                priceBook={priceBook}
-              />
-            ))}
+          {design && (
+            <div className="space-y-4 rounded-2xl border border-carbon/15 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold">{design.name} colours</p>
+                <button
+                  type="button"
+                  disabled={!strip.designColours}
+                  onClick={() => set({ designColours: undefined })}
+                  className="text-xs underline underline-offset-4 disabled:opacity-40"
+                >
+                  Reset colours
+                </button>
+              </div>
+              {design.parts.map((part) => (
+                <ColourChooser
+                  key={part.key}
+                  label={part.label}
+                  options={colours}
+                  value={stickerColours(design, strip.designColours)[part.key]}
+                  onChange={(colour) => set({ designColours: { ...strip.designColours, [part.key]: colour } })}
+                  priceBook={priceBook}
+                />
+              ))}
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <label htmlFor="visor-strip-text" className="text-sm font-semibold">
@@ -299,15 +364,6 @@ export function StepVisorStrip({ priceBook, config, update }: UpdateProps & { pr
 
           {!design && (
             <ColourChooser label="Sticker colour" options={colours} value={strip.colour} onChange={(colour) => set({ colour, kind: undefined, film: undefined })} priceBook={priceBook} />
-          )}
-          {holographic && (
-            <label className="flex items-start justify-between gap-4 rounded-2xl border border-carbon/15 p-3">
-              <span className="text-sm">
-                <span className="block font-semibold">Holographic</span>
-                <span className="block text-xs text-muted-foreground">Printed on holographic film, tinted by your colour. {optionPriceLabel(holographic.price)}</span>
-              </span>
-              <Switch checked={Boolean(strip.holographic)} onCheckedChange={(on) => set({ holographic: on || undefined })} aria-label="Holographic sticker" />
-            </label>
           )}
           <SwatchGrid label="Text colour" options={colours} value={strip.textColour} onChange={(textColour) => set({ textColour })} />
 

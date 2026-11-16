@@ -1,7 +1,7 @@
 import { findFlag } from "@/lib/helmet-3d/flags"
 import { findStickerDesign } from "@/lib/helmet-3d/sticker-designs"
 import { coverageLabel, coveragePrice, imageCoverage } from "@/lib/configurator/coverage-pricing"
-import { bellParts } from "@/lib/helmet-3d/parts"
+import { partsFor } from "@/lib/helmet-3d/parts"
 import { colourDistance } from "@/lib/design-assistant/colour"
 import { getTreatment } from "@/lib/configurator/regions"
 import { first3dModel } from "@/lib/helmet-3d/models"
@@ -218,11 +218,9 @@ export function normaliseConfiguration(
   if (typeof input.trim === "string" && activeOptions(priceBook, "trim").some((option) => option.value === input.trim)) config.trim = input.trim
   if (input.spoiler === "yes" || input.spoiler === "no") config.spoiler = input.spoiler
 
-  if (config.model === "bell-kc7") {
-    for (const { key } of bellParts) {
-      const colour = input[key]
-      if (typeof colour === "string" && /^#[0-9a-f]{6}$/i.test(colour)) config[key] = colour.toLowerCase()
-    }
+  for (const { key } of partsFor(config.model)) {
+    const colour = input[key]
+    if (typeof colour === "string" && /^#[0-9a-f]{6}$/i.test(colour)) config[key] = colour.toLowerCase()
   }
 
   const riderName = typeof input.riderName === "string" ? input.riderName.slice(0, 24) : ""
@@ -297,7 +295,7 @@ function carryV2Fields(
       text: strip.text.slice(0, 40),
       textColour: isHex(strip.textColour) ? strip.textColour : "#ffffff",
       font: typeof strip.font === "string" ? strip.font.slice(0, 20) : "racing",
-      ...(strip.holographic ? { holographic: true } : {}),
+      // Holographic is only on the Lucas Racing sticker (client, Nov 2026), so designed ones drop it.
     }
     // A ready-made design, with only its own parts' colours kept.
     const design = findStickerDesign(typeof strip.design === "string" ? strip.design : undefined)
@@ -430,7 +428,7 @@ export function configurationToLook(product: CatalogProduct, config: HelmetConfi
     accent: accent?.colour ?? product.look.accent,
     accentTexture: accent?.texture,
     trim: config.trim,
-    accessories: config.model === "bell-kc7" ? Object.fromEntries(bellParts.map(({ key }) => [key, config[key]])) : undefined,
+    accessories: Object.fromEntries(partsFor(config.model).map(({ key }) => [key, config[key]])),
     spoiler: config.spoiler === "yes",
     number: config.raceNumber?.trim() || undefined,
     name: config.riderName?.trim() || undefined,
@@ -646,11 +644,9 @@ export function summariseConfiguration(
       value: `Uploaded · ${placementLabels[logo.position]}${image ? ` · ${coverageLabel(imageCoverage(logo))}` : ""}`,
     })
   })
-  if (config.model === "bell-kc7") {
-    for (const { key, label } of bellParts.filter((part) => !trimKeys.includes(part.key))) {
-      const colour = config[key]
-      if (colour) lines.push({ key, label, value: `${colourOption(priceBook, colour)?.label ?? colour.toUpperCase()}` })
-    }
+  for (const { key, label } of partsFor(config.model).filter((part) => !trimKeys.includes(part.key))) {
+    const colour = config[key]
+    if (colour) lines.push({ key, label, value: `${colourOption(priceBook, colour)?.label ?? colour.toUpperCase()}` })
   }
   if (config.riderName?.trim()) {
     lines.push({ key: "riderName", label: "Name on helmet", value: `${config.riderName.trim()} · ${placementLabels[config.namePosition ?? "sides"]}` })

@@ -5,6 +5,7 @@ import { CalendarDays, Crown, PencilRuler, ScrollText, Send, Share2, Ticket, Tro
 import { Container } from "@/components/layout/container"
 import { PageHero } from "@/components/shared/page-hero"
 import { Button } from "@/components/ui/button"
+import { shareTags } from "@/constants/brand"
 import { competitionPrizes } from "@/lib/competition/prizes"
 import { formatClosing, formatDay } from "@/lib/competition/status"
 import { getCompetition, getCompetitionWinner } from "@/lib/data/competition"
@@ -25,7 +26,7 @@ const steps = [
   {
     icon: Share2,
     title: "Share it",
-    text: "Share your helmet on your story, and tag two people plus us, @hydro.karts.",
+    text: `Share your helmet on your story and tag two friends, plus both of us: ${shareTags}.`,
   },
   {
     icon: Send,

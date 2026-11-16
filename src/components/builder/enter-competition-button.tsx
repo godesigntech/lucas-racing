@@ -2,13 +2,14 @@
 
 import { useEffect, useId, useState, useTransition } from "react"
 import Link from "next/link"
-import { CheckCircle2, Download, Loader2, Palette, Trophy } from "lucide-react"
+import { CheckCircle2, Download, Loader2, Palette, Share2, Trophy } from "lucide-react"
 import { toast } from "react-toastify"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { shareTags } from "@/constants/brand"
 import { enterCompetition } from "@/lib/actions/competition"
 import { formatClosing } from "@/lib/competition/status"
 import { uploadDesignPhoto } from "@/lib/design-assistant/photo"
@@ -73,6 +74,20 @@ export function EnterCompetitionButton({ competition, slug, productName, getConf
   useEffect(() => () => {
     if (picture) URL.revokeObjectURL(picture.url)
   }, [picture])
+
+  // Phones can hand the picture straight to Instagram or Facebook (no screenshot needed).
+  const pictureFile = picture ? new File([picture.blob], `${designName.trim() || "my-helmet"}.jpg`, { type: picture.blob.type || "image/jpeg" }) : null
+  const canShare = Boolean(pictureFile && typeof navigator !== "undefined" && navigator.canShare?.({ files: [pictureFile] }))
+
+  async function sharePicture() {
+    if (!pictureFile) return
+    try {
+      await navigator.share({ files: [pictureFile], text: `My helmet design for the Lucas Racing competition. ${shareTags}` })
+    } catch (error) {
+      // Closing the share sheet isn't a problem.
+      if ((error as Error).name !== "AbortError") toast.error("Sharing didn't work here. Download the picture and share it instead.")
+    }
+  }
 
   if (signedIn === false) {
     return (
@@ -201,7 +216,7 @@ export function EnterCompetitionButton({ competition, slug, productName, getConf
               <div className="space-y-2 rounded-2xl border border-carbon/10 p-3">
                 <p className="text-sm font-semibold">1. Share your design</p>
                 <p className="text-xs text-muted-foreground">
-                  Share your helmet on your story, and tag two people plus us, @hydro.karts.
+                  Share your helmet on your story and tag two friends, plus both of us: <strong className="text-carbon">{shareTags}</strong>.
                 </p>
                 <div className="flex items-center gap-3">
                   <span className="grid h-20 w-28 shrink-0 place-items-center overflow-hidden rounded-xl bg-[radial-gradient(circle_at_50%_35%,#ffffff,#e8e7e0_80%)] ring-1 ring-carbon/10">
@@ -213,11 +228,18 @@ export function EnterCompetitionButton({ competition, slug, productName, getConf
                     )}
                   </span>
                   {picture && (
-                    <Button asChild variant="outline" size="sm">
-                      <a href={picture.url} download={`${designName.trim() || "my-helmet"}.jpg`}>
-                        <Download /> Download picture
-                      </a>
-                    </Button>
+                    <div className="flex flex-wrap gap-2">
+                      {canShare && (
+                        <Button type="button" size="sm" onClick={sharePicture}>
+                          <Share2 /> Share
+                        </Button>
+                      )}
+                      <Button asChild variant="outline" size="sm">
+                        <a href={picture.url} download={`${designName.trim() || "my-helmet"}.jpg`}>
+                          <Download /> Download picture
+                        </a>
+                      </Button>
+                    </div>
                   )}
                 </div>
               </div>

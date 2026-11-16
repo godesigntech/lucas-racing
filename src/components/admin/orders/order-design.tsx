@@ -9,7 +9,7 @@ import { configurationToLook, selectedSpoilers } from "@/lib/configurator/helmet
 import { resolveRegions, templateArtworkUrl } from "@/lib/configurator/regions"
 import { buildSceneDesign, designMainColour, fittingFinishes, withShellPrint } from "@/lib/configurator/scene-design"
 import { findFlag } from "@/lib/helmet-3d/flags"
-import { bellParts } from "@/lib/helmet-3d/parts"
+import { partsFor } from "@/lib/helmet-3d/parts"
 import type { PriceBook } from "@/types/catalog"
 import type { HelmetConfiguration } from "@/types/configurator"
 import type { OrderSummaryLine } from "@/types/order"
@@ -99,7 +99,7 @@ function FittingDetails({ config, priceBook }: { config: HelmetConfiguration; pr
     const label = priceBook.options.base.find((option) => option.value === value)?.label
     return label ? `${label} (${value})` : value
   }
-  const parts = bellParts.flatMap(({ key, label }) => (config[key] ? [{ label, value: colourName(config[key] as string) }] : []))
+  const parts = partsFor(config.model).flatMap(({ key, label }) => (config[key] ? [{ label, value: colourName(config[key] as string) }] : []))
   const strip = config.visorStrip?.enabled ? config.visorStrip : null
   if (parts.length === 0 && !strip) return null
   return (

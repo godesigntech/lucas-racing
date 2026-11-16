@@ -157,6 +157,28 @@ async function drawStrip(strip: VisorStrip, aspect: number, filmUrl: string | nu
   }
 
   const design = findStickerDesign(strip.design)
+  if (design?.shaped) {
+    // A cut-out sticker: laid along the visor's top edge at its own proportions, the
+    // rest of the band left clear, like the Lucas Racing sticker.
+    const image = new Image()
+    image.src = await recolouredSticker(design, strip.designColours)
+    await image.decode().catch(() => undefined)
+    if (!image.naturalWidth) return finish(canvas)
+    const flat = straighten(image)
+    const width = Math.min(canvas.width, CANVAS_HEIGHT * (flat.canvas.width / flat.canvas.height) * SHAPED_STRETCH)
+    const left = (canvas.width - width) / 2
+    context.drawImage(flat.canvas, left, 0, width, CANVAS_HEIGHT)
+    if (strip.holographic && filmUrl) {
+      await shimmer(context, canvas.width, filmUrl)
+      // The foil only where the sticker is.
+      context.globalCompositeOperation = "destination-in"
+      context.drawImage(flat.canvas, left, 0, width, CANVAS_HEIGHT)
+      context.globalCompositeOperation = "source-over"
+    }
+    const text = strip.text.trim()
+    if (text) await letter(context, strip, text, canvas.width / 2, CANVAS_HEIGHT * flat.bandDepth * 0.5, CANVAS_HEIGHT * flat.bandDepth * 0.62, width * 0.42)
+    return finish(canvas)
+  }
   if (design) {
     // A ready-made design fills the whole strip, in the customer's colours.
     const image = new Image()
@@ -169,25 +191,74 @@ async function drawStrip(strip: VisorStrip, aspect: number, filmUrl: string | nu
   }
 
   const text = strip.text.trim()
-  if (text) {
-    let size = CANVAS_HEIGHT * 0.62
-    const font = canvasFont(strip.font, size)
-    if (document.fonts) await document.fonts.load(font, text).catch(() => undefined)
-    context.font = font
-    // Keep the lettering on the front of the visor, clear of the curve at the sides.
-    const maxWidth = canvas.width * 0.5
-    const width = context.measureText(text).width
-    if (width > maxWidth) {
-      size *= maxWidth / width
-      context.font = canvasFont(strip.font, size)
-    }
-    context.fillStyle = strip.textColour ?? "#ffffff"
-    context.textAlign = "center"
-    context.textBaseline = "middle"
-    context.fillText(text, canvas.width / 2, CANVAS_HEIGHT / 2 + size * 0.04)
-  }
+  // Kept on the front of the visor, clear of the curve at the sides.
+  if (text) await letter(context, strip, text, canvas.width / 2, CANVAS_HEIGHT / 2, CANVAS_HEIGHT * 0.62, canvas.width * 0.5)
 
   return finish(canvas)
+}
+
+/** The customer's lettering, centred at (x, y), shrunk to fit maxWidth. */
+async function letter(context: CanvasRenderingContext2D, strip: VisorStrip, text: string, x: number, y: number, size: number, maxWidth: number) {
+  const font = canvasFont(strip.font, size)
+  if (document.fonts) await document.fonts.load(font, text).catch(() => undefined)
+  context.font = font
+  const width = context.measureText(text).width
+  if (width > maxWidth) {
+    size *= maxWidth / width
+    context.font = canvasFont(strip.font, size)
+  }
+  context.fillStyle = strip.textColour ?? "#ffffff"
+  context.textAlign = "center"
+  context.textBaseline = "middle"
+  context.fillText(text, x, y + size * 0.04)
+}
+
+/** How much wider than its artwork a cut-out design is drawn (as the Lucas Racing sticker). */
+const SHAPED_STRETCH = 1
+
+/**
+ * A cut-out design is drawn as a flat view of the visor: its top edge curves up towards
+ * the ends. The 3D band already follows the visor's top edge, so each column of the
+ * artwork is moved up until its top edge is straight; otherwise the ends would sit
+ * above the band and be cut off. Also gives how deep the main band is at the centre
+ * (above the gap to its thin lower strip), as a share of the whole, for the lettering.
+ */
+function straighten(image: HTMLImageElement): { canvas: HTMLCanvasElement; bandDepth: number } {
+  const scale = 2
+  const source = document.createElement("canvas")
+  source.width = image.naturalWidth * scale
+  source.height = image.naturalHeight * scale
+  const sourceContext = source.getContext("2d", { willReadFrequently: true })!
+  sourceContext.drawImage(image, 0, 0, source.width, source.height)
+  const { data } = sourceContext.getImageData(0, 0, source.width, source.height)
+  const solid = (x: number, y: number) => data[(y * source.width + x) * 4 + 3] > 8
+
+  const columns: { x: number; top: number; bottom: number }[] = []
+  for (let x = 0; x < source.width; x++) {
+    let top = -1
+    let bottom = -1
+    for (let y = 0; y < source.height; y++) {
+      if (!solid(x, y)) continue
+      if (top < 0) top = y
+      bottom = y
+    }
+    if (top >= 0) columns.push({ x, top, bottom })
+  }
+  if (!columns.length) return { canvas: source, bandDepth: 1 }
+
+  const height = Math.max(...columns.map((column) => column.bottom - column.top + 1))
+  const first = columns[0].x
+  const flat = document.createElement("canvas")
+  flat.width = columns[columns.length - 1].x - first + 1
+  flat.height = height
+  const flatContext = flat.getContext("2d")!
+  for (const { x, top, bottom } of columns) flatContext.drawImage(source, x, top, 1, bottom - top + 1, x - first, 0, 1, bottom - top + 1)
+
+  // Down the middle column: the main band ends where the first clear row is.
+  const middle = columns[Math.floor(columns.length / 2)]
+  let bandEnd = middle.top
+  while (bandEnd <= middle.bottom && solid(middle.x, bandEnd)) bandEnd++
+  return { canvas: flat, bandDepth: Math.min(1, (bandEnd - middle.top) / height) }
 }
 
 function finish(canvas: HTMLCanvasElement): CanvasTexture {
@@ -247,9 +318,13 @@ export async function updateVisorStrip(root: Object3D, strip: VisorStrip | null,
     const material = mesh.material as MeshStandardMaterial
     material.map = texture
     material.color.set("#ffffff")
+    // Drawn with the see-through things, after the visor glass, so the glass never cuts it.
     // The branded sticker has a shaped outline: the clear parts of its artwork show the visor.
-    material.transparent = Boolean(strip.branded)
-    material.alphaTest = strip.branded ? 0.5 : 0
+    material.transparent = true
+    material.opacity = 1
+    // Cut-out shapes (the Lucas Racing sticker, cut-out designs) show the visor around them.
+    material.alphaTest = strip.branded || findStickerDesign(strip.design)?.shaped ? 0.5 : 0
+    mesh.renderOrder = 1
     material.metalness = strip.branded ? 0.25 : strip.kind === "chrome" ? 1 : strip.kind === "metallic" || strip.holographic ? 0.65 : 0
     material.roughness = strip.kind === "chrome" ? 0.1 : strip.kind === "metallic" ? 0.28 : 0.35
     material.needsUpdate = true

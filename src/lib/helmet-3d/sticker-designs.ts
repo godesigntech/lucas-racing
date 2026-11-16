@@ -5,7 +5,10 @@
  * a design and recolour each part; their own text goes on top.
  *
  * To add one: put the SVG in public/stickers/designs/ and list it here with its colour parts.
+ * Cut-out designs from the designer go through scripts/prepare-visor-stickers.mjs instead.
  */
+import visorStickerDesigns from "./visor-sticker-designs.json"
+
 export interface StickerDesignPart {
   /** The CSS class in the SVG that colours this part. */
   key: string
@@ -19,6 +22,12 @@ export interface StickerDesign {
   name: string
   file: string
   parts: StickerDesignPart[]
+  /**
+   * A cut-out sticker drawn as a flat view of the visor (its top edge curving up at the
+   * ends, transparent around it), rather than a full rectangle filling the strip. The
+   * 3D view lays it along the visor's top edge (visor-strip.ts).
+   */
+  shaped?: boolean
 }
 
 export const stickerDesigns: StickerDesign[] = [
@@ -32,6 +41,8 @@ export const stickerDesigns: StickerDesign[] = [
       { key: "fil3", label: "Strikes", colour: "#fafc07" },
     ],
   },
+  // The 20 cut-out designs (scripts/prepare-visor-stickers.mjs).
+  ...(visorStickerDesigns as StickerDesign[]),
 ]
 
 export function findStickerDesign(id: string | undefined): StickerDesign | undefined {
@@ -59,6 +70,8 @@ export async function recolouredSticker(design: StickerDesign, chosen: Record<st
   let svg = await pending
   for (const [key, colour] of Object.entries(stickerColours(design, chosen))) {
     svg = svg.replace(new RegExp(`\\.${key}\\s*\\{fill:[^}]*\\}`), `.${key} {fill:${colour}}`)
+    // Lines drawn in the same colour (cut-out designs).
+    svg = svg.replace(new RegExp(`\\.${key}-st\\s*\\{stroke:[^}]*\\}`), `.${key}-st {stroke:${colour}}`)
   }
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
 }

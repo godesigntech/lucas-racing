@@ -21,8 +21,9 @@ import { pendingPrices } from "@/lib/configurator/pending-prices"
 import { chromeBaseCoatPrice, helmetDeposit, quoteReasons } from "@/lib/configurator/pricing-rules"
 import { getTreatment, requiresGloss, resolveRegions, setTreatment, templateArtworkUrl } from "@/lib/configurator/regions"
 import { buildSceneDesign, designMainColour, fittingFinishes, withShellPrint } from "@/lib/configurator/scene-design"
+import { shareTags } from "@/constants/brand"
 import { formatMoney } from "@/lib/format"
-import { hasCustomBellParts } from "@/lib/helmet-3d/parts"
+import { hasCustomParts } from "@/lib/helmet-3d/parts"
 import { designHasHydroFilm } from "@/lib/competition/prizes"
 import { decodeShared } from "@/lib/configurator/share-link"
 import { OWN_HELMET_FORM_ID, setDesignReference } from "@/lib/own-helmet/design-reference"
@@ -443,11 +444,9 @@ function BuilderBody({
           spoilerFinish={fittings.spoilerFinish}
           aeroMesh={aeroMesh}
         />
-        {config.model === "bell-kc7" && (
-          <Button variant="outline" className="mt-3 w-full" onClick={() => go("exterior")}>
-            Customize trims, GrillZ & visor screws
-          </Button>
-        )}
+        <Button variant="outline" className="mt-3 w-full" onClick={() => go("exterior")}>
+          {config.model === "bell-kc7" ? "Customize trims, GrillZ & visor screws" : "Customize trims, vents & screws"}
+        </Button>
       </div>
 
       {/* data-helmet-builder hides the floating chat buttons on phones (globals.css): they would cover the step buttons. */}
@@ -489,7 +488,7 @@ function BuilderBody({
                 {competition.title}
               </Link>
               {competition.accepting
-                ? ": design your helmet with at least one hydrographic film, then enter it from the Review step."
+                ? `: design your helmet with at least one hydrographic film, then enter it from the Review step. When you share it, tag both ${shareTags}.`
                 : competition.opensLater
                   ? ": entries open soon. Design your helmet now and save it to enter later."
                   : ": entries have closed."}
@@ -585,7 +584,7 @@ function BuilderBody({
                   imageCaption={`${product.name} · ${model?.name ?? ""}`}
                   getPreviewSvg={() => previewRef.current?.querySelector("svg") ?? null}
                   imageUnavailableReason={
-                    hasCustomBellParts(config) || design.regions.some((region) => region.maskUrl)
+                    hasCustomParts(config) || design.regions.some((region) => region.maskUrl)
                       ? "Use Share link to include your 3D artwork and accessory colours. Illustrated image export does not show these yet."
                       : undefined
                   }

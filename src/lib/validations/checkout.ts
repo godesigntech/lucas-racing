@@ -145,6 +145,10 @@ export const helmetItemSchema = z.object({
     grille2: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),
     visorScrewLeft: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),
     visorScrewRight: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),
+    chinVent: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),
+    visorPivot: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),
+    sideVents: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),
+    screws: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),
 
     spoiler: z.enum(["yes", "no"]),
     namePosition: placement.optional(),

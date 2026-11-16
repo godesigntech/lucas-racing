@@ -1,4 +1,4 @@
-import type { BellPartColours } from "@/lib/helmet-3d/parts"
+import type { HelmetPartColours } from "@/lib/helmet-3d/parts"
 
 // The helmet builder's data model. A build is stored flat (plain string fields)
 // so it travels unchanged through share links, the basket, saved designs and
@@ -129,7 +129,7 @@ export type FinishId = "gloss" | "satin" | "matte"
 /** Where text and logos go on the helmet. */
 export type Placement = "sides" | "left" | "right" | "front" | "back" | "top"
 
-export interface HelmetConfiguration extends BellPartColours {
+export interface HelmetConfiguration extends HelmetPartColours {
   /**
    * Build format. Absent means the original flat build, which is still read and still
    * priced by place_order(); "2" adds the fields below. The flat shell/graphic/pinstripe
