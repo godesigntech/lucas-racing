@@ -22,15 +22,15 @@ interface StepTemplateProps {
 
 /** Every design as a selectable card with its showcase illustration. */
 export function StepTemplate({ products, value, modelId, onChange }: StepTemplateProps) {
-  // A sketch (own-helmet page) shows no prices, and the AI designer would take them off the page.
+  // On a sketch (own-helmet page) the AI designer opens in a new tab, so the sketch stays put.
   const sketch = usePricesHidden()
   return (
     <fieldset className="grid grid-cols-2 gap-3 sm:grid-cols-3">
       <legend className="sr-only">Template</legend>
       {/* A blank helmet first: the AI designs something unique instead of starting from a template. */}
-      {!sketch && (
       <Link
         href={DESIGN_ASSISTANT_HREF}
+        {...(sketch ? { target: "_blank", rel: "noreferrer" } : {})}
         className="flex h-full flex-col overflow-hidden rounded-2xl border border-dashed border-brand-ink/50 text-left transition-colors hover:border-brand-ink"
       >
         <span className="relative grid aspect-[4/3] place-items-center overflow-hidden bg-carbon">
@@ -47,7 +47,6 @@ export function StepTemplate({ products, value, modelId, onChange }: StepTemplat
           <span className="text-xs text-muted-foreground">Let AI design a helmet unique to you. Free, with unlimited changes.</span>
         </span>
       </Link>
-      )}
       {products.map((product) => {
         const checked = product.slug === value
         const fits = product.models.includes(modelId)

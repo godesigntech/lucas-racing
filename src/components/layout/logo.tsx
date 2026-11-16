@@ -15,11 +15,13 @@ interface LogoProps {
   className?: string
   /** Responsive sizing for the image, e.g. a larger logo on desktop. */
   imageClassName?: string
+  /** "hydrokarts": the Lucas Racing by HydroKarts logo, used on the customisation pages. */
+  variant?: "default" | "hydrokarts"
 }
 
 /** The Lucas Racing logo, linking home. Uses the client's artwork as supplied. */
-export function Logo({ tone = "dark", height = 40, preload, className, imageClassName }: LogoProps) {
-  const { src, width: naturalWidth, height: naturalHeight } = brandLogos.lucasRacing
+export function Logo({ tone = "dark", height = 40, preload, className, imageClassName, variant = "default" }: LogoProps) {
+  const { src, width: naturalWidth, height: naturalHeight } = variant === "hydrokarts" ? brandLogos.lucasRacingHydroKarts : brandLogos.lucasRacing
   const width = Math.round((naturalWidth / naturalHeight) * height)
 
   return (

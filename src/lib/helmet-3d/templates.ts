@@ -4,15 +4,19 @@ export interface HelmetTemplateArtwork {
   thumbnail: string
 }
 
-const slugs = ["emilio", "nygel", "rusinov", "pink-blade", "navy-pink", "ivory-gold", "neon-volt", "tricolore", "inferno", "strike-red", "red-fury", "sky-racer", "gold-line", "yellow-flash", "crimson-bolt", "cobalt-storm", "hornet", "blue-arrow"]
+const shared = ["emilio", "nygel", "rusinov", "pink-blade", "navy-pink", "ivory-gold", "neon-volt", "tricolore", "inferno", "strike-red", "red-fury", "sky-racer", "gold-line", "yellow-flash", "crimson-bolt", "hornet", "blue-arrow"]
 
 /**
- * Template artwork per helmet. The Bell KC7's is drawn by the designers; the Arai SK-6's
- * is moved across from it by scripts/prepare-sk6-templates.mjs, in the SK-6's own UVs.
+ * Template artwork each helmet has in /public/models/templates/<model>/<slug>/. Only list
+ * a design once its files are there, or its picture shows as a broken image. Designs are
+ * moved between helmets by scripts/prepare-sk6-templates.mjs (--to-bell for SK-6 designs).
  */
-const models = ["bell-kc7", "arai-sk6"]
+const available: Record<string, string[]> = {
+  "bell-kc7": [...shared, "cobalt-storm"],
+  "arai-sk6": shared,
+}
 const templates: Record<string, HelmetTemplateArtwork> = Object.fromEntries(
-  models.flatMap((modelId) =>
+  Object.entries(available).flatMap(([modelId, slugs]) =>
     slugs.map((slug) => {
       const path = `/models/templates/${modelId}/${slug}`
       return [`${modelId}/${slug}`, { graphicMask: `${path}/graphic-mask.png`, accentMask: `${path}/accent-mask.png`, thumbnail: `${path}/thumbnail.png` }]

@@ -10,6 +10,8 @@ export interface BrandLogo {
 
 export const brandLogos = {
   lucasRacing: { src: "/images/brand/lucas-racing-logo.png", alt: "Lucas Racing", width: 402, height: 163 },
+  /** "Lucas Racing by HydroKarts.co.uk", in the header on the customisation pages. */
+  lucasRacingHydroKarts: { src: "/images/brand/lucas-racing-hydrokarts-logo.png", alt: "Lucas Racing by HydroKarts", width: 1527, height: 311 },
   /** Customisation section only. */
   lucasRacingByHydroKarts: {
     src: "/images/brand/lucas-racing-by-hydrokarts.png",

@@ -17,6 +17,7 @@ export async function WhatsAppButton() {
       target="_blank"
       rel="noreferrer"
       data-floating-launcher
+      data-whatsapp
       aria-label="Chat with us on WhatsApp"
       className="group fixed bottom-5 right-5 z-40 flex h-14 items-center gap-2 rounded-full bg-[#25d366] pl-4 pr-4 font-semibold text-white shadow-[0_12px_32px_-8px_rgb(17_20_18/0.6)] transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#25d366]/50 active:scale-95 sm:pr-5"
     >

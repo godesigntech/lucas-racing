@@ -6,6 +6,9 @@
 //   node scripts/prepare-sk6-templates.mjs [slug ...]
 //
 // Run after scripts/prepare-arai-sk6.mjs and whenever a Bell template changes.
+//
+// --to-bell moves the other way, for designs drawn for the SK-6 (Hornet, Blue Arrow):
+//   node scripts/prepare-sk6-templates.mjs --to-bell hornet blue-arrow
 
 import { existsSync } from "node:fs"
 import { mkdir, readdir } from "node:fs/promises"
@@ -22,8 +25,10 @@ const MASK_SIZE = 2048
 const GUTTER = 24
 /** Corners of one SK-6 triangle take their UVs from one island of the Bell's texture. */
 const UV_NEIGHBOURHOOD = 0.05
-const FROM = "public/models/templates/bell-kc7"
-const TO = "public/models/templates/arai-sk6"
+const toBell = process.argv.includes("--to-bell")
+const [SOURCE_MODEL, TARGET_MODEL] = toBell ? ["arai-sk6", "bell-kc7"] : ["bell-kc7", "arai-sk6"]
+const FROM = `public/models/templates/${SOURCE_MODEL}`
+const TO = `public/models/templates/${TARGET_MODEL}`
 
 await MeshoptDecoder.ready
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ "meshopt.decoder": MeshoptDecoder })
@@ -120,8 +125,9 @@ function search(grid, point, filter = () => true) {
 }
 
 console.log("Matching the SK-6 shell to the Bell KC7 shell…")
-const bell = await shellTriangles("public/models/bell-kc7.glb")
-const arai = await shellTriangles("public/models/arai-sk6.glb")
+// "bell" is where the artwork comes from, "arai" the helmet it goes onto.
+const bell = await shellTriangles(`public/models/${SOURCE_MODEL}.glb`)
+const arai = await shellTriangles(`public/models/${TARGET_MODEL}.glb`)
 const grid = buildGrid(bell)
 
 // Where on the Bell's texture each SK-6 texel comes from.
@@ -200,7 +206,7 @@ function sample(data, width, channels, u, v, out, offset) {
   }
 }
 
-const only = process.argv.slice(2)
+const only = process.argv.slice(2).filter((arg) => !arg.startsWith("--"))
 const slugs = (await readdir(FROM)).filter((slug) => only.length === 0 || only.includes(slug))
 for (const slug of slugs) {
   const from = path.join(FROM, slug)

@@ -216,3 +216,11 @@
     display: none;
   }
 }
+
+/* On larger screens the design tools' step bar is pinned to the bottom of the screen:
+   the WhatsApp button rises above it so it never covers the Next button. */
+@media (min-width: 1024px) {
+  body:has([data-helmet-builder]) [data-whatsapp] {
+    bottom: 6rem;
+  }
+}
