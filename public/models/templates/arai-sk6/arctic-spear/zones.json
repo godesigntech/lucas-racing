@@ -1,0 +1,56 @@
+{
+  "slug": "arctic-spear",
+  "name": "Arctic Spear",
+  "zones": [
+    {
+      "key": "base",
+      "colours": [
+        "#F8FAFC"
+      ],
+      "swatch": "#f4f3ee",
+      "swatchName": "Paddock white",
+      "label": "White",
+      "coverage": 0.4141
+    },
+    {
+      "key": "graphic",
+      "colours": [
+        "#12386B"
+      ],
+      "swatch": "#14254d",
+      "swatchName": "Navy",
+      "label": "Navy",
+      "coverage": 0.1999
+    },
+    {
+      "key": "accent",
+      "colours": [
+        "#00A9C9"
+      ],
+      "swatch": "#0f8b8d",
+      "swatchName": "Teal",
+      "label": "Light blue",
+      "coverage": 0.1631
+    },
+    {
+      "key": "detail",
+      "colours": [
+        "#19282F"
+      ],
+      "swatch": "#14254d",
+      "swatchName": "Navy",
+      "label": "Navy",
+      "coverage": 0.1385
+    },
+    {
+      "key": "rim",
+      "colours": [
+        "#91DCE6"
+      ],
+      "swatch": "#0f8b8d",
+      "swatchName": "Teal",
+      "label": "Light blue",
+      "coverage": 0.0844
+    }
+  ]
+}

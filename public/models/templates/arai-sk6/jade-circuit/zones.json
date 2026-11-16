@@ -1,0 +1,46 @@
+{
+  "slug": "jade-circuit",
+  "name": "Jade Circuit",
+  "zones": [
+    {
+      "key": "base",
+      "colours": [
+        "#F6F4EB"
+      ],
+      "swatch": "#f4f3ee",
+      "swatchName": "Paddock white",
+      "label": "White",
+      "coverage": 0.5035
+    },
+    {
+      "key": "graphic",
+      "colours": [
+        "#0B8C70"
+      ],
+      "swatch": "#0f8b8d",
+      "swatchName": "Teal",
+      "label": "Teal",
+      "coverage": 0.226
+    },
+    {
+      "key": "accent",
+      "colours": [
+        "#16342E"
+      ],
+      "swatch": "#14254d",
+      "swatchName": "Navy",
+      "label": "Dark green",
+      "coverage": 0.1909
+    },
+    {
+      "key": "detail",
+      "colours": [
+        "#75CDB0"
+      ],
+      "swatch": "#0f8b8d",
+      "swatchName": "Teal",
+      "label": "Mint",
+      "coverage": 0.0796
+    }
+  ]
+}

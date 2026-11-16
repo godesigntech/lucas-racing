@@ -1,0 +1,58 @@
+{
+  "slug": "blue-current",
+  "name": "Blue Current",
+  "zones": [
+    {
+      "key": "base",
+      "colours": [
+        "#F7F8FA"
+      ],
+      "swatch": "#f4f3ee",
+      "swatchName": "Paddock white",
+      "label": "White",
+      "coverage": 0.3645
+    },
+    {
+      "key": "graphic",
+      "colours": [
+        "#243F75",
+        "#23538B"
+      ],
+      "swatch": "#14254d",
+      "swatchName": "Navy",
+      "label": "Blue",
+      "coverage": 0.3339
+    },
+    {
+      "key": "accent",
+      "colours": [
+        "#263641"
+      ],
+      "swatch": "#14254d",
+      "swatchName": "Navy",
+      "label": "Navy",
+      "coverage": 0.1966
+    },
+    {
+      "key": "detail",
+      "colours": [
+        "#2A739A",
+        "#267CA5"
+      ],
+      "swatch": "#0f8b8d",
+      "swatchName": "Teal",
+      "label": "Teal blue",
+      "coverage": 0.0712
+    },
+    {
+      "key": "rim",
+      "colours": [
+        "#2385B2"
+      ],
+      "swatch": "#0f8b8d",
+      "swatchName": "Teal",
+      "label": "Teal blue",
+      "coverage": 0.0339
+    }
+  ]
+}

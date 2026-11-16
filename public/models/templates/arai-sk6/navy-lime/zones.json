@@ -1,0 +1,46 @@
+{
+  "slug": "navy-lime",
+  "name": "Navy and Lime",
+  "zones": [
+    {
+      "key": "base",
+      "colours": [
+        "#FFFFFF"
+      ],
+      "swatch": "#f4f3ee",
+      "swatchName": "Paddock white",
+      "label": "White",
+      "coverage": 0.4475
+    },
+    {
+      "key": "graphic",
+      "colours": [
+        "#003786"
+      ],
+      "swatch": "#14254d",
+      "swatchName": "Navy",
+      "label": "Blue",
+      "coverage": 0.2714
+    },
+    {
+      "key": "accent",
+      "colours": [
+        "#2F3234"
+      ],
+      "swatch": "#4a4f55",
+      "swatchName": "Gunmetal",
+      "label": "Black",
+      "coverage": 0.1778
+    },
+    {
+      "key": "detail",
+      "colours": [
+        "#E7E702"
+      ],
+      "swatch": "#c6f432",
+      "swatchName": "Lucas lime",
+      "label": "Yellow",
+      "coverage": 0.1033
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "slug": "amber-vortex",
+  "name": "Amber Vortex",
+  "zones": [
+    {
+      "key": "base",
+      "colours": [
+        "#20252A"
+      ],
+      "swatch": "#14254d",
+      "swatchName": "Navy",
+      "label": "Navy",
+      "coverage": 0.5073
+    },
+    {
+      "key": "graphic",
+      "colours": [
+        "#E57611"
+      ],
+      "swatch": "#ff6a13",
+      "swatchName": "Flag orange",
+      "label": "Orange",
+      "coverage": 0.279
+    },
+    {
+      "key": "accent",
+      "colours": [
+        "#F3EFE3"
+      ],
+      "swatch": "#f4f3ee",
+      "swatchName": "Paddock white",
+      "label": "White",
+      "coverage": 0.1722
+    },
+    {
+      "key": "detail",
+      "colours": [
+        "#BE4D0B"
+      ],
+      "swatch": "#d7261e",
+      "swatchName": "Race red",
+      "label": "Orange",
+      "coverage": 0.0415
+    }
+  ]
+}

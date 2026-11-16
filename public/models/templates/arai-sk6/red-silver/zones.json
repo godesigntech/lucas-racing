@@ -1,0 +1,46 @@
+{
+  "slug": "red-silver",
+  "name": "Red and Silver",
+  "zones": [
+    {
+      "key": "base",
+      "colours": [
+        "#EFEFEF"
+      ],
+      "swatch": "#f4f3ee",
+      "swatchName": "Paddock white",
+      "label": "White",
+      "coverage": 0.326
+    },
+    {
+      "key": "graphic",
+      "colours": [
+        "#3B3C40"
+      ],
+      "swatch": "#4a4f55",
+      "swatchName": "Gunmetal",
+      "label": "Grey",
+      "coverage": 0.301
+    },
+    {
+      "key": "accent",
+      "colours": [
+        "#ED1F26"
+      ],
+      "swatch": "#d7261e",
+      "swatchName": "Race red",
+      "label": "Red",
+      "coverage": 0.2462
+    },
+    {
+      "key": "detail",
+      "colours": [
+        "#A4A7A8"
+      ],
+      "swatch": "#c4c7c9",
+      "swatchName": "Silver",
+      "label": "Silver",
+      "coverage": 0.1268
+    }
+  ]
+}

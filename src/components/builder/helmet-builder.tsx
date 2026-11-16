@@ -235,7 +235,8 @@ function BuilderBody({
   const next = steps[index + 1]
   const previous = steps[index - 1]
   const model = priceBook.models.find((item) => item.id === config.model)
-  const models = priceBook.models.filter((item) => item.isActive && product.models.includes(item.id))
+  // Every helmet with templates of its own; picking one moves the build onto its designs.
+  const models = priceBook.models.filter((item) => item.isActive && products.some((candidate) => candidate.models.includes(item.id)))
 
   const regions = useMemo(() => resolveRegions(product, config.model, templates), [product, config.model, templates])
   const glossOnly = requiresGloss(config, regions)

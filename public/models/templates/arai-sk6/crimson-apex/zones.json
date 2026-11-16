@@ -1,0 +1,46 @@
+{
+  "slug": "crimson-apex",
+  "name": "Crimson Apex",
+  "zones": [
+    {
+      "key": "base",
+      "colours": [
+        "#F3F5F6"
+      ],
+      "swatch": "#f4f3ee",
+      "swatchName": "Paddock white",
+      "label": "White",
+      "coverage": 0.4067
+    },
+    {
+      "key": "graphic",
+      "colours": [
+        "#18212C"
+      ],
+      "swatch": "#14254d",
+      "swatchName": "Navy",
+      "label": "Navy",
+      "coverage": 0.2548
+    },
+    {
+      "key": "accent",
+      "colours": [
+        "#D51E35"
+      ],
+      "swatch": "#d7261e",
+      "swatchName": "Race red",
+      "label": "Red",
+      "coverage": 0.2301
+    },
+    {
+      "key": "detail",
+      "colours": [
+        "#BEC8CE"
+      ],
+      "swatch": "#c4c7c9",
+      "swatchName": "Silver",
+      "label": "Silver",
+      "coverage": 0.1084
+    }
+  ]
+}

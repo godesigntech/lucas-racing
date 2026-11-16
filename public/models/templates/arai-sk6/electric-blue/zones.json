@@ -1,0 +1,58 @@
+{
+  "slug": "electric-blue",
+  "name": "Electric Blue",
+  "zones": [
+    {
+      "key": "base",
+      "colours": [
+        "#161A20"
+      ],
+      "swatch": "#14254d",
+      "swatchName": "Navy",
+      "label": "Navy",
+      "coverage": 0.2897
+    },
+    {
+      "key": "graphic",
+      "colours": [
+        "#003DEA",
+        "#0362DF"
+      ],
+      "swatch": "#1f5bd8",
+      "swatchName": "Grid blue",
+      "label": "Blue",
+      "coverage": 0.4322
+    },
+    {
+      "key": "accent",
+      "colours": [
+        "#EFEFEF",
+        "#FFFFFF"
+      ],
+      "swatch": "#f4f3ee",
+      "swatchName": "Paddock white",
+      "label": "White",
+      "coverage": 0.217
+    },
+    {
+      "key": "detail",
+      "colours": [
+        "#002BB8"
+      ],
+      "swatch": "#6a3fb5",
+      "swatchName": "Purple",
+      "label": "Blue",
+      "coverage": 0.0439
+    },
+    {
+      "key": "rim",
+      "colours": [
+        "#061E60"
+      ],
+      "swatch": "#14254d",
+      "swatchName": "Navy",
+      "label": "Navy",
+      "coverage": 0.0172
+    }
+  ]
+}

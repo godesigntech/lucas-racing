@@ -1,0 +1,46 @@
+{
+  "slug": "red-yellow",
+  "name": "Red and Yellow",
+  "zones": [
+    {
+      "key": "base",
+      "colours": [
+        "#353A3C"
+      ],
+      "swatch": "#4a4f55",
+      "swatchName": "Gunmetal",
+      "label": "Black",
+      "coverage": 0.5171
+    },
+    {
+      "key": "graphic",
+      "colours": [
+        "#E3DF04"
+      ],
+      "swatch": "#ffd000",
+      "swatchName": "Signal yellow",
+      "label": "Yellow",
+      "coverage": 0.3201
+    },
+    {
+      "key": "accent",
+      "colours": [
+        "#EC2124"
+      ],
+      "swatch": "#d7261e",
+      "swatchName": "Race red",
+      "label": "Red",
+      "coverage": 0.1581
+    },
+    {
+      "key": "detail",
+      "colours": [
+        "#FFFBB0"
+      ],
+      "swatch": "#c9a227",
+      "swatchName": "Gold",
+      "label": "Cream",
+      "coverage": 0.0047
+    }
+  ]
+}

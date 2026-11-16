@@ -4,16 +4,15 @@ export interface HelmetTemplateArtwork {
   thumbnail: string
 }
 
-const shared = ["emilio", "nygel", "rusinov", "pink-blade", "navy-pink", "ivory-gold", "neon-volt", "tricolore", "inferno", "strike-red", "red-fury", "sky-racer", "gold-line", "yellow-flash", "crimson-bolt", "hornet", "blue-arrow"]
-
 /**
- * Template artwork each helmet has in /public/models/templates/<model>/<slug>/. Only list
- * a design once its files are there, or its picture shows as a broken image. Designs are
- * moved between helmets by scripts/prepare-sk6-templates.mjs (--to-bell for SK-6 designs).
+ * Template artwork each helmet has in /public/models/templates/<model>/<slug>/. Each helmet
+ * has its own designs (the client's choice): the Bell KC7's from scripts/prepare-artwork-
+ * templates.mjs, the Arai SK-6's from scripts/prepare-sk6-artwork.mjs. Only list a design
+ * once its files are there, or its picture shows as a broken image.
  */
 const available: Record<string, string[]> = {
-  "bell-kc7": [...shared, "cobalt-storm"],
-  "arai-sk6": shared,
+  "bell-kc7": ["emilio", "nygel", "rusinov", "pink-blade", "navy-pink", "ivory-gold", "neon-volt", "tricolore", "inferno", "strike-red", "red-fury", "sky-racer", "gold-line", "yellow-flash", "crimson-bolt", "hornet", "blue-arrow", "cobalt-storm"],
+  "arai-sk6": ["navy-lime", "electric-blue", "red-silver", "red-yellow", "blue-current", "crimson-apex", "jade-circuit", "magenta-vector", "amber-vortex", "arctic-spear"],
 }
 const templates: Record<string, HelmetTemplateArtwork> = Object.fromEntries(
   Object.entries(available).flatMap(([modelId, slugs]) =>

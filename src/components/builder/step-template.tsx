@@ -47,9 +47,9 @@ export function StepTemplate({ products, value, modelId, onChange }: StepTemplat
           <span className="text-xs text-muted-foreground">Let AI design a helmet unique to you. Free, with unlimited changes.</span>
         </span>
       </Link>
-      {products.map((product) => {
+      {/* Each helmet has its own templates: only the chosen helmet's are offered. */}
+      {products.filter((product) => product.models.includes(modelId)).map((product) => {
         const checked = product.slug === value
-        const fits = product.models.includes(modelId)
         const artwork = getTemplateArtwork(modelId, product.slug)
         return (
           <label key={product.slug} className="cursor-pointer">
@@ -68,7 +68,6 @@ export function StepTemplate({ products, value, modelId, onChange }: StepTemplat
                 <span className="font-display text-lg font-bold uppercase leading-tight">{product.name}</span>
                 {!sketch && <span className="text-xs font-semibold">{formatPrice(product.startingPrice)}</span>}
                 <span className="text-[0.68rem] text-muted-foreground">{artwork ? "3D racing template · example colours" : "Example colours"}</span>
-                {!fits && <span className="text-[0.68rem] text-muted-foreground">Not available on this helmet</span>}
               </span>
               {checked && (
                 <span className="absolute right-2 top-2 grid size-6 place-items-center rounded-full bg-brand-ink text-paper">

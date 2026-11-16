@@ -39,6 +39,17 @@ export function useHelmetConfigurator(
 
   /** Change any fields; the result is re-validated (e.g. a size the new helmet doesn't come in). */
   const update = (changes: Partial<HelmetConfiguration>) => {
+    // Each helmet has its own templates: a helmet this design isn't drawn for moves the
+    // build to that helmet's first design, keeping everything that carries over.
+    if (changes.model && !product.models.includes(changes.model)) {
+      const next = products.find((item) => item.models.includes(changes.model!))
+      if (next) {
+        const kept = Object.fromEntries(carriedOver.map((key) => [key, config[key]]))
+        setProduct(next)
+        setConfig(normaliseConfiguration({ ...getInitialConfiguration(next, priceBook), ...kept, ...changes, template: next.slug }, next, priceBook))
+        return
+      }
+    }
     setConfig((current) => normaliseConfiguration({ ...current, ...changes }, product, priceBook))
   }
 

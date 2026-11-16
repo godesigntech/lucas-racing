@@ -224,3 +224,14 @@
     bottom: 6rem;
   }
 }
+
+/* Header logo: Lucas Racing by HydroKarts on customisation pages (see header-logo.tsx). */
+.header-logo-hydrokarts {
+  display: none;
+}
+body:has([data-customisation-page]) .header-logo-default {
+  display: none;
+}
+body:has([data-customisation-page]) .header-logo-hydrokarts {
+  display: inline-flex;
+}

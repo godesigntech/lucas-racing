@@ -1,0 +1,46 @@
+{
+  "slug": "magenta-vector",
+  "name": "Magenta Vector",
+  "zones": [
+    {
+      "key": "base",
+      "colours": [
+        "#171D35"
+      ],
+      "swatch": "#14254d",
+      "swatchName": "Navy",
+      "label": "Navy",
+      "coverage": 0.3488
+    },
+    {
+      "key": "graphic",
+      "colours": [
+        "#D80A83"
+      ],
+      "swatch": "#ff5fa2",
+      "swatchName": "Pink",
+      "label": "Magenta",
+      "coverage": 0.2446
+    },
+    {
+      "key": "accent",
+      "colours": [
+        "#EEF1F5"
+      ],
+      "swatch": "#f4f3ee",
+      "swatchName": "Paddock white",
+      "label": "White",
+      "coverage": 0.2077
+    },
+    {
+      "key": "detail",
+      "colours": [
+        "#704DCA"
+      ],
+      "swatch": "#6a3fb5",
+      "swatchName": "Purple",
+      "label": "Purple",
+      "coverage": 0.1989
+    }
+  ]
+}
