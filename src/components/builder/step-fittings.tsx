@@ -269,9 +269,11 @@ function DesignTile({ selected, name, onSelect, children }: { selected: boolean;
 export function StepVisorStrip({ priceBook, config, update }: UpdateProps & { priceBook: PriceBook }) {
   const strip = config.visorStrip ?? defaultStrip
   const option = priceBook.options.visor_strip?.find((item) => item.value === "printed" && item.isActive)
+  const holographic = priceBook.options.visor_strip?.find((item) => item.value === "holographic" && item.isActive)
   const colours = priceBook.options.base.filter((item) => item.isActive)
-  // Holographic is only on the Lucas Racing sticker, so a designed one never carries it.
-  const set = (changes: Partial<VisorStrip>) => update({ v: "2", visorStrip: { ...strip, ...changes, holographic: undefined } })
+  // Hidden where the sticker has its own price (the visor sticker page).
+  const pricesHidden = usePricesHidden()
+  const set = (changes: Partial<VisorStrip>) => update({ v: "2", visorStrip: { ...strip, ...changes } })
   const design = findStickerDesign(strip.design)
   const designPrice = option?.price ?? 0
 
@@ -282,11 +284,16 @@ export function StepVisorStrip({ priceBook, config, update }: UpdateProps & { pr
           selected={!strip.enabled}
           onSelect={() => set({ enabled: false })}
           title="Lucas Racing holographic"
-          summary="Our name on holographic film. Only our sticker comes in holographic."
+          summary="Our name on holographic film, with lucasracing.co.uk under the visor. Holographic at no extra cost."
           price={0}
           preview={
-            // eslint-disable-next-line @next/next/no-img-element -- the sticker's own artwork
-            <img src="/stickers/lucas-racing-visor.webp?v=straight-2" alt="" className="h-full w-full object-contain" />
+            // Both pieces: the top band and the lucasracing.co.uk strip under the visor.
+            <span className="flex h-full flex-col items-center justify-between">
+              {/* eslint-disable-next-line @next/next/no-img-element -- the sticker's own artwork */}
+              <img src="/stickers/lucas-racing-visor.webp?v=3" alt="" className="h-[68%] w-full object-contain" />
+              {/* eslint-disable-next-line @next/next/no-img-element -- the sticker's own artwork */}
+              <img src="/stickers/lucas-racing-visor-lower.webp?v=1" alt="" className="h-[22%] w-[54%] object-contain" />
+            </span>
           }
         />
         {option && (
@@ -294,7 +301,7 @@ export function StepVisorStrip({ priceBook, config, update }: UpdateProps & { pr
             selected={strip.enabled}
             onSelect={() => set({ enabled: true })}
             title="Design your own"
-            summary={`Choose from ${stickerDesigns.length + 1} designs, in your colours, with your name or number.`}
+            summary={`Choose from ${stickerDesigns.length + 1} designs, in your colours, with your name or number.${holographic?.price && !pricesHidden ? ` Holographic ${optionPriceLabel(holographic.price)}.` : ""}`}
             price={designPrice}
             preview={
               // eslint-disable-next-line @next/next/no-img-element -- a sample design
@@ -308,7 +315,9 @@ export function StepVisorStrip({ priceBook, config, update }: UpdateProps & { pr
         <div className="space-y-5">
           <fieldset className="space-y-2">
             <legend className="text-sm font-semibold">Choose a design</legend>
-            <p className="text-xs text-muted-foreground">Every design can be changed to your own colours below. The 3D view shows it on your visor.</p>
+            <p className="text-xs text-muted-foreground">
+              Every design can be changed to your own colours below.{pricesHidden ? "" : " The 3D view shows it on your visor."}
+            </p>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               <DesignTile selected={!design} name="Plain band" onSelect={() => set({ design: undefined, designColours: undefined })}>
                 <span className="block h-4 w-full rounded-sm" style={{ backgroundColor: strip.colour }} aria-hidden />
@@ -364,6 +373,17 @@ export function StepVisorStrip({ priceBook, config, update }: UpdateProps & { pr
 
           {!design && (
             <ColourChooser label="Sticker colour" options={colours} value={strip.colour} onChange={(colour) => set({ colour, kind: undefined, film: undefined })} priceBook={priceBook} />
+          )}
+          {holographic && (
+            <label className="flex items-start justify-between gap-4 rounded-2xl border border-carbon/15 p-3">
+              <span className="text-sm">
+                <span className="block font-semibold">Upgrade to holographic</span>
+                <span className="block text-xs text-muted-foreground">
+                  Your design printed on holographic film.{pricesHidden ? "" : ` ${holographic.price ? optionPriceLabel(holographic.price) : "Free"}`}
+                </span>
+              </span>
+              <Switch checked={Boolean(strip.holographic)} onCheckedChange={(on) => set({ holographic: on || undefined })} aria-label="Upgrade to holographic" />
+            </label>
           )}
           <SwatchGrid label="Text colour" options={colours} value={strip.textColour} onChange={(textColour) => set({ textColour })} />
 

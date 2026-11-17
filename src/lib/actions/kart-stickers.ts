@@ -101,6 +101,7 @@ export async function generateKartDesign(values: KartDesignValues): Promise<Acti
         prompt: request.prompt,
         race_number: request.raceNumber,
         driver_name: request.driverName,
+        number_background: request.numberBackground,
         finish: request.finish,
         logos: request.logos,
         image_path: imagePath,
@@ -157,7 +158,7 @@ export async function submitKartStickerRequest(values: { designId: string; notes
         ? [
             `Kart: ${design.kart_model} (${findKartLayout(design.layout)?.name ?? design.layout} layout)`,
             `Finish: ${kartFinishLabels[design.finish as keyof typeof kartFinishLabels]?.label ?? design.finish}`,
-            design.race_number ? `Number: ${design.race_number}` : "",
+            design.race_number ? `Number: ${design.race_number}${design.number_background ? ` on ${design.number_background}` : ""}` : "",
             design.driver_name ? `Name: ${design.driver_name}` : "",
             `Brief: ${design.prompt}`,
             "Design and logos in Admin > Quotes.",
@@ -200,6 +201,7 @@ function toKartDesign(row: KartStickerDesignRowLike, imageUrl: string | null): K
     prompt: row.prompt,
     raceNumber: row.race_number,
     driverName: row.driver_name,
+    numberBackground: row.number_background ?? "",
     finish: row.finish as KartDesign["finish"],
     logos: row.logos ?? [],
     imageUrl,
@@ -214,6 +216,8 @@ type KartStickerDesignRowLike = {
   prompt: string
   race_number: string
   driver_name: string
+  /** Missing on designs saved before it existed. */
+  number_background?: string | null
   finish: string
   logos: string[] | null
   created_at: string

@@ -178,6 +178,8 @@ export const productItemSchema = z.object({
   variantId: z.uuid(),
   quantity: z.number().int().min(1).max(99),
   finish: partFinishSchema.optional(),
+  /** A visor sticker's design, colours and text (place_order() keeps them for that product only). */
+  details: z.array(z.object({ label: z.string().trim().min(1).max(40), value: z.string().trim().max(200) })).max(12).optional(),
 })
 
 export const basketItemSchema = z.discriminatedUnion("kind", [helmetItemSchema, productItemSchema])

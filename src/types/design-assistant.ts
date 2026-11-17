@@ -99,6 +99,8 @@ export interface KartStickerDetails {
   prompt: string
   raceNumber: string
   driverName: string
+  /** The race number's background colour (yellow, red…), or "" for the design's own. */
+  numberBackground: string
   finish: string
 }
 

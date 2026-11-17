@@ -204,6 +204,20 @@ export async function setKartPartsLive(live: boolean): Promise<ActionResult> {
   return { ok: true, message: live ? "MS Kart parts by HydroKarts is now public." : "MS Kart parts by HydroKarts is now admin-only." }
 }
 
+/** The notice across the top of every page: its words, and whether it's showing. */
+export async function updateSiteNotice(text: string, show: boolean): Promise<ActionResult> {
+  if (isDemoMode()) return DEMO_READ_ONLY
+  if (!(await getFullAdmin())) return NOT_ALLOWED
+  const notice = typeof text === "string" ? text.trim().slice(0, 400) : ""
+  if (show && !notice) return failure("Write the notice before switching it on.")
+  const supabase = await createClient()
+  const { error } = await supabase.from("site_settings").update({ site_notice: notice, show_site_notice: show === true }).eq("id", 1)
+  if (error) return databaseError(error, "We couldn't save the notice.")
+  refreshSettings()
+  revalidatePath("/", "layout")
+  return { ok: true, message: show ? "The notice is showing on every page." : "The notice is hidden." }
+}
+
 /** Turns the News or Gallery section on or off (off: a coming-soon page until there's content). */
 export async function setSectionVisible(section: "news" | "gallery", visible: boolean): Promise<ActionResult> {
   if (isDemoMode()) return DEMO_READ_ONLY

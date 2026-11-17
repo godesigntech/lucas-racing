@@ -73,7 +73,7 @@ export function SocialLinksForm({ links }: { links: SocialLink[] }) {
                   {...register(`links.${index}.href`)}
                   aria-label={`URL for link ${index + 1}`}
                   aria-invalid={errors.links?.[index]?.href ? true : undefined}
-                  placeholder="https://www.instagram.com/lucasracing"
+                  placeholder="https://www.instagram.com/ms.lucasracing"
                   inputMode="url"
                 />
                 <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} aria-label={`Remove link ${index + 1}`}>

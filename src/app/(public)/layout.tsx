@@ -4,6 +4,7 @@ import { CustomerChatLauncher } from "@/components/chat/customer-chat-launcher"
 import { CompetitionPromoLoader } from "@/components/competition/competition-promo-loader"
 import { SiteFooter } from "@/components/layout/site-footer"
 import { SiteHeader } from "@/components/layout/site-header"
+import { SiteNotice } from "@/components/layout/site-notice"
 import { WhatsAppButton } from "@/components/layout/whatsapp-button"
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
@@ -15,6 +16,9 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       >
         Skip to content
       </a>
+      <Suspense fallback={null}>
+        <SiteNotice />
+      </Suspense>
       <SiteHeader />
       <main id="main" className="flex-1">
         {children}

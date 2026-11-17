@@ -1,6 +1,8 @@
 import { SocialIcon } from "@/components/shared/social-icon"
 import { getSiteSettings } from "@/lib/data/settings"
 
+import { WhatsAppChooser } from "./whatsapp-chooser"
+
 /**
  * A floating "Chat on WhatsApp" button, bottom right. Shown when a WhatsApp link is set
  * in Admin > Settings > Social links. Hidden on phones in the design tools
@@ -8,8 +10,11 @@ import { getSiteSettings } from "@/lib/data/settings"
  */
 export async function WhatsAppButton() {
   const settings = await getSiteSettings()
-  const link = settings.socialLinks.find((item) => item.icon === "whatsapp" && item.href)
+  const links = settings.socialLinks.filter((item) => item.icon === "whatsapp" && item.href)
+  const link = links[0]
   if (!link) return null
+  // Each team with its own WhatsApp (Lucas Racing, HydroKarts): customers pick which.
+  if (links.length > 1) return <WhatsAppChooser links={links.map(({ label, href }) => ({ label: label || "WhatsApp", href }))} />
 
   return (
     <a

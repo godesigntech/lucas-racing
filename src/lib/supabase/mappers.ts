@@ -157,6 +157,8 @@ export function toSiteSettings(row: SiteSettingsRow): SiteSettings {
     kartPartsLive: row.kart_parts_live ?? false,
     showNews: row.show_news ?? true,
     showGallery: row.show_gallery ?? true,
+    siteNotice: row.site_notice ?? "",
+    showSiteNotice: row.show_site_notice ?? false,
     socialLinks: asArray(row.social_links).map((link) => {
       const item = asObject(link)
       return { label: str(item.label), icon: str(item.icon, "instagram") as SocialIconName, href: str(item.href) } satisfies SocialLink

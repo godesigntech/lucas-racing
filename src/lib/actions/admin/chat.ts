@@ -8,7 +8,7 @@ import { notifyWorkshopReply } from "@/lib/email/notifications"
 import { createClient } from "@/lib/supabase/server"
 import { chatMessageSchema, conversationStatusSchema, type ChatMessageValues } from "@/lib/validations/chat"
 import type { ActionResult } from "@/types/account"
-import type { ConversationStatus } from "@/types/chat"
+import { departmentInfo, isDepartment, type ConversationStatus, type Department } from "@/types/chat"
 
 import { getAdmin, NOT_ALLOWED } from "./guard"
 
@@ -69,6 +69,18 @@ export async function setConversationStatus(conversationId: string, status: Conv
   if (error) return databaseError(error, "We couldn't update the conversation.")
 
   return { ok: true, message: parsed.data === "resolved" ? "Marked as resolved." : "Conversation reopened." }
+}
+
+/** Moves a conversation to the other team (Lucas Racing or HydroKarts). */
+export async function setConversationDepartment(conversationId: string, department: Department): Promise<ActionResult> {
+  if (isDemoMode()) return DEMO_READ_ONLY
+  if (!(await getAdmin())) return NOT_ALLOWED
+  if (!isDepartment(department)) return failure("Unknown team.")
+
+  const supabase = await createClient()
+  const { error } = await supabase.from("conversations").update({ department }).eq("id", conversationId)
+  if (error) return databaseError(error, "We couldn't move the conversation.")
+  return { ok: true, message: `Moved to ${departmentInfo[department].label}.` }
 }
 
 /** Opens (or creates) the conversation with a customer, for the "Message" button on their profile. */

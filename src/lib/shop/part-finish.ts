@@ -121,8 +121,13 @@ export function describeFinish(product: Pick<ShopProduct, "customFinishes" | "cu
   return (priceFinish(product, finish, priceBook)?.summary ?? []).map((line) => line.value).join(", ")
 }
 
+/** The visor sticker sold on its own (migration 20261117006100). */
+export const VISOR_STICKER_SLUG = "visor-sticker"
+
 /** Where a product's page lives: HydroKarts parts under Customisation, Delta under Racewear, the rest in the shop. */
 export function productHref(product: Pick<ShopProduct, "storeId" | "slug">): string {
+  // Visor stickers are made in their own designer.
+  if (product.storeId === "hydrokarts-parts" && product.slug === VISOR_STICKER_SLUG) return "/customisation/visor-stickers"
   if (product.storeId === "hydrokarts-parts") return `/customisation/kart-parts/${product.slug}`
   if (product.storeId === "delta") return `/racewear/${product.slug}`
   return `/shop/p/${product.slug}`

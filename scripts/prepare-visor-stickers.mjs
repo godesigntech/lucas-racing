@@ -35,7 +35,8 @@ function colourName(hex) {
   else h = (r - g) / (max - min) + 4
   h = (h * 60 + 360) % 360
   const hue = h < 15 || h >= 345 ? "Red" : h < 40 ? "Orange" : h < 68 ? "Yellow" : h < 90 ? "Lime" : h < 165 ? "Green" : h < 195 ? "Teal" : h < 250 ? "Blue" : h < 290 ? "Purple" : "Pink"
-  if (hue === "Orange" && (v < 0.6 || s < 0.3)) return v < 0.35 ? "Dark brown" : "Brown"
+  if (hue === "Orange" && v < 0.6) return v < 0.35 ? "Dark brown" : "Brown"
+  if (s < 0.3 && v > 0.8) return "Cream"
   if (v < 0.4) return `Dark ${hue.toLowerCase()}`
   if (s < 0.45 && v > 0.8) return `Light ${hue.toLowerCase()}`
   return hue

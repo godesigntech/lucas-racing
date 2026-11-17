@@ -6,15 +6,36 @@ import { databaseError, failure, validationError } from "@/lib/actions/result"
 import { getCurrentUser } from "@/lib/auth/session"
 import { DEMO_READ_ONLY, isDemoMode } from "@/lib/demo/mode"
 import { notifyCustomerMessage } from "@/lib/email/notifications"
+import { canCreateAccounts, createAdminClient } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
 import { chatMessageSchema, type ChatMessageValues } from "@/lib/validations/chat"
 import type { ActionResult } from "@/types/account"
+import { departmentInfo, isDepartment, type Department } from "@/types/chat"
 
 /** A unique violation on the message id means a retried send already landed. */
 const DUPLICATE = "23505"
 
+/**
+ * Points the customer's conversation at a team (Lucas Racing or HydroKarts). Customers
+ * can't update conversations themselves (RLS), so this checks it's theirs, then writes.
+ */
+async function setOwnDepartment(customerId: string, department: Department) {
+  if (!canCreateAccounts) return
+  await createAdminClient().from("conversations").update({ department }).eq("customer_id", customerId)
+}
+
+/** The customer picks who they're talking to; applied to their conversation if they have one. */
+export async function setChatDepartment(department: Department): Promise<ActionResult> {
+  if (isDemoMode()) return DEMO_READ_ONLY
+  const user = await getCurrentUser()
+  if (!user) return failure("Please log in to message the workshop.")
+  if (!isDepartment(department)) return failure("Choose a team.")
+  await setOwnDepartment(user.id, department)
+  return { ok: true }
+}
+
 /** Sends a message from the signed-in customer, starting their conversation on the first one. */
-export async function sendCustomerMessage(values: ChatMessageValues): Promise<ActionResult<{ conversationId: string }>> {
+export async function sendCustomerMessage(values: ChatMessageValues, department?: Department): Promise<ActionResult<{ conversationId: string }>> {
   if (isDemoMode()) return DEMO_READ_ONLY
   const user = await getCurrentUser()
   if (!user) return failure("Please log in to message the workshop.")
@@ -29,6 +50,7 @@ export async function sendCustomerMessage(values: ChatMessageValues): Promise<Ac
     .from("conversations")
     .upsert({ customer_id: user.id }, { onConflict: "customer_id", ignoreDuplicates: true })
   if (startError) return databaseError(startError, "We couldn't send your message. Please try again.")
+  if (isDepartment(department)) await setOwnDepartment(user.id, department)
 
   const { data: conversation, error: readError } = await supabase
     .from("conversations")
@@ -49,7 +71,7 @@ export async function sendCustomerMessage(values: ChatMessageValues): Promise<Ac
 
   // Email the workshop for the first unread message only, not for every message in a burst.
   if (!error && conversation.admin_unread_count === 0) {
-    after(() => notifyCustomerMessage({ conversationId: conversation.id, customerName: user.fullName, body }))
+    after(() => notifyCustomerMessage({ conversationId: conversation.id, customerName: user.fullName, body, team: isDepartment(department) ? departmentInfo[department].label : undefined }))
   }
   return { ok: true, data: { conversationId: conversation.id } }
 }

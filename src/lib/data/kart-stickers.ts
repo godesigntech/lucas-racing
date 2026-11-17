@@ -41,6 +41,7 @@ function toDesign(row: {
   prompt: string
   race_number: string
   driver_name: string
+  number_background?: string | null
   finish: string
   logos: string[] | null
   created_at: string
@@ -52,6 +53,7 @@ function toDesign(row: {
     prompt: row.prompt,
     raceNumber: row.race_number,
     driverName: row.driver_name,
+    numberBackground: row.number_background ?? "",
     finish: row.finish as KartDesign["finish"],
     logos: row.logos ?? [],
     createdAt: row.created_at,

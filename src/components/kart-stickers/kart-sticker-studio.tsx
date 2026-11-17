@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { deleteKartDesign, generateKartDesign, submitKartStickerRequest } from "@/lib/actions/kart-stickers"
-import { findKartLayout, isReadyLayout, kartFinishes, kartFinishLabels, kartLayouts, MAX_KART_LOGOS, readyKartLayouts } from "@/lib/kart-stickers/options"
+import { findKartLayout, isReadyLayout, kartFinishes, kartFinishLabels, kartLayouts, MAX_KART_LOGOS, numberBackgrounds, readyKartLayouts } from "@/lib/kart-stickers/options"
 import { cn } from "@/lib/utils"
 import { kartDesignSchema, type KartDesignValues } from "@/lib/validations/kart-stickers"
 import type { KartDesign } from "@/types/kart-stickers"
@@ -77,9 +77,10 @@ export function KartStickerStudio({ initialDesigns, initialRemaining, limit }: {
     formState: { errors },
   } = useForm<KartDesignValues>({
     resolver: zodResolver(kartDesignSchema),
-    defaultValues: { layout: readyKartLayouts[0]?.id ?? "", kartModel: "", prompt: "", raceNumber: "", driverName: "", finish: "gloss", logos: [] },
+    defaultValues: { layout: readyKartLayouts[0]?.id ?? "", kartModel: "", prompt: "", raceNumber: "", driverName: "", numberBackground: "", finish: "gloss", logos: [] },
   })
   const prompt = useWatch({ control, name: "prompt" })
+  const raceNumber = useWatch({ control, name: "raceNumber" })
   const layoutId = useWatch({ control, name: "layout" })
   const layout = findKartLayout(layoutId)
   const shown = designs.find((item) => item.id === shownId) ?? null
@@ -109,7 +110,7 @@ export function KartStickerStudio({ initialDesigns, initialRemaining, limit }: {
 
   /** Puts a saved design's choices back in the form, to try a variation. */
   function reuse(item: KartDesign) {
-    reset({ layout: item.layout, kartModel: item.kartModel, prompt: item.prompt, raceNumber: item.raceNumber, driverName: item.driverName, finish: item.finish, logos: item.logos })
+    reset({ layout: item.layout, kartModel: item.kartModel, prompt: item.prompt, raceNumber: item.raceNumber, driverName: item.driverName, numberBackground: item.numberBackground ?? "", finish: item.finish, logos: item.logos })
     setLogoSlots(Math.max(1, item.logos.length))
     toast.info("Its choices are back in the form. Change what you like and design again.")
     document.getElementById("kart-design-form")?.scrollIntoView({ behavior: "smooth", block: "start" })
@@ -237,6 +238,35 @@ export function KartStickerStudio({ initialDesigns, initialRemaining, limit }: {
               <Input {...register("driverName")} {...fieldA11y("kart-name", errors.driverName?.message)} maxLength={40} placeholder="e.g. A. Taylor" />
             </FormField>
           </div>
+          {raceNumber?.trim() && (
+            <Controller
+              control={control}
+              name="numberBackground"
+              render={({ field }) => (
+                <fieldset className="space-y-2">
+                  <legend className="text-sm font-medium">Number background</legend>
+                  <p className="text-xs text-muted-foreground">Your class races on its own colour: pick it so the number panels are right.</p>
+                  <div className="flex flex-wrap gap-2">
+                    {numberBackgrounds.map((option) => (
+                      <button
+                        key={option.id || "design"}
+                        type="button"
+                        aria-pressed={field.value === option.id}
+                        onClick={() => field.onChange(option.id)}
+                        className={cn(
+                          "flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors",
+                          field.value === option.id ? "border-brand-ink bg-accent font-semibold" : "border-carbon/15 hover:border-carbon/35",
+                        )}
+                      >
+                        {option.swatch && <span aria-hidden className="size-4 rounded-full ring-1 ring-carbon/20" style={{ backgroundColor: option.swatch }} />}
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </fieldset>
+              )}
+            />
+          )}
           <Controller
             control={control}
             name="logos"

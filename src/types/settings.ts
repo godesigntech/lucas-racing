@@ -33,6 +33,9 @@ export interface SiteSettings {
   showNews: boolean
   /** The gallery is on. */
   showGallery: boolean
+  /** A notice across the top of every page (e.g. "still in testing"), shown while switched on. */
+  siteNotice: string
+  showSiteNotice: boolean
   socialLinks: SocialLink[]
   deliveryMethods: DeliveryMethod[]
 }

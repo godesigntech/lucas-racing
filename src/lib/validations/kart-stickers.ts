@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { kartFinishes, MAX_KART_LOGOS, readyKartLayouts } from "@/lib/kart-stickers/options"
+import { kartFinishes, MAX_KART_LOGOS, numberBackgrounds, readyKartLayouts } from "@/lib/kart-stickers/options"
 
 const logoPath = z.string().regex(/^[0-9a-f-]{36}\/[0-9a-f-]{36}\.(png|jpg|webp)$/, "That logo isn't valid")
 
@@ -16,6 +16,7 @@ export const kartDesignSchema = z.object({
     .max(4, "Up to 4 characters")
     .regex(/^[0-9A-Za-z]*$/, "Letters and numbers only"),
   driverName: z.string().trim().max(40, "Keep the name under 40 characters"),
+  numberBackground: z.enum(numberBackgrounds.map((item) => item.id) as [string, ...string[]]),
   finish: z.enum(kartFinishes),
   logos: z.array(logoPath).max(MAX_KART_LOGOS, `Add up to ${MAX_KART_LOGOS} logos`),
 })

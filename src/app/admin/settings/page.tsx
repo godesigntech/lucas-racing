@@ -58,7 +58,7 @@ async function SettingsEditor() {
         <DeliveryMethodsForm methods={settings.deliveryMethods} />
       </TabsContent>
       <TabsContent value="launches">
-        <LaunchesCard kartPartsLive={settings.kartPartsLive} showNews={settings.showNews} showGallery={settings.showGallery} />
+        <LaunchesCard kartPartsLive={settings.kartPartsLive} showNews={settings.showNews} showGallery={settings.showGallery} siteNotice={settings.siteNotice} showSiteNotice={settings.showSiteNotice} />
       </TabsContent>
       <TabsContent value="admins">
         <AdminUsersCard admins={admins} currentEmail={currentEmail} canCreateAccounts={canCreateAccounts} />

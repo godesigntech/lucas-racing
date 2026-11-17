@@ -107,10 +107,13 @@ function resolveProductLine(item: ProductBasketItem, { variants, priceBook }: Ca
     const finish = item.finish ? priceFinish(live.product, item.finish, priceBook) : null
     if (!finish) return { kind: "product", available: false, item, reason: "The finish chosen for this part is no longer available. Please choose it again." }
     unitPrice += finish.extra
-    finishSummary = finish.summary
+    finishSummary = [...finish.summary]
   } else if (item.finish) {
     return { kind: "product", available: false, item, reason: "This part is no longer offered with a custom finish." }
   }
+
+  // Made-to-order details (a visor sticker's design and text) show like a finish.
+  for (const [index, detail] of (item.details ?? []).entries()) finishSummary.push({ key: `detail-${index}`, label: detail.label, value: detail.value })
 
   const quantity = Math.min(item.quantity, max)
   return {
@@ -146,7 +149,7 @@ export function basketSubtotal(lines: ResolvedBasketLine[]): number {
 export function toOrderItems(lines: AvailableLine[]) {
   return lines.map((line) =>
     line.kind === "product"
-      ? { kind: "product" as const, variantId: line.variant.id, quantity: line.quantity, finish: line.item.finish }
+      ? { kind: "product" as const, variantId: line.variant.id, quantity: line.quantity, finish: line.item.finish, details: line.item.details }
       : { kind: "helmet" as const, slug: line.item.slug, quantity: line.item.quantity, config: line.item.config },
   )
 }

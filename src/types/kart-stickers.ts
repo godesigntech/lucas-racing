@@ -8,6 +8,8 @@ export interface KartDesign {
   prompt: string
   raceNumber: string
   driverName: string
+  /** The race number's class colour, or "" for the design's own. */
+  numberBackground: string
   finish: KartFinish
   /** Storage paths in design-logos. */
   logos: string[]

@@ -2,7 +2,7 @@ import { Download } from "lucide-react"
 
 import { AdminCard } from "@/components/admin/admin-card"
 import { Button } from "@/components/ui/button"
-import { findKartLayout, kartFinishLabels, type KartFinish } from "@/lib/kart-stickers/options"
+import { findKartLayout, kartFinishLabels, numberBackgrounds, type KartFinish } from "@/lib/kart-stickers/options"
 import type { QuoteRequest } from "@/types/design-assistant"
 
 /**
@@ -17,6 +17,7 @@ export function KartStickerRequest({ quote, designUrl, logoUrls }: { quote: Quot
     ["Layout", layout ? (layout.parts ? `${layout.name} (${layout.parts})` : layout.name) : (kart?.layout ?? "")],
     ["Finish", kartFinishLabels[kart?.finish as KartFinish]?.label ?? kart?.finish ?? ""],
     ["Race number", kart?.raceNumber ?? ""],
+    ["Number background", numberBackgrounds.find((item) => item.id && item.id === kart?.numberBackground)?.label ?? (kart?.raceNumber ? "Match the design" : "")],
     ["Driver name", kart?.driverName ?? ""],
   ]
 

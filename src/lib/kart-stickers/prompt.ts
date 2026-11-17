@@ -1,4 +1,4 @@
-import { kartFinishLabels, type ReadyKartLayout } from "@/lib/kart-stickers/options"
+import { kartFinishLabels, numberBackgrounds, type ReadyKartLayout } from "@/lib/kart-stickers/options"
 import type { KartDesignValues } from "@/lib/validations/kart-stickers"
 
 /** Text from the customer, as plain words inside the prompt (no quotes to break out of). */
@@ -9,6 +9,14 @@ const finishLook: Record<KartDesignValues["finish"], string> = {
   matt: "a printed matt vinyl finish with flat, even colours",
   holographic: "holographic vinyl: a rainbow foil shimmer showing through the design",
   chrome: "chrome vinyl: mirror-like metallic areas within the design",
+}
+
+/** The class colour the number sits on, when the driver chose one. */
+function numberPanel(background: string): string {
+  const colour = numberBackgrounds.find((item) => item.id === background && item.swatch)
+  if (!colour) return ""
+  const ink = colour.id === "white" || colour.id === "yellow" ? "black" : "white"
+  return ` Each number panel has a solid ${colour.label.toLowerCase()} (${colour.swatch}) background, as the driver's class requires, with the number in ${ink} so it's easy to read.`
 }
 
 /**
@@ -25,7 +33,7 @@ export function kartDesignPrompt(layout: ReadyKartLayout, values: KartDesignValu
     `The customer's design brief: ${plain(values.prompt)}.`,
     `Style it as ${finishLook[values.finish]} (${kartFinishLabels[values.finish].label}).`,
     values.raceNumber
-      ? `Put the race number ${plain(values.raceNumber)} in a clear, bold number panel on the main front panel and on the panels for each side of the kart, in a racing font that's easy to read.`
+      ? `Put the race number ${plain(values.raceNumber)} in a clear, bold number panel on the main front panel and on the panels for each side of the kart, in a racing font that's easy to read.${numberPanel(values.numberBackground)}`
       : "Don't add any race numbers.",
     values.driverName ? `Write the driver's name, ${plain(values.driverName)}, small and neat on the panels for each side of the kart.` : "Don't add a driver's name.",
     values.logos.length

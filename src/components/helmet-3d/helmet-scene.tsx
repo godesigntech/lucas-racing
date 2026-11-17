@@ -21,7 +21,7 @@ import type { HelmetSpot } from "@/lib/helmet-3d/decal-layout"
 import { registerHelmetCapture } from "@/lib/helmet-3d/capture"
 
 import { SceneLoading } from "./scene-loading"
-import { removeVisorStrips, updateVisorStrip } from "./visor-strip"
+import { addLowerBand, removeVisorStrips, updateVisorStrip } from "./visor-strip"
 
 /** One editable area of the template, as the preview needs it. */
 export interface SceneRegion {
@@ -296,6 +296,18 @@ function HelmetModel({ url, tint = "#ffffff", finish = "gloss", paintFinish = "g
   // The strip is redrawn when its text, colours or font change; the old one stays until the new one is ready.
   const stripKey = visorStrip?.enabled ? JSON.stringify(visorStrip) : ""
   const spoilerKey = spoilerFinish ? JSON.stringify(spoilerFinish) : ""
+  // The band along the bottom of the visor (the Lucas Racing sticker's website strip) is
+  // loaded beside the model; the strip is drawn again once it's on.
+  const [lowerBand, setLowerBand] = useState<Object3D | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    addLowerBand(root, url)
+      .then((added) => !cancelled && added && setLowerBand(root))
+      .catch((error) => console.error("Couldn't add the lower visor band:", error))
+    return () => {
+      cancelled = true
+    }
+  }, [root, url])
   useEffect(() => {
     let cancelled = false
     updateVisorStrip(root, stripKey ? (JSON.parse(stripKey) as VisorStrip) : null, visorStripFilmUrl, () => cancelled).catch((error) =>
@@ -304,7 +316,7 @@ function HelmetModel({ url, tint = "#ffffff", finish = "gloss", paintFinish = "g
     return () => {
       cancelled = true
     }
-  }, [root, stripKey, visorStripFilmUrl])
+  }, [root, stripKey, visorStripFilmUrl, lowerBand])
 
   // The spoiler keeps its current look until a new film has loaded.
   useEffect(() => {

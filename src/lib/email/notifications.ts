@@ -182,12 +182,12 @@ export async function notifyNewEnquiry(enquiry: {
 // messages sends one email.
 // ---------------------------------------------------------------------------
 
-export async function notifyCustomerMessage(message: { conversationId: string; customerName: string; body: string }): Promise<void> {
+export async function notifyCustomerMessage(message: { conversationId: string; customerName: string; body: string; team?: string }): Promise<void> {
   const inbox = await workshopInbox()
   if (!inbox) return
   await sendEmail({
     to: inbox,
-    subject: `New chat message from ${message.customerName || "a customer"}`,
+    subject: `${message.team ? `[${message.team}] ` : ""}New chat message from ${message.customerName || "a customer"}`,
     html: emailLayout({
       heading: `${message.customerName || "A customer"} sent a message`,
       body: paragraphs(message.body || "Sent a photo."),

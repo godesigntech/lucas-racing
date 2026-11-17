@@ -56,6 +56,7 @@ function toKartDetails(value: unknown): KartStickerDetails {
     prompt: text("prompt"),
     raceNumber: text("raceNumber"),
     driverName: text("driverName"),
+    numberBackground: text("numberBackground"),
     finish: text("finish"),
   }
 }

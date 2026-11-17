@@ -29,6 +29,8 @@ export interface ProductBasketItem {
   imageUrl: string | null
   /** The custom finish for a customisable part (MS Kart parts by HydroKarts). */
   finish?: PartFinish
+  /** What to make, for a product made to order (a visor sticker's design, colours and text). */
+  details?: { label: string; value: string }[]
   quantity: number
 }
 

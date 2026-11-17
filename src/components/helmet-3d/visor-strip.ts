@@ -1,4 +1,4 @@
-import { BufferAttribute, CanvasTexture, Matrix4, type Mesh, MeshStandardMaterial, SRGBColorSpace, Vector3, type Object3D } from "three"
+import { BufferAttribute, BufferGeometry, CanvasTexture, DoubleSide, Matrix4, Mesh, MeshStandardMaterial, SRGBColorSpace, Vector3, type Object3D } from "three"
 
 import { findStickerDesign, recolouredSticker } from "@/lib/helmet-3d/sticker-designs"
 
@@ -270,17 +270,73 @@ function finish(canvas: HTMLCanvasElement): CanvasTexture {
 }
 
 /** The client's visor sticker, cut out of its background. */
-const BRANDED_STICKER_URL = "/stickers/lucas-racing-visor.webp?v=straight-2"
+const BRANDED_STICKER_URL = "/stickers/lucas-racing-visor.webp?v=3"
 /** How much wider than its artwork the sticker is drawn, so it reaches further round the visor. */
 const STICKER_STRETCH = 1.3
+
+/** The Lucas Racing sticker's second piece: lucasracing.co.uk along the bottom of the visor. */
+const BRANDED_LOWER_URL = "/stickers/lucas-racing-visor-lower.webp?v=1"
+const LOWER_BAND = "VisorStripLower"
 
 function findStrips(root: Object3D): Mesh[] {
   const strips: Mesh[] = []
   root.traverse((node) => {
     const mesh = node as Mesh
-    if (mesh.isMesh && mesh.name === "VisorStrip") strips.push(mesh)
+    if (mesh.isMesh && (mesh.name === "VisorStrip" || mesh.name === LOWER_BAND)) strips.push(mesh)
   })
   return strips
+}
+
+const lowerBands = new Map<string, Promise<{ aspect: number; positions: number[]; uvs: number[]; indices: number[] } | null>>()
+
+/**
+ * Adds the band along the bottom of the visor (scripts/prepare-visor-lower-band.mjs, saved
+ * beside the model as <model>-visor-lower.json) to the helmet, hidden until the Lucas
+ * Racing sticker is on. True once it's there; false for a helmet without one.
+ */
+export async function addLowerBand(root: Object3D, modelUrl: string): Promise<boolean> {
+  if (root.getObjectByName(LOWER_BAND)) return true
+  const url = modelUrl.replace(/\.glb(\?.*)?$/, "-visor-lower.json$1")
+  if (url === modelUrl) return false
+  let pending = lowerBands.get(url)
+  if (!pending) {
+    pending = fetch(url)
+      .then((response) => (response.ok ? response.json() : null))
+      .catch(() => null)
+    lowerBands.set(url, pending)
+  }
+  const band = await pending
+  if (!band || root.getObjectByName(LOWER_BAND)) return Boolean(band)
+  const geometry = new BufferGeometry()
+  geometry.setAttribute("position", new BufferAttribute(new Float32Array(band.positions), 3))
+  // Laid out by the script (it knows the band's grid), so wrapStrip() leaves it alone.
+  geometry.setAttribute("uv", new BufferAttribute(new Float32Array(band.uvs), 2))
+  geometry.setIndex(band.indices)
+  geometry.computeVertexNormals()
+  // Its points are in the model's scene space, which is the helmet root's own.
+  const mesh = new Mesh(geometry, new MeshStandardMaterial({ side: DoubleSide }))
+  mesh.name = LOWER_BAND
+  mesh.userData.stripAspect = band.aspect
+  mesh.visible = false
+  root.add(mesh)
+  return true
+}
+
+/** The website strip, at its own proportions in the middle of the lower band. */
+async function drawLower(aspect: number): Promise<CanvasTexture> {
+  const canvas = document.createElement("canvas")
+  canvas.width = Math.min(Math.round(CANVAS_HEIGHT * aspect), MAX_CANVAS_WIDTH)
+  canvas.height = CANVAS_HEIGHT
+  const image = new Image()
+  image.src = BRANDED_LOWER_URL
+  await image.decode().catch(() => undefined)
+  if (image.naturalWidth) {
+    // Its share of the band's length. The band is so long that the canvas is capped and
+    // squeezed along it, so sizing by share (not pixels) keeps the strip's proportions.
+    const width = canvas.width * Math.min(1, image.naturalWidth / image.naturalHeight / aspect)
+    canvas.getContext("2d")!.drawImage(image, (canvas.width - width) / 2, 0, width, CANVAS_HEIGHT)
+  }
+  return finish(canvas)
 }
 
 function clearArtwork(mesh: Mesh) {
@@ -297,7 +353,9 @@ export function removeVisorStrips(root: Object3D) {
 /** Prints the strip on the visor, or takes it off with null. */
 export async function updateVisorStrip(root: Object3D, strip: VisorStrip | null, filmUrl: string | null, isCancelled: () => boolean) {
   for (const mesh of findStrips(root)) {
-    if (!strip?.enabled) {
+    // The lower band carries only the Lucas Racing sticker's website strip.
+    const lower = mesh.name === LOWER_BAND
+    if (!strip?.enabled || (lower && !strip.branded)) {
       mesh.visible = false
       continue
     }
@@ -309,7 +367,7 @@ export async function updateVisorStrip(root: Object3D, strip: VisorStrip | null,
       mesh.geometry.setAttribute("uv", new BufferAttribute(wrap.uvs, 2))
       mesh.userData.stripAspect = wrap.aspect
     }
-    const texture = await drawStrip(strip, mesh.userData.stripAspect as number, filmUrl)
+    const texture = lower ? await drawLower(mesh.userData.stripAspect as number) : await drawStrip(strip, mesh.userData.stripAspect as number, filmUrl)
     if (isCancelled()) {
       texture.dispose()
       return

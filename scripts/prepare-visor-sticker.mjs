@@ -6,11 +6,15 @@
 // lies straight once it's stuck on the curved visor. The website's strip is already
 // unrolled flat, so the arch is undone here: every column is moved up until the
 // sticker's top edge is a straight line, flush with the top of the strip.
+//
+// --bottom: for a strip along the visor's bottom edge (the lucasracing.co.uk strip): its
+// bottom edge is made straight instead. Done by flipping it, straightening, flipping back.
 import sharp from "sharp"
 
-const [input = "scripts/assets/lucas-racing-visor-sticker.webp", output = "public/stickers/lucas-racing-visor.webp"] = process.argv.slice(2)
+const bottom = process.argv.includes("--bottom")
+const [input = "scripts/assets/lucas-racing-visor-sticker.webp", output = "public/stickers/lucas-racing-visor.webp"] = process.argv.slice(2).filter((arg) => !arg.startsWith("--"))
 
-const { data, info } = await sharp(input).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
+const { data, info } = await sharp(input).flip(bottom).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
 const { width: w, height: h } = info
 
 // 1. Cut the sticker out: flood fill the near-white background from the border. The
@@ -77,5 +81,7 @@ for (let x = 0; x < w; x++) {
   }
 }
 
-const result = await sharp(out, { raw: { width: w, height: h, channels: 4 } }).trim({ threshold: 0 }).webp({ quality: 92, alphaQuality: 100 }).toFile(output)
+// Trimmed first (to a buffer), then flipped back: sharp runs trim after flip in one chain.
+const trimmed = await sharp(out, { raw: { width: w, height: h, channels: 4 } }).trim({ threshold: 0 }).png().toBuffer()
+const result = await sharp(trimmed).flip(bottom).webp({ quality: 92, alphaQuality: 100 }).toFile(output)
 console.log(`${output}: ${result.width} x ${result.height}, arch of ${Math.round(Math.max(...smooth) - highest)}px straightened`)

@@ -22,6 +22,8 @@ export const demoSettings: SiteSettings = {
   kartPartsLive: false,
   showNews: true,
   showGallery: true,
+  siteNotice: "",
+  showSiteNotice: false,
   socialLinks: [
     { label: "Instagram", icon: "instagram", href: "https://www.instagram.com/" },
     { label: "Facebook", icon: "facebook", href: "https://www.facebook.com/" },

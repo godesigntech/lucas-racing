@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { MessageCircle, X } from "lucide-react"
 
-import { sendCustomerMessage } from "@/lib/actions/chat"
+import { sendCustomerMessage, setChatDepartment } from "@/lib/actions/chat"
 import { fetchCustomerConversation } from "@/lib/chat/queries"
 import { markConversationRead, useChatThread } from "@/lib/chat/use-chat-thread"
 import { useRealtimeRows } from "@/lib/chat/use-realtime-rows"
 import { createClient } from "@/lib/supabase/browser"
 import { cn } from "@/lib/utils"
+import { departmentInfo, departments, isDepartment, type Department } from "@/types/chat"
 
 import { ChatComposer } from "./chat-composer"
 import { MessageList } from "./message-list"
@@ -18,7 +19,7 @@ interface CustomerChatProps {
   firstName: string
 }
 
-type ConversationState = { id: string; unread: number } | null
+type ConversationState = { id: string; unread: number; department: Department } | null
 
 const PANEL_ID = "customer-chat-panel"
 
@@ -32,7 +33,7 @@ export function CustomerChat({ customerId, firstName }: CustomerChatProps) {
   const refresh = useCallback(async () => {
     try {
       const found = await fetchCustomerConversation(createClient(), customerId)
-      setConversation(found ? { id: found.id, unread: found.customerUnreadCount } : null)
+      setConversation(found ? { id: found.id, unread: found.customerUnreadCount, department: found.department } : null)
     } catch {
       // The badge simply stays as it was; the next resync will try again.
     }
@@ -44,7 +45,7 @@ export function CustomerChat({ customerId, firstName }: CustomerChatProps) {
     filter: `customer_id=eq.${customerId}`,
     onChange: (payload) => {
       if (payload.eventType === "DELETE") setConversation(null)
-      else setConversation({ id: payload.new.id, unread: payload.new.customer_unread_count })
+      else setConversation({ id: payload.new.id, unread: payload.new.customer_unread_count, department: isDepartment(payload.new.department) ? payload.new.department : "lucas" })
     },
     onResync: refresh,
   })
@@ -74,6 +75,7 @@ export function CustomerChat({ customerId, firstName }: CustomerChatProps) {
           onClose={close}
           customerId={customerId}
           conversationId={conversationId ?? null}
+          savedDepartment={conversation?.department ?? null}
           firstName={firstName}
         />
       )}
@@ -109,17 +111,30 @@ interface CustomerChatPanelProps {
   onClose: () => void
   customerId: string
   conversationId: string | null
+  /** The team their conversation is with, once they have one. */
+  savedDepartment: Department | null
   firstName: string
 }
 
-function CustomerChatPanel({ open, onClose, customerId, conversationId, firstName }: CustomerChatPanelProps) {
+function CustomerChatPanel({ open, onClose, customerId, conversationId, savedDepartment, firstName }: CustomerChatPanelProps) {
+  // Who they're talking to: their conversation's team, else HydroKarts on the customisation
+  // pages (flagged on <html>, header-logo.tsx) and Lucas Racing everywhere else.
+  const [chosen, setChosen] = useState<Department | null>(null)
+  const pageTeam: Department = typeof document !== "undefined" && (document.documentElement.dataset.customisation || document.documentElement.dataset.customisationInitial) ? "hydrokarts" : "lucas"
+  const department = chosen ?? savedDepartment ?? pageTeam
+  const send = useCallback((values: Parameters<typeof sendCustomerMessage>[0]) => sendCustomerMessage(values, department), [department])
   const thread = useChatThread({
     conversationId,
     viewerRole: "customer",
     customerId,
-    send: sendCustomerMessage,
+    send,
     enabled: open,
   })
+
+  function pickTeam(next: Department) {
+    setChosen(next)
+    if (conversationId) void setChatDepartment(next)
+  }
 
   useEffect(() => {
     if (!open) return
@@ -143,7 +158,7 @@ function CustomerChatPanel({ open, onClose, customerId, conversationId, firstNam
           LR
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="font-display text-xl font-bold uppercase leading-none">Lucas Racing workshop</h2>
+          <h2 className="font-display text-xl font-bold uppercase leading-none">{departmentInfo[department].label}</h2>
           <p className="mt-1 flex items-center gap-1.5 text-xs text-paper/65">
             <span className="size-1.5 rounded-full bg-brand" aria-hidden /> We usually reply within a few hours
           </p>
@@ -157,6 +172,25 @@ function CustomerChatPanel({ open, onClose, customerId, conversationId, firstNam
           <X className="size-5" aria-hidden />
         </button>
       </header>
+
+      <div role="radiogroup" aria-label="Who would you like to talk to?" className="grid grid-cols-2 gap-1.5 border-b border-carbon/10 bg-card p-2">
+        {departments.map((team) => (
+          <button
+            key={team}
+            type="button"
+            role="radio"
+            aria-checked={department === team}
+            onClick={() => pickTeam(team)}
+            className={cn(
+              "rounded-xl px-3 py-1.5 text-left transition-colors",
+              department === team ? "bg-carbon text-paper" : "text-carbon hover:bg-carbon/5",
+            )}
+          >
+            <span className="block text-sm font-semibold leading-tight">{departmentInfo[team].label}</span>
+            <span className={cn("block text-[0.7rem] leading-tight", department === team ? "text-paper/70" : "text-muted-foreground")}>{departmentInfo[team].topics}</span>
+          </button>
+        ))}
+      </div>
 
       <MessageList
         messages={thread.messages}

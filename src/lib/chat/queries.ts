@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 
 import type { ConversationRow, Database, MessageRow } from "@/lib/supabase/database.types"
-import type { ChatMessage, ChatRole, Conversation, ConversationStatus } from "@/types/chat"
+import { isDepartment, type ChatMessage, type ChatRole, type Conversation, type ConversationStatus } from "@/types/chat"
 
 // Shared by Server Components and the browser (live updates), so no server-only imports here.
 
@@ -36,6 +36,8 @@ export function toConversation(row: ConversationWithCustomer): Conversation {
     lastMessageRole: row.last_message_role as ChatRole | null,
     customerUnreadCount: row.customer_unread_count,
     adminUnreadCount: row.admin_unread_count,
+    // Before the departments migration the column isn't there: everything was Lucas Racing.
+    department: isDepartment(row.department) ? row.department : "lucas",
   }
 }
 

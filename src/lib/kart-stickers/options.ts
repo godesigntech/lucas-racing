@@ -7,6 +7,21 @@
  * To switch one on: put its blank layout in public/kart-stickers/layouts/ and give it
  * `image`, `width`, `height` and `parts` below.
  */
+/**
+ * The race number's background: classes race on different colours (yellow, red, white…),
+ * so the driver picks theirs. "" leaves it to the design.
+ */
+export const numberBackgrounds = [
+  { id: "", label: "Match my design", swatch: null },
+  { id: "yellow", label: "Yellow", swatch: "#ffd000" },
+  { id: "red", label: "Red", swatch: "#d7261e" },
+  { id: "white", label: "White", swatch: "#ffffff" },
+  { id: "blue", label: "Blue", swatch: "#1f5bd8" },
+  { id: "green", label: "Green", swatch: "#1f9d55" },
+  { id: "black", label: "Black", swatch: "#111412" },
+] as const
+export type NumberBackground = (typeof numberBackgrounds)[number]["id"]
+
 export interface KartLayout {
   id: string
   name: string

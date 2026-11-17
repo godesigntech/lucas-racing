@@ -9,11 +9,11 @@ import { ChatComposer } from "@/components/chat/chat-composer"
 import { MessageList } from "@/components/chat/message-list"
 import { UserAvatar } from "@/components/shared/user-avatar"
 import { Button } from "@/components/ui/button"
-import { sendAdminMessage, setConversationStatus } from "@/lib/actions/admin/chat"
+import { sendAdminMessage, setConversationDepartment, setConversationStatus } from "@/lib/actions/admin/chat"
 import { markConversationRead, useChatThread } from "@/lib/chat/use-chat-thread"
 import { useRealtimeRows } from "@/lib/chat/use-realtime-rows"
 import type { ChatMessageValues } from "@/lib/validations/chat"
-import type { ChatMessage, Conversation, ConversationStatus } from "@/types/chat"
+import { departmentInfo, departments, type ChatMessage, type Conversation, type ConversationStatus, type Department } from "@/types/chat"
 
 interface AdminChatThreadProps {
   conversation: Conversation
@@ -28,6 +28,7 @@ export function AdminChatThread({ conversation, initialMessages }: AdminChatThre
 
   const [status, setStatus] = useState<ConversationStatus>(conversation.status)
   const [unread, setUnread] = useState(conversation.adminUnreadCount)
+  const [team, setTeam] = useState<Department>(conversation.department)
   const [isUpdating, startUpdate] = useTransition()
 
   const send = useCallback((values: ChatMessageValues) => sendAdminMessage(id, values), [id])
@@ -56,6 +57,19 @@ export function AdminChatThread({ conversation, initialMessages }: AdminChatThre
     return () => document.removeEventListener("visibilitychange", markIfVisible)
   }, [id, unread])
 
+  function changeTeam(next: Department) {
+    if (next === team) return
+    startUpdate(async () => {
+      const result = await setConversationDepartment(id, next)
+      if (result.ok) {
+        setTeam(next)
+        toast.success(result.message)
+      } else {
+        toast.error(result.message)
+      }
+    })
+  }
+
   function changeStatus(next: ConversationStatus) {
     startUpdate(async () => {
       const result = await setConversationStatus(id, next)
@@ -81,6 +95,21 @@ export function AdminChatThread({ conversation, initialMessages }: AdminChatThre
           <h2 className="truncate font-semibold leading-tight">{name}</h2>
           <p className="truncate text-xs text-muted-foreground">{conversation.customerEmail}</p>
         </div>
+        <label className="hidden items-center gap-1.5 text-xs text-muted-foreground md:flex">
+          Team
+          <select
+            value={team}
+            disabled={isUpdating}
+            onChange={(event) => changeTeam(event.target.value as Department)}
+            className="h-8 rounded-full border border-carbon/15 bg-card px-2 text-xs font-semibold text-carbon"
+          >
+            {departments.map((value) => (
+              <option key={value} value={value}>
+                {departmentInfo[value].label}
+              </option>
+            ))}
+          </select>
+        </label>
         <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
           <Link href={`/admin/customers/${customerId}`}>
             <UserRound /> Profile

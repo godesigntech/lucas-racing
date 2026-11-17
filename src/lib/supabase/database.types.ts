@@ -48,6 +48,8 @@ export type SiteSettingsRow = {
   kart_parts_live: boolean
   show_news: boolean
   show_gallery: boolean
+  site_notice: string
+  show_site_notice: boolean
   social_links: Json
   delivery_methods: Json
   updated_at: string
@@ -323,6 +325,8 @@ export type KartStickerDesignRow = {
   prompt: string
   race_number: string
   driver_name: string
+  /** The race number's background colour (by driver class), or "" for the designer's choice. */
+  number_background: string
   /** gloss, matt, holographic or chrome. */
   finish: string
   logos: string[]
@@ -401,6 +405,8 @@ export type ConversationRow = Timestamps & {
   last_message_role: string | null
   customer_unread_count: number
   admin_unread_count: number
+  /** Which team answers it: "lucas" (karts, parts, teamwear) or "hydrokarts" (helmets, customisation). */
+  department: string
 }
 
 export type MessageRow = {

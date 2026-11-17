@@ -295,7 +295,8 @@ function carryV2Fields(
       text: strip.text.slice(0, 40),
       textColour: isHex(strip.textColour) ? strip.textColour : "#ffffff",
       font: typeof strip.font === "string" ? strip.font.slice(0, 20) : "racing",
-      // Holographic is only on the Lucas Racing sticker (client, Nov 2026), so designed ones drop it.
+      // A designed sticker is free printed; holographic is a paid upgrade (the Lucas Racing one is always holographic).
+      ...(strip.holographic ? { holographic: true } : {}),
     }
     // A ready-made design, with only its own parts' colours kept.
     const design = findStickerDesign(typeof strip.design === "string" ? strip.design : undefined)
@@ -622,7 +623,7 @@ export function summariseConfiguration(
 
   if (config.visorStrip?.enabled) {
     const design = findStickerDesign(config.visorStrip.design)
-    lines.push({ key: "visorStrip", label: "Visor sticker", value: `Bespoke${design ? ` · ${design.name} design` : ""} · ${config.visorStrip.text.trim() || "no text"}` })
+    lines.push({ key: "visorStrip", label: "Visor sticker", value: `Your own${design ? ` · ${design.name} design` : " · plain band"} · ${config.visorStrip.text.trim() || "no text"}` })
     const finish = stripTreatment(config.visorStrip) ?? { kind: "colour" as const, value: config.visorStrip.colour }
     lines.push({ key: "visorStripFinish", label: "Visor sticker finish", value: `${partLabel(priceBook, finish)}${config.visorStrip.holographic ? ", holographic" : ""}` })
   } else {

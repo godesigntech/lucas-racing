@@ -11,7 +11,7 @@ import { fetchConversations } from "@/lib/chat/queries"
 import { useRealtimeRows } from "@/lib/chat/use-realtime-rows"
 import { createClient } from "@/lib/supabase/browser"
 import { cn } from "@/lib/utils"
-import type { Conversation, ConversationStatus } from "@/types/chat"
+import { departmentInfo, departments, type Conversation, type ConversationStatus, type Department } from "@/types/chat"
 
 const tabs: { value: ConversationStatus; label: string }[] = [
   { value: "open", label: "Open" },
@@ -24,6 +24,8 @@ export function ConversationList({ initialConversations }: { initialConversation
   const [conversations, setConversations] = useState(initialConversations)
   const [status, setStatus] = useState<ConversationStatus>("open")
   const [query, setQuery] = useState("")
+  // Each team sees its own messages; "all" for whoever covers both.
+  const [team, setTeam] = useState<Department | "all">("all")
 
   // Change payloads don't include the customer's name, so reload the (short) list instead.
   const refresh = useCallback(async () => {
@@ -37,20 +39,21 @@ export function ConversationList({ initialConversations }: { initialConversation
 
   const counts = useMemo(() => {
     const result: Record<ConversationStatus, number> = { open: 0, resolved: 0 }
-    for (const conversation of conversations) result[conversation.status] += 1
+    for (const conversation of conversations) if (team === "all" || conversation.department === team) result[conversation.status] += 1
     return result
-  }, [conversations])
+  }, [conversations, team])
 
   const visible = useMemo(() => {
     const term = query.trim().toLowerCase()
     return conversations.filter(
       (conversation) =>
         conversation.status === status &&
+        (team === "all" || conversation.department === team) &&
         (!term ||
           conversation.customerName.toLowerCase().includes(term) ||
           conversation.customerEmail.toLowerCase().includes(term)),
     )
-  }, [conversations, status, query])
+  }, [conversations, status, query, team])
 
   return (
     <div className={cn("flex min-h-0 flex-col border-carbon/10 lg:border-r", activeId && "max-lg:hidden")}>
@@ -70,6 +73,22 @@ export function ConversationList({ initialConversations }: { initialConversation
               )}
             >
               {tab.label} <span className="text-muted-foreground">({counts[tab.value]})</span>
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Team">
+          {(["all", ...departments] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={team === value}
+              onClick={() => setTeam(value)}
+              className={cn(
+                "rounded-full border px-3 py-1 text-xs font-semibold transition-colors",
+                team === value ? "border-carbon bg-carbon text-paper" : "border-carbon/15 text-muted-foreground hover:text-carbon",
+              )}
+            >
+              {value === "all" ? "Both teams" : departmentInfo[value].label}
             </button>
           ))}
         </div>
@@ -126,6 +145,9 @@ function ConversationRow({ conversation, active }: { conversation: Conversation;
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">
           <p className={cn("truncate text-sm", unread ? "font-bold" : "font-semibold")}>{name}</p>
+          <span className="ml-auto shrink-0 rounded-full bg-carbon/[0.06] px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-muted-foreground">
+            {departmentInfo[conversation.department].label}
+          </span>
           {conversation.lastMessageAt && (
             <time dateTime={conversation.lastMessageAt} className="shrink-0 text-xs text-muted-foreground">
               {formatInboxTime(conversation.lastMessageAt)}
