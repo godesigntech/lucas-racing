@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light">
+<title>Log in to Lucas Racing</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f3ee;font-family:Arial,Helvetica,sans-serif;color:#111412;-webkit-text-size-adjust:100%">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#f4f3ee">Your Lucas Racing login link</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#f4f3ee" style="background:#f4f3ee"><tr><td align="center" style="padding:28px 12px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:580px">
+
+<tr><td bgcolor="#ffffff" style="background:#ffffff;border-radius:16px 16px 0 0;padding:24px 32px 20px">
+<a href="https://lucasracing.co.uk" style="text-decoration:none"><img src="https://lucasracing.co.uk/images/brand/lucas-racing-logo.png" width="148" height="60" alt="Lucas Racing" style="display:block;border:0;outline:none"></a>
+</td></tr>
+<tr><td style="padding:0;font-size:0;line-height:0">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+<td height="6" bgcolor="#f95312" style="background:#f95312;height:6px;font-size:0;line-height:0">&nbsp;</td></tr><tr>
+<td height="3" bgcolor="#111412" style="background:#111412;height:3px;font-size:0;line-height:0">&nbsp;</td></tr></table>
+</td></tr>
+
+<tr><td bgcolor="#ffffff" style="background:#ffffff;padding:32px 32px 36px">
+<h1 style="margin:0 0 18px;font-family:'Arial Black','Helvetica Neue',Arial,sans-serif;font-size:24px;line-height:1.2;font-weight:900;text-transform:uppercase;letter-spacing:.01em;color:#111412">Log in to Lucas Racing</h1>
+<div style="font-size:15px;line-height:1.6;color:#111412"><p style="margin:0 0 12px">Press the button to log in to your account. The link works once and expires soon.</p></div>
+<table role="presentation" cellpadding="0" cellspacing="0" style="margin:28px 0 0"><tr>
+<td bgcolor="#f95312" style="border-radius:999px">
+<a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=%2Faccount" target="_blank" style="display:inline-block;padding:14px 28px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#111412;text-decoration:none;border-radius:999px">Log in</a>
+</td></tr></table>
+<p style="margin:16px 0 0;font-size:12px;line-height:1.5;color:#5c635d">Button not working? Copy this link into your browser:<br><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=%2Faccount" style="color:#b23a08;word-break:break-all">{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=%2Faccount</a></p>
+<p style="margin:24px 0 0;padding-top:16px;border-top:1px solid #e8e7e0;font-size:13px;line-height:1.5;color:#5c635d">Didn&#39;t ask for this? You can ignore this email.</p>
+</td></tr>
+
+<tr><td bgcolor="#111412" style="background:#111412;border-radius:0 0 16px 16px;padding:24px 32px;font-size:12px;line-height:1.6;color:#e8e7e0">
+<p style="margin:0 0 6px;font-family:'Arial Black','Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;color:#ffffff">Lucas <span style="color:#f95312">Racing</span></p>
+<p style="margin:0 0 12px">Family-run kart racing team · UK home of MS Kart · Custom helmets and parts by HydroKarts</p>
+<p style="margin:0"><a href="https://lucasracing.co.uk" style="color:#f4f3ee;text-decoration:underline">lucasracing.co.uk</a> &nbsp;·&nbsp; <a href="https://lucasracing.co.uk/contact" style="color:#f4f3ee;text-decoration:underline">Contact us</a> &nbsp;·&nbsp; <a href="https://lucasracing.co.uk/privacy" style="color:#f4f3ee;text-decoration:underline">Privacy</a></p>
+</td></tr>
+
+</table>
+</td></tr></table>
+</body></html>

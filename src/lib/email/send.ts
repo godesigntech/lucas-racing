@@ -1,6 +1,10 @@
 import "server-only"
 
+import nodemailer, { type Transporter } from "nodemailer"
+
 import { siteConfig } from "@/config/site"
+
+import { brandedEmail, escapeHtml } from "./layout"
 
 export interface EmailMessage {
   to: string | string[]
@@ -17,21 +21,42 @@ export function siteUrl(path = ""): string {
   return `${base}${path}`
 }
 
-/** Escapes user-supplied text before it goes into an email's HTML. */
-export function escapeHtml(value: string): string {
-  return value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]!)
+export { escapeHtml }
+
+let smtpTransport: Transporter | undefined
+
+/** The mailbox's own SMTP server (Fasthosts: smtp.livemail.co.uk, port 465), when set. */
+function smtp(): Transporter | undefined {
+  const { SMTP_HOST: host, SMTP_USER: user, SMTP_PASSWORD: pass } = process.env
+  if (!host || !user || !pass) return undefined
+  const port = Number(process.env.SMTP_PORT) || 465
+  smtpTransport ??= nodemailer.createTransport({ host, port, secure: port === 465, auth: { user, pass } })
+  return smtpTransport
 }
 
 /**
- * Sends an email through Resend (https://resend.com). Until RESEND_API_KEY and
- * EMAIL_FROM are set it does nothing, so the site works without email.
+ * Sends an email through the mailbox's SMTP server when SMTP_HOST, SMTP_USER and
+ * SMTP_PASSWORD are set, otherwise through Resend (https://resend.com). With neither
+ * (or no EMAIL_FROM) it does nothing, so the site works without email.
  * Never throws: an email failing must not undo an order or message.
  */
 export async function sendEmail(message: EmailMessage): Promise<boolean> {
+  const transport = smtp()
+  // Mail hosts like Fasthosts only accept mail from the mailbox that logs in.
+  const from = process.env.EMAIL_FROM || (transport ? `Lucas Racing <${process.env.SMTP_USER}>` : undefined)
+  if (transport && from) {
+    try {
+      await transport.sendMail({ from, to: message.to, subject: message.subject, html: message.html, text: message.text, replyTo: message.replyTo })
+      return true
+    } catch (error) {
+      console.error("Email failed (SMTP):", error)
+      return false
+    }
+  }
+
   const apiKey = process.env.RESEND_API_KEY
-  const from = process.env.EMAIL_FROM
   if (!apiKey || !from) {
-    if (process.env.NODE_ENV !== "production") console.info(`[email skipped, no RESEND_API_KEY] ${message.subject}`)
+    if (process.env.NODE_ENV !== "production") console.info(`[email skipped, no SMTP or RESEND_API_KEY] ${message.subject}`)
     return false
   }
 
@@ -60,20 +85,6 @@ export async function sendEmail(message: EmailMessage): Promise<boolean> {
 }
 
 /** Shared branded layout for every email. `body` must already be escaped HTML. */
-export function emailLayout({ heading, body, action }: { heading: string; body: string; action?: { label: string; href: string } }) {
-  const button = action
-    ? `<p style="margin:28px 0 0"><a href="${action.href}" style="display:inline-block;background:#f95312;color:#111412;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:999px">${escapeHtml(action.label)}</a></p>`
-    : ""
-  return `<!doctype html>
-<html><body style="margin:0;background:#f4f3ee;font-family:Arial,Helvetica,sans-serif;color:#111412">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:24px 12px"><tr><td align="center">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden">
-<tr><td style="background:#ffffff;padding:20px 28px;border-bottom:4px solid #f95312"><img src="${siteUrl()}/images/brand/lucas-racing-logo.png" width="140" height="57" alt="Lucas Racing" style="display:block;border:0"></td></tr>
-<tr><td style="padding:28px">
-<h1 style="margin:0 0 16px;font-size:22px">${escapeHtml(heading)}</h1>
-<div style="font-size:15px;line-height:1.6">${body}</div>
-${button}
-</td></tr>
-<tr><td style="padding:16px 28px;background:#f4f3ee;font-size:12px;color:#5c635d">Lucas Racing · <a href="${siteUrl()}" style="color:#5c635d">${escapeHtml(siteUrl().replace(/^https?:\/\//, ""))}</a></td></tr>
-</table></td></tr></table></body></html>`
+export function emailLayout(email: { heading: string; body: string; action?: { label: string; href: string }; preview?: string; note?: string }) {
+  return brandedEmail({ ...email, baseUrl: siteUrl() })
 }
