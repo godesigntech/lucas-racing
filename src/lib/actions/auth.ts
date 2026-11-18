@@ -3,6 +3,7 @@
 import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 
+import { siteConfig } from "@/config/site"
 import { DEMO_READ_ONLY, isDemoMode } from "@/lib/demo/mode"
 import { safeRedirectPath } from "@/lib/safe-redirect"
 import { createClient } from "@/lib/supabase/server"
@@ -75,14 +76,13 @@ export async function signUp(values: SignupFormValues, next?: string): Promise<A
   const parsed = signupSchema.safeParse(values)
   if (!parsed.success) return validationError(parsed.error)
 
-  const origin = (await headers()).get("origin") ?? ""
   const supabase = await createClient()
   const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
     options: {
       data: { full_name: parsed.data.fullName },
-      emailRedirectTo: `${origin}/auth/confirm?next=${encodeURIComponent(destination)}`,
+      emailRedirectTo: await emailLink(destination),
     },
   })
 
@@ -106,8 +106,18 @@ export async function signUp(values: SignupFormValues, next?: string): Promise<A
 
 /** Where an email link lands: /auth/confirm signs the customer in, then sends them on to `next`. */
 async function emailLink(next: string) {
-  const origin = (await headers()).get("origin") ?? ""
-  return `${origin}/auth/confirm?next=${encodeURIComponent(next)}`
+  return `${await siteOrigin()}/auth/confirm?next=${encodeURIComponent(next)}`
+}
+
+/**
+ * The site's address for links in auth emails. The live host doesn't always pass the
+ * browser's Origin header to server actions, and a link without it isn't on Supabase's
+ * allow list, so Supabase swapped it for the bare Site URL and the email links broke.
+ */
+async function siteOrigin(): Promise<string> {
+  const origin = (await headers()).get("origin")
+  if (origin && /^https?:\/\/[^/]+$/.test(origin)) return origin
+  return (process.env.NEXT_PUBLIC_SITE_URL || siteConfig.url).replace(/\/$/, "")
 }
 
 const emailLimitMessage = "We've sent a few emails already. Please wait a few minutes and try again."

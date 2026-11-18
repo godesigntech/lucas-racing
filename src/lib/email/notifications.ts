@@ -18,6 +18,11 @@ async function workshopInbox(): Promise<string | null> {
   }
 }
 
+/** The first name for a greeting; "there" if no name was given, so a greeting never has a gap. */
+function firstNameOf(fullName: string | null | undefined): string {
+  return fullName?.trim().split(/\s+/)[0] || "there"
+}
+
 function paragraphs(text: string): string {
   return text
     .split(/\n{2,}/)
@@ -63,7 +68,7 @@ export async function notifyOrderPlaced(order: PlacedOrder): Promise<void> {
   const itemsText = order.items
     .map((item) => `${item.name} x${item.quantity} (${formatMoney(item.lineTotal)})\n${item.summary.map((line) => `  ${line.label}: ${line.value}`).join("\n")}`)
     .join("\n\n")
-  const firstName = order.customerName.split(" ")[0]
+  const firstName = firstNameOf(order.customerName)
 
   await sendEmail({
     to: order.customerEmail,
@@ -91,7 +96,7 @@ export async function notifyOrderPlaced(order: PlacedOrder): Promise<void> {
   await sendEmail({
     to: inbox,
     replyTo: order.customerEmail,
-    subject: `New order ${order.orderNumber} from ${order.customerName} – ${formatMoney(order.total)}`,
+    subject: `New order ${order.orderNumber} from ${order.customerName || order.customerEmail} – ${formatMoney(order.total)}`,
     html: emailLayout({
       heading: `New order ${order.orderNumber}`,
       body: detailRows([
@@ -199,7 +204,7 @@ export async function notifyCustomerMessage(message: { conversationId: string; c
 
 export async function notifyWorkshopReply(reply: { customerEmail: string; customerName: string; body: string }): Promise<void> {
   if (!reply.customerEmail) return
-  const firstName = reply.customerName.split(" ")[0] || "there"
+  const firstName = firstNameOf(reply.customerName)
   await sendEmail({
     to: reply.customerEmail,
     subject: "New message from the Lucas Racing workshop",
@@ -223,7 +228,7 @@ export async function notifyProofReady(proof: {
   customerEmail: string
   version: number
 }): Promise<void> {
-  const firstName = proof.customerName.split(" ")[0]
+  const firstName = firstNameOf(proof.customerName)
   const href = siteUrl(`/account/orders/${proof.orderNumber}`)
   const line =
     proof.version === 1
@@ -283,7 +288,7 @@ export async function notifyOrderStatus(update: {
   note: string
   estimatedCompletionDate: string | null
 }): Promise<void> {
-  const firstName = update.customerName.split(" ")[0]
+  const firstName = firstNameOf(update.customerName)
   const href = siteUrl(`/account/orders/${update.orderNumber}`)
 
   await sendEmail({
@@ -316,7 +321,7 @@ export async function notifyQuotePrice(quote: {
   chrome: boolean
   note: string
 }): Promise<void> {
-  const firstName = quote.customerName.split(" ")[0]
+  const firstName = firstNameOf(quote.customerName)
   const href = siteUrl("/account/quotes")
   const money = (value: number) => `£${value.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   const depositText = quote.chrome ? `${money(quote.deposit)} (10% plus the chrome base coat)` : `${money(quote.deposit)} (10%)`
@@ -350,7 +355,7 @@ export async function notifyCompetitionEntry(entry: {
   closesAt: string | null
   updated: boolean
 }): Promise<void> {
-  const firstName = entry.customerName.split(" ")[0]
+  const firstName = firstNameOf(entry.customerName)
   const href = siteUrl("/account/competition")
   const closes = entry.closesAt
     ? new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/London" }).format(new Date(entry.closesAt))
@@ -384,7 +389,7 @@ export async function notifyCompetitionVoucher(voucher: {
   placeLabel: string
   expiresAt: string
 }): Promise<void> {
-  const firstName = voucher.customerName.split(" ")[0]
+  const firstName = firstNameOf(voucher.customerName)
   const href = siteUrl("/helmet-builder")
   const expires = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/London" }).format(new Date(voucher.expiresAt))
   const intro = voucher.placeLabel
@@ -418,7 +423,7 @@ export async function notifyCompetitionWinner(winner: {
   competitionTitle: string
   prize: string
 }): Promise<void> {
-  const firstName = winner.customerName.split(" ")[0]
+  const firstName = firstNameOf(winner.customerName)
   const href = siteUrl("/account/competition")
   await sendEmail({
     to: winner.customerEmail,

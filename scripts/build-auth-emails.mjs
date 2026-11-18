@@ -6,10 +6,11 @@
 // Writes supabase/templates/<name>.html. Paste each one into Supabase:
 // Authentication > Emails > Templates, with the subject listed in supabase/templates/README.md.
 //
-// The links go to /auth/confirm with a token hash, so they work even when the customer
-// opens the email on another device or browser. Sign-up and password reset keep the
-// app's own redirect ({{ .RedirectTo }} already holds /auth/confirm?next=...), so they
-// need https://lucasracing.co.uk/** in Authentication > URL Configuration > Redirect URLs.
+// Every link is built from {{ .SiteURL }} (Authentication > URL Configuration > Site URL,
+// which must be https://lucasracing.co.uk) and goes to /auth/confirm with a token hash, so it
+// works even when the customer opens the email on another device or browser. It doesn't use
+// {{ .RedirectTo }}: Supabase swaps that for the bare Site URL when the address isn't on its
+// allow list, which broke the link.
 import { mkdirSync, writeFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
@@ -30,7 +31,7 @@ const templates = [
     heading: "Welcome to Lucas Racing",
     body: p("Thanks for signing up. Please confirm your email address to finish setting up your account.") +
       p("Once you're in you can save helmet designs, follow your orders and message the team."),
-    action: { label: "Confirm my email", href: "{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=email" },
+    action: { label: "Confirm my email", href: siteLink("email", "/account") },
     note: "Didn't sign up? You can ignore this email and no account will be made.",
   },
   {
@@ -40,7 +41,7 @@ const templates = [
     heading: "Reset your password",
     body: p("We got a request to reset the password for your Lucas Racing account.") +
       p("Press the button to choose a new password. The link works once and expires soon."),
-    action: { label: "Choose a new password", href: "{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=recovery" },
+    action: { label: "Choose a new password", href: siteLink("recovery", "/reset-password") },
     note: "Didn't ask for this? You can ignore this email. Your password stays the same.",
   },
   {
@@ -101,7 +102,7 @@ the whole HTML file into the message body, then save.
 |---|---|---|
 ${templates.map((t) => `| ${t.name} | ${t.subject} | \`${t.file}.html\` |`).join("\n")}
 
-The links need \`https://lucasracing.co.uk/**\` in **Authentication > URL Configuration > Redirect URLs**,
-and Site URL set to \`https://lucasracing.co.uk\`.
+The links are built from the Site URL in **Authentication > URL Configuration**, which must be
+\`https://lucasracing.co.uk\`.
 `
 writeFileSync(join(outDir, "README.md"), readme)

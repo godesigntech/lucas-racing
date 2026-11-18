@@ -15,5 +15,5 @@ the whole HTML file into the message body, then save.
 | Invite user | You're invited to Lucas Racing | `invite-user.html` |
 | Reauthentication | Your Lucas Racing security code | `reauthentication.html` |
 
-The links need `https://lucasracing.co.uk/**` in **Authentication > URL Configuration > Redirect URLs**,
-and Site URL set to `https://lucasracing.co.uk`.
+The links are built from the Site URL in **Authentication > URL Configuration**, which must be
+`https://lucasracing.co.uk`.

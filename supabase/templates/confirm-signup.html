@@ -23,9 +23,9 @@
 <div style="font-size:15px;line-height:1.6;color:#111412"><p style="margin:0 0 12px">Thanks for signing up. Please confirm your email address to finish setting up your account.</p><p style="margin:0 0 12px">Once you're in you can save helmet designs, follow your orders and message the team.</p></div>
 <table role="presentation" cellpadding="0" cellspacing="0" style="margin:28px 0 0"><tr>
 <td bgcolor="#f95312" style="border-radius:999px">
-<a href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=email" target="_blank" style="display:inline-block;padding:14px 28px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#111412;text-decoration:none;border-radius:999px">Confirm my email</a>
+<a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=%2Faccount" target="_blank" style="display:inline-block;padding:14px 28px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#111412;text-decoration:none;border-radius:999px">Confirm my email</a>
 </td></tr></table>
-<p style="margin:16px 0 0;font-size:12px;line-height:1.5;color:#5c635d">Button not working? Copy this link into your browser:<br><a href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=email" style="color:#b23a08;word-break:break-all">{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=email</a></p>
+<p style="margin:16px 0 0;font-size:12px;line-height:1.5;color:#5c635d">Button not working? Copy this link into your browser:<br><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=%2Faccount" style="color:#b23a08;word-break:break-all">{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=%2Faccount</a></p>
 <p style="margin:24px 0 0;padding-top:16px;border-top:1px solid #e8e7e0;font-size:13px;line-height:1.5;color:#5c635d">Didn&#39;t sign up? You can ignore this email and no account will be made.</p>
 </td></tr>
 

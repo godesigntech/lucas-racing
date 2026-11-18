@@ -25,12 +25,17 @@ export { escapeHtml }
 
 let smtpTransport: Transporter | undefined
 
-/** The mailbox's own SMTP server (Fasthosts: smtp.livemail.co.uk, port 465), when set. */
+/** The mailbox's own SMTP server (Lucas Racing: mail.lucasracing.co.uk, port 465), when set. */
 function smtp(): Transporter | undefined {
   const { SMTP_HOST: host, SMTP_USER: user, SMTP_PASSWORD: pass } = process.env
   if (!host || !user || !pass) return undefined
   const port = Number(process.env.SMTP_PORT) || 465
-  smtpTransport ??= nodemailer.createTransport({ host, port, secure: port === 465, auth: { user, pass } })
+  // Short time limits: email is sent after the response, and a hosted function is stopped
+  // after a few seconds, so a slow mail server must fail (and log) rather than hang.
+  smtpTransport ??= nodemailer.createTransport({
+    host, port, secure: port === 465, auth: { user, pass },
+    connectionTimeout: 8_000, greetingTimeout: 8_000, socketTimeout: 12_000,
+  })
   return smtpTransport
 }
 
@@ -42,7 +47,7 @@ function smtp(): Transporter | undefined {
  */
 export async function sendEmail(message: EmailMessage): Promise<boolean> {
   const transport = smtp()
-  // Mail hosts like Fasthosts only accept mail from the mailbox that logs in.
+  // Mail servers usually only accept mail from the mailbox that logs in.
   const from = process.env.EMAIL_FROM || (transport ? `Lucas Racing <${process.env.SMTP_USER}>` : undefined)
   if (transport && from) {
     try {
