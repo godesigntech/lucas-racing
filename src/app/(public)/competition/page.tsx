@@ -26,12 +26,12 @@ const steps = [
   {
     icon: Share2,
     title: "Share it",
-    text: `Share your helmet on your story and tag two friends, plus both of us: ${shareTags}.`,
+    text: `Share your helmet on your story or as a post, and tag two friends, plus both of us: ${shareTags}.`,
   },
   {
     icon: Send,
     title: "Enter it",
-    text: "On the Review step, press Enter the competition and paste the link to your story. One entry per person; you can change your design until entries close.",
+    text: "On the Review step, press Enter the competition and paste the link to your story or post. One entry per person; you can change your design until entries close.",
   },
   {
     icon: Vote,
@@ -142,6 +142,13 @@ export default async function CompetitionPage() {
           <div id="rules" className="scroll-mt-28 rounded-3xl border border-carbon/10 bg-card p-6">
             <ScrollText className="size-6 text-brand-ink" aria-hidden />
             <h2 className="mt-3 font-display text-2xl font-bold uppercase">Rules</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Read the{" "}
+              <Link href="/competition/terms" className="font-medium text-carbon underline underline-offset-2">
+                full competition terms
+              </Link>
+              .
+            </p>
             {competition.rules.length > 0 ? (
               <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-sm">
                 {competition.rules.map((rule) => (

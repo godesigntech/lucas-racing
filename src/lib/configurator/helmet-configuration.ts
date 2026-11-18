@@ -286,6 +286,10 @@ function carryV2Fields(
 
   if (typeof input.aero === "string" && input.aero) config.aero = input.aero.slice(0, 60)
   if (typeof input.visor === "string" && input.visor) config.visor = input.visor.slice(0, 60)
+  // The visor fitting kit is an Arai SK-6 part.
+  if (config.model === "arai-sk6" && typeof input.visorKit === "string" && activeOptions(priceBook, "visor_kit").some((option) => option.value === input.visorKit)) {
+    config.visorKit = input.visorKit
+  }
 
   const strip = input.visorStrip
   if (strip && typeof strip === "object" && typeof strip.text === "string") {
@@ -293,6 +297,7 @@ function carryV2Fields(
       enabled: Boolean(strip.enabled),
       colour: isHex(strip.colour) ? strip.colour : "#101114",
       text: strip.text.slice(0, 40),
+      ...(typeof strip.bottomText === "string" && strip.bottomText.trim() ? { bottomText: strip.bottomText.slice(0, 25) } : {}),
       textColour: isHex(strip.textColour) ? strip.textColour : "#ffffff",
       font: typeof strip.font === "string" ? strip.font.slice(0, 20) : "racing",
       // A designed sticker is free printed; holographic is a paid upgrade (the Lucas Racing one is always holographic).
@@ -409,6 +414,18 @@ export function describePart(priceBook: PriceBook, config: HelmetConfiguration, 
 }
 
 /** The build drawn as the helmet illustration and the 3D shell. */
+/** The chosen visor fitting kit (Arai SK-6), if any. */
+export function visorKitOption(config: HelmetConfiguration, priceBook: PriceBook) {
+  if (config.model !== "arai-sk6" || !config.visorKit) return undefined
+  return priceBook.options.visor_kit?.find((option) => option.value === config.visorKit && option.isActive)
+}
+
+/** The kit's parts in its colour, over any colours picked for them one by one. */
+function visorKitColours(config: HelmetConfiguration, priceBook: PriceBook): Partial<Record<"visorPivot" | "sideVents" | "screws", string>> {
+  const colour = visorKitOption(config, priceBook)?.swatch
+  return colour ? { visorPivot: colour, sideVents: colour, screws: colour } : {}
+}
+
 export function configurationToLook(product: CatalogProduct, config: HelmetConfiguration, priceBook: PriceBook): HelmetLook {
   const base = partSwatch(priceBook, config.regions?.base ?? { kind: config.baseKind, value: config.base })
   const graphicPaint = partOf(config, "graphic")
@@ -429,7 +446,7 @@ export function configurationToLook(product: CatalogProduct, config: HelmetConfi
     accent: accent?.colour ?? product.look.accent,
     accentTexture: accent?.texture,
     trim: config.trim,
-    accessories: Object.fromEntries(partsFor(config.model).map(({ key }) => [key, config[key]])),
+    accessories: { ...Object.fromEntries(partsFor(config.model).map(({ key }) => [key, config[key]])), ...visorKitColours(config, priceBook) },
     spoiler: config.spoiler === "yes",
     number: config.raceNumber?.trim() || undefined,
     name: config.riderName?.trim() || undefined,
@@ -547,6 +564,8 @@ export function calculateHelmetPrice(
 
   const visor = extras.visors?.find((item) => item.id === config.visor)
   if (visor?.price) lines.push({ label: `${visor.name} visor`, amount: visor.price })
+  const kit = visorKitOption(config, priceBook)
+  if (kit?.price) lines.push({ label: `${kit.label} visor fitting kit`, amount: kit.price })
 
   if (config.visorStrip?.enabled) {
     const strip = priceBook.options.visor_strip?.find((item) => item.value === "printed")
@@ -620,10 +639,13 @@ export function summariseConfiguration(
 
   const visor = extras.visors?.find((item) => item.id === config.visor)
   if (visor) lines.push({ key: "visor", label: "Visor", value: visor.name })
+  const kitOption = visorKitOption(config, priceBook)
+  if (kitOption) lines.push({ key: "visorKit", label: "Visor fitting kit", value: kitOption.label })
 
   if (config.visorStrip?.enabled) {
     const design = findStickerDesign(config.visorStrip.design)
     lines.push({ key: "visorStrip", label: "Visor sticker", value: `Your own${design ? ` · ${design.name} design` : " · plain band"} · ${config.visorStrip.text.trim() || "no text"}` })
+    lines.push({ key: "visorStripBottom", label: "Visor bottom strip", value: config.visorStrip.bottomText?.trim() || "No text" })
     const finish = stripTreatment(config.visorStrip) ?? { kind: "colour" as const, value: config.visorStrip.colour }
     lines.push({ key: "visorStripFinish", label: "Visor sticker finish", value: `${partLabel(priceBook, finish)}${config.visorStrip.holographic ? ", holographic" : ""}` })
   } else {

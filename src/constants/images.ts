@@ -42,18 +42,21 @@ export const images = {
   },
 } satisfies Record<string, SiteImage>
 
-/** Cut-out helmet photos on transparent backgrounds, used in the Customisation section. */
+/**
+ * Cut-out helmet photos on transparent backgrounds, used in the Customisation section:
+ * helmets HydroKarts painted (scripts/prepare-helmet-photo.mjs cuts them out).
+ */
 export const helmetPhotos = {
-  araiSk6: {
-    src: "/images/helmets/arai-sk6-custom.webp",
-    alt: "Custom-painted Arai SK-6 kart helmet in orange, blue and lime with a mirrored visor",
-    width: 647,
-    height: 550,
+  paisley: {
+    src: "/images/helmets/arai-paisley.webp",
+    alt: "Arai kart helmet painted by HydroKarts in a gold and blue paisley film with black stripes and a gold mirrored visor",
+    width: 900,
+    height: 854,
   },
-  bellKc7: {
-    src: "/images/helmets/bell-kc7-championship.webp",
-    alt: "Bell KC7 kart helmet in fluorescent yellow with green and grey racing lines",
-    width: 685,
-    height: 693,
+  tealGold: {
+    src: "/images/helmets/arai-teal-gold.webp",
+    alt: "Arai kart helmet painted by HydroKarts in teal and white with gold pinstripes and a green mirrored visor",
+    width: 900,
+    height: 751,
   },
 } satisfies Record<string, SiteImage & { width: number; height: number }>

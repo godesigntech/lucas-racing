@@ -17,12 +17,12 @@ const highlights = [
 
 // Where the film swatches float around the helmets (large screens).
 const chipSpots = [
-  "left-[2%] top-[8%] -rotate-12",
-  "right-[4%] top-[2%] rotate-6",
-  "left-[-4%] bottom-[30%] rotate-12",
-  "right-[-2%] bottom-[34%] -rotate-6",
-  "left-[16%] bottom-[2%] rotate-3",
-  "right-[18%] bottom-[-2%] -rotate-12",
+  "left-[2%] top-[8%]",
+  "right-[4%] top-[2%]",
+  "left-[-4%] bottom-[30%]",
+  "right-[-2%] bottom-[34%]",
+  "left-[16%] bottom-[2%]",
+  "right-[18%] bottom-[-2%]",
 ]
 
 /** Customisation by HydroKarts: helmets now, bespoke MS Kart parts next. Dark and colourful. */
@@ -96,18 +96,18 @@ export async function HomeCustomisation() {
 
           <div className="absolute inset-[10%] grid grid-cols-[1.1fr_1fr] items-center">
             <Image
-              src={helmetPhotos.araiSk6.src}
-              alt={helmetPhotos.araiSk6.alt}
-              width={helmetPhotos.araiSk6.width}
-              height={helmetPhotos.araiSk6.height}
+              src={helmetPhotos.paisley.src}
+              alt={helmetPhotos.paisley.alt}
+              width={helmetPhotos.paisley.width}
+              height={helmetPhotos.paisley.height}
               sizes="(min-width: 1024px) 26vw, 50vw"
               className="relative z-10 drop-shadow-[0_30px_40px_rgb(0_0_0/0.6)]"
             />
             <Image
-              src={helmetPhotos.bellKc7.src}
-              alt={helmetPhotos.bellKc7.alt}
-              width={helmetPhotos.bellKc7.width}
-              height={helmetPhotos.bellKc7.height}
+              src={helmetPhotos.tealGold.src}
+              alt={helmetPhotos.tealGold.alt}
+              width={helmetPhotos.tealGold.width}
+              height={helmetPhotos.tealGold.height}
               sizes="(min-width: 1024px) 24vw, 45vw"
               className="-ml-8 mt-16 drop-shadow-[0_30px_40px_rgb(0_0_0/0.6)]"
             />

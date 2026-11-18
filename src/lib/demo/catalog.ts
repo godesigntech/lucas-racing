@@ -23,6 +23,7 @@ export const demoSettings: SiteSettings = {
   showNews: true,
   showGallery: true,
   siteNotice: "",
+  checkoutEnabled: true,
   showSiteNotice: false,
   socialLinks: [
     { label: "Instagram", icon: "instagram", href: "https://www.instagram.com/" },

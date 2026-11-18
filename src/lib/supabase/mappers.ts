@@ -158,6 +158,7 @@ export function toSiteSettings(row: SiteSettingsRow): SiteSettings {
     showNews: row.show_news ?? true,
     showGallery: row.show_gallery ?? true,
     siteNotice: row.site_notice ?? "",
+    checkoutEnabled: row.checkout_enabled ?? true,
     showSiteNotice: row.show_site_notice ?? false,
     socialLinks: asArray(row.social_links).map((link) => {
       const item = asObject(link)

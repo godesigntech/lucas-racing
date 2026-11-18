@@ -21,6 +21,8 @@ export interface StickerDesign {
   id: string
   name: string
   file: string
+  /** The design cut to each helmet visor template (Bell KC7, Arai SK-6), when it differs. */
+  files?: Partial<Record<string, string>>
   parts: StickerDesignPart[]
   /**
    * A cut-out sticker drawn as a flat view of the visor (its top edge curving up at the
@@ -56,16 +58,27 @@ export function stickerColours(design: StickerDesign, chosen: Record<string, str
 
 const svgCache = new Map<string, Promise<string>>()
 
-/** The design's SVG with each part in its chosen colour, as a data URL ready to draw. */
-export async function recolouredSticker(design: StickerDesign, chosen: Record<string, string> = {}): Promise<string> {
-  let pending = svgCache.get(design.file)
+/** The design file for this helmet (each is cut to its own visor template). */
+export function stickerFile(design: StickerDesign, model?: string): string {
+  return (model && design.files?.[model]) || design.file
+}
+
+/** The Lucas Racing holographic top band, cut to this helmet visor template. */
+export function brandedStickerUrl(model?: string): string {
+  return model === "arai-sk6" ? "/stickers/lucas-racing-visor-arai.webp?v=1" : "/stickers/lucas-racing-visor-bell.webp?v=1"
+}
+
+/** The design's SVG (in this helmet's shape) with each part in its chosen colour, as a data URL ready to draw. */
+export async function recolouredSticker(design: StickerDesign, chosen: Record<string, string> = {}, model?: string): Promise<string> {
+  const file = stickerFile(design, model)
+  let pending = svgCache.get(file)
   if (!pending) {
-    pending = fetch(design.file).then((response) => {
-      if (!response.ok) throw new Error(`Sticker design ${design.file} didn't load`)
+    pending = fetch(file).then((response) => {
+      if (!response.ok) throw new Error(`Sticker design ${file} didn't load`)
       return response.text()
     })
-    pending.catch(() => svgCache.delete(design.file))
-    svgCache.set(design.file, pending)
+    pending.catch(() => svgCache.delete(file))
+    svgCache.set(file, pending)
   }
   let svg = await pending
   for (const [key, colour] of Object.entries(stickerColours(design, chosen))) {

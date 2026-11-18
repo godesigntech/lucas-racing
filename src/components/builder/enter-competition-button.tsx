@@ -216,7 +216,7 @@ export function EnterCompetitionButton({ competition, slug, productName, getConf
               <div className="space-y-2 rounded-2xl border border-carbon/10 p-3">
                 <p className="text-sm font-semibold">1. Share your design</p>
                 <p className="text-xs text-muted-foreground">
-                  Share your helmet on your story and tag two friends, plus both of us: <strong className="text-carbon">{shareTags}</strong>.
+                  Share your helmet on your story or as a post, and tag two friends, plus both of us: <strong className="text-carbon">{shareTags}</strong>.
                 </p>
                 <div className="flex items-center gap-3">
                   <span className="grid h-20 w-28 shrink-0 place-items-center overflow-hidden rounded-xl bg-[radial-gradient(circle_at_50%_35%,#ffffff,#e8e7e0_80%)] ring-1 ring-carbon/10">
@@ -246,19 +246,19 @@ export function EnterCompetitionButton({ competition, slug, productName, getConf
 
               <div className="space-y-1.5">
                 <label htmlFor={postId} className="text-sm font-semibold">
-                  2. Link to your story
+                  2. Link to your story or post
                 </label>
                 <Input
                   id={postId}
                   type="url"
                   inputMode="url"
-                  placeholder="https://www.instagram.com/stories/…"
+                  placeholder="https://www.instagram.com/…"
                   value={postUrl}
                   maxLength={500}
                   onChange={(event) => setPostUrl(event.target.value)}
                   aria-invalid={postUrl.length > 0 && !postValid}
                 />
-                <p className="text-xs text-muted-foreground">Copy the link to your story on Instagram or Facebook.</p>
+                <p className="text-xs text-muted-foreground">Copy the link to your story or post on Instagram or Facebook.</p>
               </div>
 
               <div className="flex items-start gap-2.5 text-sm">
@@ -271,6 +271,14 @@ export function EnterCompetitionButton({ competition, slug, productName, getConf
                   I agree to the{" "}
                   <Link href="/competition#rules" target="_blank" className="font-medium underline underline-offset-2">
                     competition rules
+                  </Link>{" "}
+                  and{" "}
+                  <Link href="/competition/terms" target="_blank" className="font-medium underline underline-offset-2">
+                    terms
+                  </Link>
+                  . See how we use your details in our{" "}
+                  <Link href="/privacy" target="_blank" className="font-medium underline underline-offset-2">
+                    Privacy Policy
                   </Link>
                   .
                 </label>

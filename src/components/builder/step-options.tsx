@@ -14,6 +14,7 @@ import type { HelmetModel } from "@/types/helmet"
 
 import { SwatchGrid } from "./swatch-grid"
 import { PartOptions } from "./part-options"
+import { VisorKitOptions } from "./visor-kit-options"
 
 type Update = (changes: Partial<HelmetConfiguration>) => void
 
@@ -286,6 +287,7 @@ export function StepTrims({ priceBook, config, update }: { priceBook: PriceBook;
         </div>
       ))}
       </section>
+      <VisorKitOptions config={config} priceBook={priceBook} update={update} />
       <PartOptions key={config.model} config={config} priceBook={priceBook} update={update} />
     </div>
   )

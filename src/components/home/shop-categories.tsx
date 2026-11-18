@@ -33,7 +33,7 @@ const categories: Category[] = [
     title: "Custom helmets",
     description: "Arai SK-6 and Bell KC7 designs, finished by HydroKarts",
     href: "/customisation",
-    image: helmetPhotos.araiSk6,
+    image: helmetPhotos.paisley,
     cutout: true,
   },
   {

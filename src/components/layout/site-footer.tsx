@@ -85,7 +85,7 @@ export async function SiteFooter() {
           <p>
             © {siteConfig.copyrightYear} {settings.businessName}. All rights reserved.
           </p>
-          <ul className="flex gap-5">
+          <ul className="flex flex-wrap gap-x-5 gap-y-2">
             {legalNav.map((item) => (
               <li key={item.href}>
                 <Link href={item.href} className="transition-colors hover:text-brand">

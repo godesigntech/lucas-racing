@@ -96,6 +96,8 @@ export interface VisorStrip {
   /** That design's part colours, by part key, where the customer changed them. */
   designColours?: Record<string, string>
   text: string
+  /** The bottom strip text (up to 25 characters), on designed stickers. */
+  bottomText?: string
   textColour?: string
   font?: string
 }
@@ -156,6 +158,8 @@ export interface HelmetConfiguration extends HelmetPartColours {
   /** How the spoilers are finished. Left out, they stay clear. */
   spoilerFinish?: SpoilerFinish
   visorStrip?: VisorStrip
+  /** Arai SK-6 visor fitting kit (visor_kit option): visor pivot, side covers and screws in one colour. */
+  visorKit?: string
 
   /** Treatment per editable region of the template, keyed by region key. */
   regions?: Record<string, RegionTreatment>

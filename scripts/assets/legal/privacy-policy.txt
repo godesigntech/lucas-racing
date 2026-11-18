@@ -1,0 +1,105 @@
+# Privacy Policy
+
+This policy explains how personal information is used when you visit lucasracing.co.uk, create an account, upload a design, enquire, place an order or enter a promotion. Lucas Racing and HydroKarts are separate businesses using this website. The business named as seller for your purchase is responsible for its processing of your order information as explained below.
+
+Last updated [CONFIRM PUBLICATION DATE]
+
+## Who is responsible for your information
+
+Lucas Racing is the trading name of KARTS, PARTS & PREP LIMITED, at The Croft House, 750 Ripponden Road, Oldham, OL4 2LP. You can contact it at howard@lucasracing.co.uk or on 0161 628 9221.
+
+HydroKarts is the trading name of [CONFIRM NEW CUSTOMISATION COMPANY REGISTERED NAME], at 19 Harwood Court, Riverside Park Industrial Estate, Middlesbrough, TS2 1PU. You can contact it at info@hydrokarts.co.uk or through the WhatsApp link on lucasracing.co.uk.
+
+Each business can access only its own customer records. Access to customer account information, designs and order details is separated between the sellers. Neither business can view the other business's customer records. Each business handles privacy enquiries and requests about its own customers using its contact details above. If you have bought from both businesses, contact each about the information it holds.
+
+[CONFIRM RESPONSIBILITY AND PRIVACY CONTACT FOR GENERAL WEBSITE TECHNICAL DATA AND ACCOUNTS OR DESIGNS NOT YET ASSOCIATED WITH A SELLER]
+
+## Information involved
+
+Depending on how you use the website and what you order, the information involved can include the following.
+
+- Your name, email address, telephone number, billing and delivery addresses, and communications with us.
+- Account details, saved designs, uploaded images and artwork, names or race numbers you ask to include, and design approvals.
+- Orders, payment status, transaction references, invoices, refunds and complaint records.
+- Sizes and body measurements needed for custom racewear, including information collected by Delta during personalisation.
+- Device and connection information, such as IP address, browser information and security logs, and cookie preferences where used.
+- Competition entries, voting information and prize or voucher records where you take part.
+- Marketing preferences and any consent you give for publication of identifiable images or designs.
+
+Payments are processed using Stripe. [CONFIRM WHICH PAYMENT DETAILS EACH SELLER CAN ACCESS AND WHICH ARE HANDLED ONLY BY STRIPE]
+
+Please provide only the personal information needed for your enquiry, order or design. If you submit information about another person, make sure you are entitled to do so and that they know how it will be used.
+
+## Purposes and lawful grounds
+
+We use information needed to answer a requested quote, accept and fulfil an order, arrange personalisation, take payment and deliver goods on the basis of taking steps at your request before a contract or performing the contract with you. If you do not provide information necessary for those steps, we may be unable to process the order and will explain what is needed.
+
+We keep transaction and accounting information to meet legal obligations. We may also process information to respond to legal requests where the law requires it.
+
+We use relevant information to keep the website and accounts secure, prevent fraud, resolve enquiries and complaints, and establish or defend legal claims on the basis of our legitimate interests, where those interests are not overridden by your rights. Those interests are operating the service reliably, protecting customers and managing business disputes fairly.
+
+Where we rely on consent, including for marketing or optional tracking that requires it, we will explain the choice and how you can withdraw it. Withdrawal does not affect the lawfulness of processing already carried out. A privacy notice acknowledgement is separate from consent to marketing.
+
+[CONFIRM LAWFUL BASIS FOR WEBSITE ACCOUNTS FREE AI DESIGNS AND COMPETITION ADMINISTRATION INCLUDING INFORMATION ABOUT CHILDREN]
+
+## Service providers and fulfilment partners
+
+Each seller shares relevant information with the people and organisations needed to provide its service, including payment providers, delivery companies, website and account providers, and suppliers helping to fulfil the item. Sharing is limited to what is necessary for the purpose. Using the same website does not give either seller access to the other seller's customer records.
+
+Lucas Racing shares relevant order and contact details with Delta Racewear so Delta can contact you about the personalisation included in your Lucas Racing racewear order. This may include collecting or confirming measurements, names, numbers and design details. Lucas Racing remains your seller.
+
+[CONFIRM DELTA LEGAL NAME DATA PROTECTION ROLE PRIVACY CONTACT AND HOW MEASUREMENTS ARE SHARED AND RETAINED]
+
+Stripe provides payment processing. Relevant payment and transaction information is handled through Stripe to process payments and refunds. Stripe also describes its own processing, including fraud prevention and legal compliance, in its [Privacy Policy](https://stripe.com/gb/privacy).
+
+Visibility Groups Ltd provides website hosting. Other relevant providers are [CONFIRM ACCOUNT EMAIL AI ANALYTICS DELIVERY AND OTHER FULFILMENT PROVIDERS OR SUFFICIENTLY SPECIFIC RECIPIENT CATEGORIES]. Professional advisers or authorities may receive information where needed for accounting, legal obligations or claims.
+
+## AI design tools and uploaded artwork
+
+When you use an AI design feature, your prompt, images and related information may need to be sent to the provider operating that feature. The details of this processing are [CONFIRM AI PROVIDER INPUTS RETENTION TRAINING USE AND COUNTRIES OF PROCESSING].
+
+Please avoid putting unnecessary personal information into prompts or uploaded examples. Any public gallery or publication of your design will be explained separately when you choose that feature or enter a competition.
+
+## Transfers outside the United Kingdom
+
+[CONFIRM WHICH PROVIDERS PROCESS DATA OUTSIDE THE UK THE COUNTRIES OR RELEVANT LOCATIONS AND THE APPLICABLE ADEQUACY OR TRANSFER SAFEGUARDS]
+
+Where a restricted international transfer takes place, the responsible business will use the legal transfer mechanism required for it. You can contact the privacy contact above for information about the safeguards and how to obtain a copy where applicable.
+
+## How long information is kept
+
+We retain information for the purpose it was collected for and for applicable legal requirements. The relevant periods or criteria are set out below.
+
+- Enquiries that do not become orders are retained for [CONFIRM ENQUIRY RETENTION PERIOD OR CRITERIA].
+- Order, payment and accounting records are retained for [CONFIRM ORDER AND ACCOUNTING RETENTION PERIODS AND START POINT].
+- Approved designs, proofs, production records and measurements are retained for [CONFIRM DESIGN AND MEASUREMENT RETENTION INCLUDING DELTA].
+- Accounts and saved AI designs are retained for [CONFIRM ACCOUNT AND SAVED DESIGN RETENTION AND INACTIVITY RULE].
+- Technical and security logs are retained for [CONFIRM LOG RETENTION PERIOD].
+- Competition and voucher records are retained for [CONFIRM COMPETITION RETENTION CONSISTENT WITH THE PUBLISHED COMPETITION PROMISE].
+- Marketing consent and opt-out records are retained for [CONFIRM MARKETING AND SUPPRESSION RECORD PERIOD OR CRITERIA].
+
+Some information may need to be retained longer where a dispute, legal obligation or claim makes it necessary. Where that applies, access and use will be limited to the relevant purpose. Information that no longer needs to be kept will be deleted or anonymised using the relevant retention process.
+
+## Your choices and rights
+
+Depending on the circumstances, you can ask to access your personal information, correct it, erase it, restrict its use, or obtain a portable copy. You can withdraw consent where we rely on it. You can object to processing based on legitimate interests, and you have an absolute right to object to use of your information for direct marketing.
+
+Contact the responsible business using the details above. We may ask for information needed to verify your identity or understand the request and will respond within the applicable legal time limits. Some rights have legal exceptions, including where records must be kept to meet an obligation or deal with a claim.
+
+Marketing messages will explain how to unsubscribe. You can also contact us to change your preference. Service messages about an existing order are sent where necessary to deal with that order.
+
+## Cookies and similar technologies
+
+Our [Cookie Policy](cookie-policy.html) explains storage and access technologies and how to control them. Where consent is required, it must be given before the technology operates. Any use relying on a legal exception will meet the conditions of that exception, including an objection mechanism where required.
+
+## Children and young racers
+
+We may need information about a young racer to fulfil an order placed for them, such as garment measurements or a name included in a design. A parent or guardian should provide or authorise the necessary details where appropriate. Our account, design-tool and competition arrangements for children are [CONFIRM AGE RULES PARENTAL INVOLVEMENT AND CHILD FRIENDLY PRIVACY INFORMATION].
+
+## Complaints
+
+Contact the relevant privacy contact if you have a concern about how your information is handled. You can also complain to the Information Commissioner's Office through [ico.org.uk](https://ico.org.uk/make-a-complaint/).
+
+## Updates
+
+We will update this policy when the way the website or the businesses handle information changes. The date at the top identifies the latest version. Where required, we will provide further information before using information for a new purpose.

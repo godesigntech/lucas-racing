@@ -3,6 +3,7 @@
 import { after } from "next/server"
 
 import { getCurrentUser } from "@/lib/auth/session"
+import { getSiteSettings } from "@/lib/data/settings"
 import { isDemoMode } from "@/lib/demo/mode"
 import { notifyOrderPlaced } from "@/lib/email/notifications"
 import { createClient } from "@/lib/supabase/server"
@@ -31,6 +32,8 @@ export async function placeOrder(input: PlaceOrderInput): Promise<ActionResult<{
   if (isDemoMode()) return { ok: false, message: "Demo mode: orders aren't saved. Connect Supabase to take real orders." }
   const user = await getCurrentUser()
   if (!user) return failure("Please log in to place your order.")
+  // Switched off in Admin > Settings > Launches: no orders until it's back on.
+  if (!(await getSiteSettings()).checkoutEnabled) return failure("We're not taking orders online yet. Please send us your basket for a quote.")
 
   const parsed = placeOrderSchema.safeParse(input)
   if (!parsed.success) return validationError(parsed.error)

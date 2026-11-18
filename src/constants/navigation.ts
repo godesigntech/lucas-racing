@@ -82,6 +82,9 @@ export const authNav = {
 } satisfies Record<string, NavItem>
 
 export const legalNav: NavItem[] = [
-  { label: "Privacy Policy", href: "/privacy" },
   { label: "Terms", href: "/terms" },
+  { label: "Delivery & Returns", href: "/delivery-returns" },
+  { label: "Privacy Policy", href: "/privacy" },
+  { label: "Cookies", href: "/cookies" },
+  { label: "Contact & Complaints", href: "/complaints" },
 ]

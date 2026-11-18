@@ -18,13 +18,13 @@ import { canSeeKartParts, listCustomParts } from "@/lib/data/shop"
 
 export const metadata: Metadata = {
   title: "MS Kart parts by HydroKarts",
-  description: "Selected MS Kart parts finished in your own colours, hydro-dip films or chrome by HydroKarts.",
+  description: "Selected MS Kart parts finished in your own paint colours or hydro-dip films by HydroKarts.",
 }
 
 const steps = [
   { icon: Wrench, title: "Choose a part", text: "Genuine MS Kart components, picked because they look great finished." },
-  { icon: Paintbrush, title: "Pick your finish", text: "Paint from our palette, any film from the hydro-dip library, or polished chrome." },
-  { icon: Droplets, title: "We finish it", text: "Dipped, painted or chromed and lacquered in the HydroKarts workshop." },
+  { icon: Paintbrush, title: "Pick your finish", text: "Paint from our palette, or any film from the hydro-dip library." },
+  { icon: Droplets, title: "We finish it", text: "Dipped or painted, then lacquered in the HydroKarts workshop." },
   { icon: PackageCheck, title: "Ready to fit", text: "Collected at the circuit or posted to you, with your other parts." },
 ]
 
@@ -44,11 +44,11 @@ async function KartParts() {
       <ComingSoon
         eyebrow="Customisation"
         title="MS Kart parts by HydroKarts"
-        description="Selected MS Kart parts finished in your own colours, hydro-dip films or chrome, to match your helmet and kart."
+        description="Selected MS Kart parts finished in your own paint colours or hydro-dip films, to match your helmet and kart."
         image={images.connor}
         points={[
           "Selected MS Kart components ready to customise",
-          "The same paints, hydro-dip films and chrome as our custom helmets",
+          "The same paints and hydro-dip films as our custom helmets",
           "Match your parts to your helmet and team colours",
           "Order with your other parts in one basket",
         ]}
@@ -65,7 +65,7 @@ async function KartParts() {
       <PageHero
         eyebrow="Customisation"
         title="MS Kart parts by HydroKarts"
-        description="Genuine MS Kart parts finished in your own colours, hydro-dip films or chrome, to match your helmet and your kart."
+        description="Genuine MS Kart parts finished in your own paint colours or hydro-dip films, to match your helmet and your kart."
         image={images.connor}
         brand={<KartPartsBrand preload />}
       />

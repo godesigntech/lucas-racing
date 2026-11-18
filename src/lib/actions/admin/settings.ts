@@ -204,6 +204,19 @@ export async function setKartPartsLive(live: boolean): Promise<ActionResult> {
   return { ok: true, message: live ? "MS Kart parts by HydroKarts is now public." : "MS Kart parts by HydroKarts is now admin-only." }
 }
 
+/** Lets customers place orders, or (off) has the basket ask for a quote instead. */
+export async function setCheckoutEnabled(enabled: boolean): Promise<ActionResult> {
+  if (isDemoMode()) return DEMO_READ_ONLY
+  if (!(await getFullAdmin())) return NOT_ALLOWED
+  const supabase = await createClient()
+  const { error } = await supabase.from("site_settings").update({ checkout_enabled: enabled === true }).eq("id", 1)
+  if (error) return databaseError(error, "We couldn't change that.")
+  refreshSettings()
+  revalidatePath("/basket")
+  revalidatePath("/checkout")
+  return { ok: true, message: enabled ? "Checkout is on: customers can place orders." : "Checkout is off: the basket asks for a quote." }
+}
+
 /** The notice across the top of every page: its words, and whether it's showing. */
 export async function updateSiteNotice(text: string, show: boolean): Promise<ActionResult> {
   if (isDemoMode()) return DEMO_READ_ONLY

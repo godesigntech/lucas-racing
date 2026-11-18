@@ -16,7 +16,7 @@ import type { HelmetConfiguration } from "@/types/configurator"
 import type { CatalogProduct } from "@/types/product"
 
 /** Everything that carries over when the customer switches template: only the design's own colours reset. */
-const carriedOver = [...helmetParts.map(({ key }) => key), "model", "size", "route", "finish", "baseCoat", "trim", "spoiler", "aero", "spoilers", "spoilerFinish", "visor", "visorStrip", "personalisation", "logos", "riderName", "namePosition", "raceNumber", "numberPosition", "logo", "logoPosition"] as const
+const carriedOver = [...helmetParts.map(({ key }) => key), "model", "size", "route", "finish", "baseCoat", "trim", "spoiler", "aero", "spoilers", "spoilerFinish", "visor", "visorKit", "visorStrip", "personalisation", "logos", "riderName", "namePosition", "raceNumber", "numberPosition", "logo", "logoPosition"] as const
 
 /**
  * Builder state: the chosen template (design) and the build on it, kept valid as

@@ -35,6 +35,8 @@ export interface SiteSettings {
   showGallery: boolean
   /** A notice across the top of every page (e.g. "still in testing"), shown while switched on. */
   siteNotice: string
+  /** Customers can place orders (off: the basket asks for a quote instead, e.g. while prices are confirmed). */
+  checkoutEnabled: boolean
   showSiteNotice: boolean
   socialLinks: SocialLink[]
   deliveryMethods: DeliveryMethod[]

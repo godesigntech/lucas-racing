@@ -49,6 +49,7 @@ export type SiteSettingsRow = {
   show_news: boolean
   show_gallery: boolean
   site_notice: string
+  checkout_enabled: boolean
   show_site_notice: boolean
   social_links: Json
   delivery_methods: Json

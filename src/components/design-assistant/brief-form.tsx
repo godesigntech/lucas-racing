@@ -1,6 +1,7 @@
 "use client"
 
 import { useId, useState } from "react"
+import Link from "next/link"
 import { ImagePlus, Loader2, Wand2, X } from "lucide-react"
 import { toast } from "react-toastify"
 
@@ -171,7 +172,13 @@ export function BriefForm({ onSubmit, busy = false, submitLabel = "Design my hel
       <Button type="submit" size="lg" className="w-full" disabled={!canSubmit}>
         {busy ? <Loader2 className="animate-spin" aria-hidden /> : <Wand2 aria-hidden />} {busy ? "Designing…" : submitLabel}
       </Button>
-      <p className="text-center text-xs text-muted-foreground">Free, and you can change it as often as you like.</p>
+      <p className="text-center text-xs text-muted-foreground">
+        Free, and you can change it as often as you like. Your brief and any photos go to our AI design provider to make the design; see our{" "}
+        <Link href="/privacy" className="underline underline-offset-2">
+          Privacy Policy
+        </Link>
+        .
+      </p>
     </form>
   )
 }

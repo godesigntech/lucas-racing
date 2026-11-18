@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { Minus, Plus, ShoppingBag } from "lucide-react"
 import { toast } from "react-toastify"
@@ -11,31 +11,44 @@ import { helmetFontStyles } from "@/components/helmet-3d/helmet-fonts"
 import { Button } from "@/components/ui/button"
 import { basket } from "@/lib/basket/basket-store"
 import { formatMoney } from "@/lib/format"
-import { findStickerDesign, recolouredSticker, stickerColours } from "@/lib/helmet-3d/sticker-designs"
+import { findStickerDesign, stickerColours } from "@/lib/helmet-3d/sticker-designs"
+import { cn } from "@/lib/utils"
 import type { PriceBook } from "@/types/catalog"
 import type { HelmetConfiguration, VisorStrip } from "@/types/configurator"
 import type { ShopProduct } from "@/types/shop"
+
+import { StickerPreview } from "./sticker-preview"
 
 const LUCAS = "Lucas Racing holographic"
 const DESIGN = "Your design"
 const DESIGN_HOLO = "Your design, holographic"
 
+/** Stickers are cut to each brand's visor template, so the customer says which they have. */
+const helmets = [
+  { id: "bell-kc7", label: "Bell", fits: "Bell KC7 and other Bell helmets" },
+  { id: "arai-sk6", label: "Arai", fits: "Arai SK-6 and other Arai helmets" },
+] as const
+type HelmetId = (typeof helmets)[number]["id"]
+
 const startStrip: VisorStrip = { enabled: false, colour: "#101114", text: "", textColour: "#ffffff", font: "racing" }
 
 /**
  * A visor sticker bought on its own: the Lucas Racing holographic one, or one of the
- * designs in the customer's colours. Uses the helmet builder's sticker step, with this
+ * designs in the customer's colours, cut to their helmet (Bell or Arai). Every sticker is
+ * a top band and a bottom strip. Uses the helmet builder's sticker step, with this
  * product's own prices (£15, or £30 for a design in holographic).
  */
 export function VisorStickerShop({ product, priceBook }: { product: ShopProduct; priceBook: PriceBook }) {
   const [strip, setStrip] = useState<VisorStrip>(startStrip)
+  const [helmet, setHelmet] = useState<HelmetId>("bell-kc7")
   const [quantity, setQuantity] = useState(1)
   const variantFor = (name: string) => product.variants.find((variant) => variant.options.Sticker === name)
   const variant = !strip.enabled ? variantFor(LUCAS) : strip.holographic ? variantFor(DESIGN_HOLO) : variantFor(DESIGN)
   const design = findStickerDesign(strip.design)
+  const helmetInfo = helmets.find((item) => item.id === helmet)!
 
-  // The step works on a helmet build; here only its sticker matters.
-  const config = { visorStrip: strip } as HelmetConfiguration
+  // The step works on a helmet build; here only its sticker and the helmet's shape matter.
+  const config = { visorStrip: strip, model: helmet } as HelmetConfiguration
   const update = (changes: Partial<HelmetConfiguration>) => {
     if (changes.visorStrip) setStrip(changes.visorStrip)
   }
@@ -44,15 +57,19 @@ export function VisorStickerShop({ product, priceBook }: { product: ShopProduct;
 
   /** What the workshop prints, saved with the order. */
   function details(): { label: string; value: string }[] {
-    if (!strip.enabled) return [{ label: "Sticker", value: "Lucas Racing holographic, with lucasracing.co.uk strip" }]
+    const shape = { label: "Helmet", value: helmetInfo.label }
+    if (!strip.enabled) return [shape, { label: "Sticker", value: "Lucas Racing holographic, with lucasracing.co.uk bottom strip" }]
     const font = helmetFontStyles.find((item) => item.id === strip.font)?.label ?? strip.font
+    const ink = colourName(strip.textColour ?? "#ffffff")
     const colours = design
       ? design.parts.map((part) => `${part.label} ${colourName(stickerColours(design, strip.designColours)[part.key])}`).join(", ")
       : colourName(strip.colour)
     return [
+      shape,
       { label: "Design", value: design ? design.name : "Plain band" },
       { label: "Colours", value: colours },
-      { label: "Text", value: strip.text.trim() ? `${strip.text.trim()} (${colourName(strip.textColour ?? "#ffffff")}, ${font} lettering)` : "No text" },
+      { label: "Top band text", value: strip.text.trim() ? `${strip.text.trim()} (${ink}, ${font} lettering)` : "No text" },
+      { label: "Bottom strip text", value: strip.bottomText?.trim() ? `${strip.bottomText.trim()} (${ink}, ${font} lettering)` : "No text" },
     ]
   }
 
@@ -64,7 +81,7 @@ export function VisorStickerShop({ product, priceBook }: { product: ShopProduct;
         productSlug: product.slug,
         storeId: product.storeId,
         name: product.title,
-        variantLabel: variant.options.Sticker ?? "",
+        variantLabel: `${variant.options.Sticker ?? ""} · ${helmetInfo.label}`,
         imageUrl: product.images[0] ?? null,
         details: details(),
       },
@@ -83,11 +100,34 @@ export function VisorStickerShop({ product, priceBook }: { product: ShopProduct;
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-start">
       <div className="space-y-4 lg:sticky lg:top-24">
-        <StickerPreview strip={strip} />
+        <fieldset className="space-y-2">
+          <legend className="text-sm font-semibold">Your helmet</legend>
+          <div className="grid grid-cols-2 gap-2">
+            {helmets.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                aria-pressed={helmet === item.id}
+                onClick={() => setHelmet(item.id)}
+                className={cn(
+                  "rounded-2xl border p-3 text-left transition",
+                  helmet === item.id ? "border-brand-ink ring-2 ring-brand-ink/20" : "border-carbon/15 hover:border-carbon/35",
+                )}
+              >
+                <span className="block font-display text-2xl font-bold uppercase leading-none">{item.label}</span>
+                <span className="mt-1 block text-xs text-muted-foreground">{item.fits}</span>
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">Each brand&apos;s visor is a different shape, so your sticker is cut to fit yours.</p>
+        </fieldset>
+        <StickerPreview strip={strip} model={helmet} />
         <div className="space-y-4 rounded-3xl border border-carbon/10 bg-card p-5">
           <div className="flex items-baseline justify-between gap-3">
             <div>
-              <p className="text-sm text-muted-foreground">{variant?.options.Sticker}</p>
+              <p className="text-sm text-muted-foreground">
+                {variant?.options.Sticker} · {helmetInfo.label}
+              </p>
               <p className="font-display text-5xl font-bold">{variant ? formatMoney(variant.price * quantity) : "Not available"}</p>
             </div>
             <div className="flex items-center gap-1 rounded-full border border-carbon/15 p-1" role="group" aria-label="Quantity">
@@ -103,69 +143,13 @@ export function VisorStickerShop({ product, priceBook }: { product: ShopProduct;
           <Button type="button" size="lg" className="w-full" disabled={!variant} onClick={add}>
             <ShoppingBag /> Add to basket
           </Button>
-          <p className="text-xs text-muted-foreground">Ordering a helmet? One sticker comes free with every helmet, chosen in the helmet builder.</p>
+          <p className="text-xs text-muted-foreground">Every sticker is a top band and a bottom strip. Ordering a helmet? One comes free with every helmet, chosen in the helmet builder.</p>
         </div>
       </div>
 
       <PricesHiddenContext.Provider value>
         <StepVisorStrip priceBook={priceBook} config={config} update={update} />
       </PricesHiddenContext.Provider>
-    </div>
-  )
-}
-
-/** The sticker laid flat: both Lucas Racing pieces, or the design in the chosen colours with the text. */
-function StickerPreview({ strip }: { strip: VisorStrip }) {
-  const design = findStickerDesign(strip.design)
-  const colourKey = useMemo(() => JSON.stringify(strip.designColours ?? {}), [strip.designColours])
-  const [art, setArt] = useState<{ key: string; url: string } | null>(null)
-  const artKey = design ? `${design.id}:${colourKey}` : ""
-
-  useEffect(() => {
-    if (!design) return
-    let cancelled = false
-    recolouredSticker(design, JSON.parse(colourKey) as Record<string, string>)
-      .then((url) => !cancelled && setArt({ key: `${design.id}:${colourKey}`, url }))
-      .catch(() => undefined)
-    return () => {
-      cancelled = true
-    }
-  }, [design, colourKey])
-
-  const font = helmetFontStyles.find((item) => item.id === strip.font) ?? helmetFontStyles[0]
-  const text = strip.text.trim()
-
-  return (
-    <div className="flex aspect-[16/7] flex-col items-center justify-center gap-3 rounded-3xl bg-[radial-gradient(circle_at_50%_40%,#ffffff,#e6e5df_85%)] p-6 ring-1 ring-carbon/10" aria-label="Your visor sticker">
-      {!strip.enabled ? (
-        <>
-          {/* eslint-disable-next-line @next/next/no-img-element -- the sticker's own artwork */}
-          <img src="/stickers/lucas-racing-visor.webp?v=3" alt="Lucas Racing holographic visor sticker" className="w-full object-contain" />
-          {/* eslint-disable-next-line @next/next/no-img-element -- the sticker's own artwork */}
-          <img src="/stickers/lucas-racing-visor-lower.webp?v=1" alt="lucasracing.co.uk strip" className="w-[54%] object-contain" />
-        </>
-      ) : (
-        <div className="relative w-full">
-          {design ? (
-            art?.key === artKey ? (
-              // eslint-disable-next-line @next/next/no-img-element -- the recoloured design
-              <img src={art.url} alt={`${design.name} visor sticker`} className="w-full object-contain" />
-            ) : (
-              <div className="aspect-[1200/210] w-full animate-pulse rounded-xl bg-carbon/5" />
-            )
-          ) : (
-            <div className="aspect-[11/1] w-full rounded-md ring-1 ring-carbon/15" style={{ backgroundColor: strip.colour }} />
-          )}
-          {text && (
-            <span
-              className="pointer-events-none absolute inset-x-0 top-[28%] -translate-y-1/2 truncate px-[22%] text-center text-[clamp(0.8rem,3.2vw,1.6rem)] leading-none"
-              style={{ color: strip.textColour ?? "#ffffff", fontFamily: font.family, fontWeight: font.weight, fontStyle: font.italic ? "italic" : "normal", top: design ? "28%" : "50%" }}
-            >
-              {text}
-            </span>
-          )}
-        </div>
-      )}
     </div>
   )
 }

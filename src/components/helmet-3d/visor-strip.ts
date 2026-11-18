@@ -1,6 +1,6 @@
 import { BufferAttribute, BufferGeometry, CanvasTexture, DoubleSide, Matrix4, Mesh, MeshStandardMaterial, SRGBColorSpace, Vector3, type Object3D } from "three"
 
-import { findStickerDesign, recolouredSticker } from "@/lib/helmet-3d/sticker-designs"
+import { brandedStickerUrl, findStickerDesign, recolouredSticker, stickerColours } from "@/lib/helmet-3d/sticker-designs"
 
 import type { VisorStrip } from "@/types/configurator"
 
@@ -136,7 +136,7 @@ async function shimmer(context: CanvasRenderingContext2D, width: number, filmUrl
 }
 
 /** The band and its lettering. */
-async function drawStrip(strip: VisorStrip, aspect: number, filmUrl: string | null): Promise<CanvasTexture> {
+async function drawStrip(strip: VisorStrip, aspect: number, filmUrl: string | null, model: string | undefined): Promise<CanvasTexture> {
   const canvas = document.createElement("canvas")
   canvas.width = Math.min(Math.round(CANVAS_HEIGHT * aspect), MAX_CANVAS_WIDTH)
   canvas.height = CANVAS_HEIGHT
@@ -147,10 +147,10 @@ async function drawStrip(strip: VisorStrip, aspect: number, filmUrl: string | nu
     // is about twice as long as the sticker, so it keeps (nearly) its own proportions and
     // the rest of the band is left clear rather than stretching the artwork.
     const sticker = new Image()
-    sticker.src = BRANDED_STICKER_URL
+    sticker.src = brandedStickerUrl(model)
     await sticker.decode().catch(() => undefined)
     if (sticker.naturalWidth) {
-      const width = Math.min(canvas.width, CANVAS_HEIGHT * (sticker.naturalWidth / sticker.naturalHeight) * STICKER_STRETCH)
+      const width = shareOf(canvas.width, (sticker.naturalWidth / sticker.naturalHeight) * STICKER_STRETCH, aspect)
       context.drawImage(sticker, (canvas.width - width) / 2, 0, width, CANVAS_HEIGHT)
     }
     return finish(canvas)
@@ -161,11 +161,11 @@ async function drawStrip(strip: VisorStrip, aspect: number, filmUrl: string | nu
     // A cut-out sticker: laid along the visor's top edge at its own proportions, the
     // rest of the band left clear, like the Lucas Racing sticker.
     const image = new Image()
-    image.src = await recolouredSticker(design, strip.designColours)
+    image.src = await recolouredSticker(design, strip.designColours, model)
     await image.decode().catch(() => undefined)
     if (!image.naturalWidth) return finish(canvas)
     const flat = straighten(image)
-    const width = Math.min(canvas.width, CANVAS_HEIGHT * (flat.canvas.width / flat.canvas.height) * SHAPED_STRETCH)
+    const width = shareOf(canvas.width, (flat.canvas.width / flat.canvas.height) * STICKER_STRETCH, aspect)
     const left = (canvas.width - width) / 2
     context.drawImage(flat.canvas, left, 0, width, CANVAS_HEIGHT)
     if (strip.holographic && filmUrl) {
@@ -182,12 +182,27 @@ async function drawStrip(strip: VisorStrip, aspect: number, filmUrl: string | nu
   if (design) {
     // A ready-made design fills the whole strip, in the customer's colours.
     const image = new Image()
-    image.src = await recolouredSticker(design, strip.designColours)
+    image.src = await recolouredSticker(design, strip.designColours, model)
     await image.decode().catch(() => undefined)
     if (image.naturalWidth) context.drawImage(image, 0, 0, canvas.width, canvas.height)
     if (strip.holographic && filmUrl) await shimmer(context, canvas.width, filmUrl)
   } else {
     await paintBand(context, canvas.width, strip, filmUrl)
+    // Cut to the helmet's sticker template (the Lucas Racing sticker's outline), like every
+    // other sticker, with the lettering centred inside it.
+    const outline = new Image()
+    outline.src = brandedStickerUrl(model)
+    await outline.decode().catch(() => undefined)
+    if (outline.naturalWidth) {
+      const flat = straighten(outline)
+      const width = shareOf(canvas.width, (outline.naturalWidth / outline.naturalHeight) * STICKER_STRETCH, aspect)
+      context.globalCompositeOperation = "destination-in"
+      context.drawImage(outline, (canvas.width - width) / 2, 0, width, CANVAS_HEIGHT)
+      context.globalCompositeOperation = "source-over"
+      const text = strip.text.trim()
+      if (text) await letter(context, strip, text, canvas.width / 2, CANVAS_HEIGHT * flat.bandDepth * 0.5, CANVAS_HEIGHT * flat.bandDepth * 0.62, width * 0.42)
+      return finish(canvas)
+    }
   }
 
   const text = strip.text.trim()
@@ -213,8 +228,6 @@ async function letter(context: CanvasRenderingContext2D, strip: VisorStrip, text
   context.fillText(text, x, y + size * 0.04)
 }
 
-/** How much wider than its artwork a cut-out design is drawn (as the Lucas Racing sticker). */
-const SHAPED_STRETCH = 1
 
 /**
  * A cut-out design is drawn as a flat view of the visor: its top edge curves up towards
@@ -269,10 +282,20 @@ function finish(canvas: HTMLCanvasElement): CanvasTexture {
   return texture
 }
 
-/** The client's visor sticker, cut out of its background. */
-const BRANDED_STICKER_URL = "/stickers/lucas-racing-visor.webp?v=3"
-/** How much wider than its artwork the sticker is drawn, so it reaches further round the visor. */
-const STICKER_STRETCH = 1.3
+/**
+ * How much wider than its artwork a sticker is drawn, so it reaches round the visor like
+ * the real one. The Lucas Racing sticker and the designs share one template size per
+ * helmet, so they're drawn alike.
+ */
+const STICKER_STRETCH = 1.15
+
+/**
+ * A sticker's width on the band's canvas: its share of the band's length. Long bands cap
+ * the canvas and squeeze it along the band, so sizing by share keeps true proportions.
+ */
+function shareOf(canvasWidth: number, stickerAspect: number, bandAspect: number) {
+  return canvasWidth * Math.min(1, stickerAspect / bandAspect)
+}
 
 /** The Lucas Racing sticker's second piece: lucasracing.co.uk along the bottom of the visor. */
 const BRANDED_LOWER_URL = "/stickers/lucas-racing-visor-lower.webp?v=1"
@@ -322,20 +345,34 @@ export async function addLowerBand(root: Object3D, modelUrl: string): Promise<bo
   return true
 }
 
-/** The website strip, at its own proportions in the middle of the lower band. */
-async function drawLower(aspect: number): Promise<CanvasTexture> {
+/**
+ * The bottom strip, part of every visor sticker: lucasracing.co.uk on the Lucas Racing
+ * sticker; on the others the same strip shape in the sticker's main colour, with the
+ * customer's bottom text (up to 25 characters) in their lettering.
+ */
+async function drawLower(aspect: number, strip: VisorStrip): Promise<CanvasTexture> {
   const canvas = document.createElement("canvas")
   canvas.width = Math.min(Math.round(CANVAS_HEIGHT * aspect), MAX_CANVAS_WIDTH)
   canvas.height = CANVAS_HEIGHT
+  const context = canvas.getContext("2d")!
   const image = new Image()
   image.src = BRANDED_LOWER_URL
   await image.decode().catch(() => undefined)
-  if (image.naturalWidth) {
-    // Its share of the band's length. The band is so long that the canvas is capped and
-    // squeezed along it, so sizing by share (not pixels) keeps the strip's proportions.
-    const width = canvas.width * Math.min(1, image.naturalWidth / image.naturalHeight / aspect)
-    canvas.getContext("2d")!.drawImage(image, (canvas.width - width) / 2, 0, width, CANVAS_HEIGHT)
-  }
+  if (!image.naturalWidth) return finish(canvas)
+  const width = shareOf(canvas.width, image.naturalWidth / image.naturalHeight, aspect)
+  const left = (canvas.width - width) / 2
+  context.drawImage(image, left, 0, width, CANVAS_HEIGHT)
+  if (strip.branded) return finish(canvas)
+
+  // The strip's shape, filled with the sticker's main colour.
+  const design = findStickerDesign(strip.design)
+  const main = design ? (stickerColours(design, strip.designColours)[design.parts[0]?.key ?? ""] ?? strip.colour) : strip.colour
+  context.globalCompositeOperation = "source-in"
+  context.fillStyle = main
+  context.fillRect(0, 0, canvas.width, CANVAS_HEIGHT)
+  context.globalCompositeOperation = "source-over"
+  const text = (strip.bottomText ?? "").trim()
+  if (text) await letter(context, strip, text, canvas.width / 2, CANVAS_HEIGHT * 0.5, CANVAS_HEIGHT * 0.6, width * 0.78)
   return finish(canvas)
 }
 
@@ -351,11 +388,11 @@ export function removeVisorStrips(root: Object3D) {
 }
 
 /** Prints the strip on the visor, or takes it off with null. */
-export async function updateVisorStrip(root: Object3D, strip: VisorStrip | null, filmUrl: string | null, isCancelled: () => boolean) {
+export async function updateVisorStrip(root: Object3D, strip: VisorStrip | null, filmUrl: string | null, isCancelled: () => boolean, model?: string) {
   for (const mesh of findStrips(root)) {
-    // The lower band carries only the Lucas Racing sticker's website strip.
+    // The bottom strip is part of every sticker (the band along the bottom of the visor).
     const lower = mesh.name === LOWER_BAND
-    if (!strip?.enabled || (lower && !strip.branded)) {
+    if (!strip?.enabled) {
       mesh.visible = false
       continue
     }
@@ -367,7 +404,7 @@ export async function updateVisorStrip(root: Object3D, strip: VisorStrip | null,
       mesh.geometry.setAttribute("uv", new BufferAttribute(wrap.uvs, 2))
       mesh.userData.stripAspect = wrap.aspect
     }
-    const texture = lower ? await drawLower(mesh.userData.stripAspect as number) : await drawStrip(strip, mesh.userData.stripAspect as number, filmUrl)
+    const texture = lower ? await drawLower(mesh.userData.stripAspect as number, strip) : await drawStrip(strip, mesh.userData.stripAspect as number, filmUrl, model)
     if (isCancelled()) {
       texture.dispose()
       return
@@ -380,8 +417,9 @@ export async function updateVisorStrip(root: Object3D, strip: VisorStrip | null,
     // The branded sticker has a shaped outline: the clear parts of its artwork show the visor.
     material.transparent = true
     material.opacity = 1
-    // Cut-out shapes (the Lucas Racing sticker, cut-out designs) show the visor around them.
-    material.alphaTest = strip.branded || findStickerDesign(strip.design)?.shaped ? 0.5 : 0
+    // Cut-out shapes (every sticker but a full-strip design like Blade) show the visor around them.
+    const design = findStickerDesign(strip.design)
+    material.alphaTest = lower || strip.branded || !design || design.shaped ? 0.5 : 0
     mesh.renderOrder = 1
     material.metalness = strip.branded ? 0.25 : strip.kind === "chrome" ? 1 : strip.kind === "metallic" || strip.holographic ? 0.65 : 0
     material.roughness = strip.kind === "chrome" ? 0.1 : strip.kind === "metallic" ? 0.28 : 0.35

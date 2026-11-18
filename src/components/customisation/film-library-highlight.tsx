@@ -40,7 +40,7 @@ export function FilmLibraryHighlight({ films }: { films: Film[] }) {
             </Link>
           </Button>
         </div>
-        <ul className="reveal grid grid-cols-4 gap-2.5 sm:grid-cols-6 lg:-rotate-2">
+        <ul className="reveal grid grid-cols-4 gap-2.5 sm:grid-cols-6">
           {picks.map((film) => (
             <li key={film.id} className="group relative aspect-square overflow-hidden rounded-xl ring-1 ring-white/10">
               <Image src={film.thumbUrl!} alt={`${film.name} film`} fill sizes="120px" className="object-cover transition-transform duration-500 group-hover:scale-110" />

@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { ArrowRight, Lock, ShoppingBag } from "lucide-react"
 
 import { EmptyState } from "@/components/shared/empty-state"
@@ -8,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Deposit } from "@/components/checkout/order-summary-card"
 import type { AvailableLine } from "@/lib/basket/resolve-basket"
+import { basketQuoteMessage } from "@/lib/basket/quote-message"
 import { useResolvedBasket } from "@/lib/basket/use-resolved-basket"
 import { chromeBaseCoatPrice, chromeHelmetCount, orderDeposit } from "@/lib/configurator/pricing-rules"
 import { formatMoney } from "@/lib/format"
@@ -19,9 +21,12 @@ import { BasketLine } from "./basket-line"
 interface BasketViewProps {
   products: CatalogProduct[]
   priceBook: PriceBook
+  /** Off: a quote request instead of checkout (Admin > Settings > Launches). */
+  checkoutEnabled?: boolean
 }
 
-export function BasketView({ products, priceBook }: BasketViewProps) {
+export function BasketView({ products, priceBook, checkoutEnabled = true }: BasketViewProps) {
+  const router = useRouter()
   const { items, lines, subtotal, loaded } = useResolvedBasket(products, priceBook)
   const available = lines.filter((line): line is AvailableLine => line.available)
   const orderable = available.length > 0
@@ -82,7 +87,15 @@ export function BasketView({ products, priceBook }: BasketViewProps) {
             chrome={chromeHelmetCount(available) > 0}
           />
         )}
-        {orderable ? (
+        {orderable && !checkoutEnabled ? (
+          // While checkout is off (Admin > Settings > Launches), the basket goes to the team as a quote request.
+          <>
+            <Button size="lg" className="w-full" onClick={() => router.push(`/contact?message=${encodeURIComponent(basketQuoteMessage(available, window.location.origin))}`)}>
+              Request a quote <ArrowRight />
+            </Button>
+            <p className="text-xs text-paper/70">We&apos;re not taking orders online just yet. Send us your basket and we&apos;ll reply with a quote.</p>
+          </>
+        ) : orderable ? (
           <Button asChild size="lg" className="w-full">
             <Link href="/checkout">
               Go to checkout <ArrowRight />

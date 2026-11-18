@@ -5,7 +5,7 @@ import { Check } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { usePricesHidden } from "@/components/builder/prices-context"
-import { findStickerDesign, stickerColours, stickerDesigns } from "@/lib/helmet-3d/sticker-designs"
+import { brandedStickerUrl, findStickerDesign, stickerColours, stickerDesigns, stickerFile } from "@/lib/helmet-3d/sticker-designs"
 import { pickableFilms, selectedSpoilers } from "@/lib/configurator/helmet-configuration"
 import { FilmPicker } from "@/components/studio/film-picker"
 import { optionPriceLabel } from "@/lib/format"
@@ -290,7 +290,7 @@ export function StepVisorStrip({ priceBook, config, update }: UpdateProps & { pr
             // Both pieces: the top band and the lucasracing.co.uk strip under the visor.
             <span className="flex h-full flex-col items-center justify-between">
               {/* eslint-disable-next-line @next/next/no-img-element -- the sticker's own artwork */}
-              <img src="/stickers/lucas-racing-visor.webp?v=3" alt="" className="h-[68%] w-full object-contain" />
+              <img src={brandedStickerUrl(config.model)} alt="" className="h-[68%] w-full object-contain" />
               {/* eslint-disable-next-line @next/next/no-img-element -- the sticker's own artwork */}
               <img src="/stickers/lucas-racing-visor-lower.webp?v=1" alt="" className="h-[22%] w-[54%] object-contain" />
             </span>
@@ -305,7 +305,7 @@ export function StepVisorStrip({ priceBook, config, update }: UpdateProps & { pr
             price={designPrice}
             preview={
               // eslint-disable-next-line @next/next/no-img-element -- a sample design
-              <img src={(design ?? stickerDesigns[stickerDesigns.length - 1]).file} alt="" className="h-full w-full object-contain" />
+              <img src={stickerFile(design ?? stickerDesigns[stickerDesigns.length - 1], config.model)} alt="" className="h-full w-full object-contain" />
             }
           />
         )}
@@ -325,7 +325,7 @@ export function StepVisorStrip({ priceBook, config, update }: UpdateProps & { pr
               {stickerDesigns.map((item) => (
                 <DesignTile key={item.id} selected={design?.id === item.id} name={item.name} onSelect={() => set({ design: item.id, designColours: undefined })}>
                   {/* eslint-disable-next-line @next/next/no-img-element -- the design's own SVG */}
-                  <img src={item.file} alt="" loading="lazy" className={cn("h-full w-full", item.shaped ? "object-contain" : "object-fill")} />
+                  <img src={stickerFile(item, config.model)} alt="" loading="lazy" className={cn("h-full w-full", item.shaped ? "object-contain" : "object-fill")} />
                 </DesignTile>
               ))}
             </div>
@@ -357,18 +357,33 @@ export function StepVisorStrip({ priceBook, config, update }: UpdateProps & { pr
             </div>
           )}
 
-          <div className="space-y-1.5">
-            <label htmlFor="visor-strip-text" className="text-sm font-semibold">
-              Text on the strip
-            </label>
-            <Input
-              id="visor-strip-text"
-              value={strip.text}
-              maxLength={40}
-              placeholder="e.g. LUCAS RACING"
-              onChange={(event) => set({ text: event.target.value })}
-            />
-            <p className="text-xs text-muted-foreground">Up to 40 characters, or leave it blank.</p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <label htmlFor="visor-strip-text" className="text-sm font-semibold">
+                Top band text
+              </label>
+              <Input
+                id="visor-strip-text"
+                value={strip.text}
+                maxLength={40}
+                placeholder="e.g. your name"
+                onChange={(event) => set({ text: event.target.value })}
+              />
+              <p className="text-xs text-muted-foreground">Up to 40 characters, or leave it blank.</p>
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="visor-strip-bottom-text" className="text-sm font-semibold">
+                Bottom strip text
+              </label>
+              <Input
+                id="visor-strip-bottom-text"
+                value={strip.bottomText ?? ""}
+                maxLength={25}
+                placeholder="e.g. your website or number"
+                onChange={(event) => set({ bottomText: event.target.value || undefined })}
+              />
+              <p className="text-xs text-muted-foreground">The strip along the bottom of the visor. Up to 25 characters.</p>
+            </div>
           </div>
 
           {!design && (

@@ -81,7 +81,10 @@ for (let x = 0; x < w; x++) {
   }
 }
 
+// Near-invisible specks (anti-aliasing left in some exports) would stop the trim, leaving
+// empty space that shrinks the sticker on the visor.
+for (let i = 3; i < out.length; i += 4) if (out[i] < 12) out[i - 3] = out[i - 2] = out[i - 1] = out[i] = 0
 // Trimmed first (to a buffer), then flipped back: sharp runs trim after flip in one chain.
-const trimmed = await sharp(out, { raw: { width: w, height: h, channels: 4 } }).trim({ threshold: 0 }).png().toBuffer()
+const trimmed = await sharp(out, { raw: { width: w, height: h, channels: 4 } }).trim({ background: { r: 0, g: 0, b: 0, alpha: 0 }, threshold: 0 }).png().toBuffer()
 const result = await sharp(trimmed).flip(bottom).webp({ quality: 92, alphaQuality: 100 }).toFile(output)
 console.log(`${output}: ${result.width} x ${result.height}, arch of ${Math.round(Math.max(...smooth) - highest)}px straightened`)

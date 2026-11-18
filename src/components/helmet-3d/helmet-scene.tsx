@@ -19,6 +19,7 @@ import { cloneHelmet, disposeHelmetMaterials, type SpoilerFinish, updateHelmetSu
 import type { HelmetSpot } from "@/lib/helmet-3d/decal-layout"
 
 import { registerHelmetCapture } from "@/lib/helmet-3d/capture"
+import { modelIdForUrl } from "@/lib/helmet-3d/models"
 
 import { SceneLoading } from "./scene-loading"
 import { addLowerBand, removeVisorStrips, updateVisorStrip } from "./visor-strip"
@@ -310,13 +311,14 @@ function HelmetModel({ url, tint = "#ffffff", finish = "gloss", paintFinish = "g
   }, [root, url])
   useEffect(() => {
     let cancelled = false
-    updateVisorStrip(root, stripKey ? (JSON.parse(stripKey) as VisorStrip) : null, visorStripFilmUrl, () => cancelled).catch((error) =>
+    // Stickers are cut to each helmet visor template (Bell, Arai).
+    updateVisorStrip(root, stripKey ? (JSON.parse(stripKey) as VisorStrip) : null, visorStripFilmUrl, () => cancelled, modelIdForUrl(url)).catch((error) =>
       console.error("Couldn't draw the visor strip:", error),
     )
     return () => {
       cancelled = true
     }
-  }, [root, stripKey, visorStripFilmUrl, lowerBand])
+  }, [root, stripKey, visorStripFilmUrl, lowerBand, url])
 
   // The spoiler keeps its current look until a new film has loaded.
   useEffect(() => {

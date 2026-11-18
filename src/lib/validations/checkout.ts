@@ -118,11 +118,13 @@ export const helmetItemSchema = z.object({
 
     aero: z.string().trim().max(60).optional(),
     visor: z.string().trim().max(60).optional(),
+    visorKit: z.string().trim().max(40).optional(),
     visorStrip: z
       .object({
         enabled: z.boolean(),
         colour: hex,
         text: z.string().trim().max(40, "Visor strip text can be up to 40 characters"),
+        bottomText: z.string().trim().max(25, "Bottom strip text can be up to 25 characters").optional(),
         textColour: hex.optional(),
         kind: partKind.optional(),
         film: z.string().trim().max(80).optional(),

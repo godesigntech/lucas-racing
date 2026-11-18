@@ -31,7 +31,10 @@ async function Visors() {
     <div className="space-y-6">
       {ready ? <VisorTable visors={visors} models={models} /> : <MigrationNotice area="Visors" />}
       <BuilderOptionGroups
-        groups={[{ key: "visor_strip", title: "Visor strip", description: "Step 13: the printed band across the top of the visor." }]}
+        groups={[
+          { key: "visor_strip", title: "Visor strip", description: "Step 13: the printed band across the top of the visor." },
+          { key: "visor_kit", title: "Visor fitting kit (Arai SK-6)", description: "Exterior step: the visor pivot, side covers and screws in one colour. Leave a price blank until it's confirmed: it still previews, but checkout won't take it." },
+        ]}
       />
     </div>
   )

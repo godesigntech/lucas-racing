@@ -13,6 +13,11 @@ export const helmet3dModels: Partial<Record<HelmetModelId, Helmet3dModel>> = {
   "arai-sk6": { url: "/models/arai-sk6.glb?v=sk6-artist-6", placeholder: false },
 }
 
+/** Which helmet a model file belongs to (visor stickers are cut to each helmet's template). */
+export function modelIdForUrl(url: string): HelmetModelId | undefined {
+  return (Object.entries(helmet3dModels) as [HelmetModelId, Helmet3dModel][]).find(([, model]) => model.url === url)?.[0]
+}
+
 export function get3dModel(modelId: HelmetModelId | undefined): Helmet3dModel | undefined {
   return modelId ? helmet3dModels[modelId] : undefined
 }

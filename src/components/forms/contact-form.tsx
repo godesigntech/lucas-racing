@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2, Send } from "lucide-react"
@@ -174,6 +175,13 @@ export function ContactForm({ designs, initialDesign, initialMessage }: ContactF
         {isSubmitting ? <Loader2 className="animate-spin" aria-hidden /> : <Send aria-hidden />}
         {isSubmitting ? "Sending…" : "Send message"}
       </Button>
+      <p className="text-xs text-muted-foreground">
+        We use your details to reply to you. See our{" "}
+        <Link href="/privacy" className="underline underline-offset-2">
+          Privacy Policy
+        </Link>
+        .
+      </p>
     </form>
   )
 }

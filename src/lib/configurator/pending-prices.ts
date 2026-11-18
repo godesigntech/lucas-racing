@@ -79,6 +79,10 @@ export function pendingPrices(
     if (item.value.trim() === "") continue
     pending.push(fromOption(find("personalisation", item.kind), `personalisation-${item.kind}`))
   }
+  if (config.model === "arai-sk6" && config.visorKit) {
+    const kit = find("visor_kit", config.visorKit)
+    pending.push(fromOption(kit, "visorKit", `${kit?.label ?? ""} visor fitting kit`))
+  }
 
   // One entry per thing, even if it was chosen in two places.
   const seen = new Set<string>()

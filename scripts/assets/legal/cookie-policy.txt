@@ -1,0 +1,45 @@
+# Cookie Policy
+
+This policy explains cookies and similar technologies used on lucasracing.co.uk and how to control them. Information about personal data is provided in our [Privacy Policy](privacy-policy.html).
+
+Last updated [CONFIRM PUBLICATION DATE]
+
+The business responsible for operating these technologies is [CONFIRM WEBSITE OPERATOR AND COOKIE PRIVACY CONTACT].
+
+## What cookies do
+
+Cookies and similar storage technologies allow a website or its providers to store information on your device or access information from it. Depending on their purpose, they can support a basket, remember a login or a preference, help secure the website, or measure its use. The rules also apply to similar technologies such as local storage and tracking pixels where relevant.
+
+## Technologies used on this website
+
+The current inventory is [CONFIRM COMPLETE LIVE COOKIE AND STORAGE INVENTORY]. For each technology, the inventory must state its name, provider, purpose, expiry or duration, and whether it operates under consent or a specified legal exception. This includes technologies introduced by the design tool, checkout and embedded services.
+
+[CONFIRM ACTUAL INVENTORY ENTRIES WITH NAME PROVIDER PURPOSE DURATION AND CONSENT OR EXCEPTION]
+
+## Essential functions
+
+Where a technology is strictly necessary to provide a service you request, such as an essential basket or authentication function, it may operate without consent. Its use must remain limited to the purpose that makes the exception applicable. The inventory identifies which technologies meet this condition.
+
+## Optional functions and measurement
+
+Where consent is required, optional technologies operate only after you choose to enable them. You can refuse or withdraw consent through the settings control. Refusing optional technologies will not prevent access to the core service, though a feature that depends on your choice may be unavailable.
+
+Some limited statistical or appearance-related uses can qualify for a legal exception. Where this website relies on one, the inventory explains the purpose and you will have a simple, free way to object. Advertising and tracking outside an applicable exception require consent.
+
+[CONFIRM OPTIONAL FEATURES USED AND WHETHER CONSENT OR A SPECIFIC EXCEPTION APPLIES TO EACH]
+
+## Managing your choices
+
+Use [CONFIRM WORKING COOKIE SETTINGS LINK OR CONTROL] to review and change your choices, withdraw consent or object to any applicable exempt optional processing.
+
+You can also use your browser settings to remove stored information or block cookies. Doing so may reset preferences or affect functions such as remaining signed in or keeping items in a basket.
+
+## Third-party content and services
+
+[CONFIRM EMBEDDED OR THIRD PARTY SERVICES THAT ACCESS DEVICE INFORMATION AND THEIR PURPOSES]
+
+Any required choice will be presented before the relevant technology starts. Following a link to a separate website is subject to that website's own privacy and cookie information.
+
+## Contact and updates
+
+Contact [CONFIRM WEBSITE PRIVACY EMAIL] about this policy. We will update the inventory and information when the technologies or their purposes change and request a fresh choice where required.

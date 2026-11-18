@@ -10,7 +10,7 @@ import { AdminCard } from "@/components/admin/admin-card"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
-import { setKartPartsLive, setSectionVisible, updateSiteNotice } from "@/lib/actions/admin/settings"
+import { setCheckoutEnabled, setKartPartsLive, setSectionVisible, updateSiteNotice } from "@/lib/actions/admin/settings"
 
 /** Sections that stay admin-only until the client signs them off. */
 interface LaunchesCardProps {
@@ -19,6 +19,7 @@ interface LaunchesCardProps {
   showGallery: boolean
   siteNotice: string
   showSiteNotice: boolean
+  checkoutEnabled: boolean
 }
 
 function LaunchRow({ title, text, href, checked, label, onToggle }: { title: string; text: string; href: string; checked: boolean; label: string; onToggle: (next: boolean) => ReturnType<typeof setKartPartsLive> }) {
@@ -72,11 +73,19 @@ function SiteNoticeRow({ notice, show }: { notice: string; show: boolean }) {
   )
 }
 
-export function LaunchesCard({ kartPartsLive, showNews, showGallery, siteNotice, showSiteNotice }: LaunchesCardProps) {
+export function LaunchesCard({ kartPartsLive, showNews, showGallery, siteNotice, showSiteNotice, checkoutEnabled }: LaunchesCardProps) {
   return (
     <AdminCard title="Page launches" description="Switch sections on when they're ready. Admins can always preview MS Kart parts.">
       <div className="space-y-5">
         <SiteNoticeRow notice={siteNotice} show={showSiteNotice} />
+        <LaunchRow
+          title="Checkout"
+          text="Customers can place orders from the basket. Off: the basket has a Request a quote button instead, which sends every item (with a link to each helmet design) to Enquiries."
+          href="/basket"
+          checked={checkoutEnabled}
+          label="Let customers place orders"
+          onToggle={setCheckoutEnabled}
+        />
         <LaunchRow
           title="News and results"
           text="Race reports and team news, plus the homepage section. Off: a coming-soon page."

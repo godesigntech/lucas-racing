@@ -321,8 +321,16 @@ export function CheckoutForm({ profile, deliveryMethods, products, priceBook, pr
           </Button>
           <p className="text-center text-xs text-paper/55">
             By placing your order you agree to our{" "}
-            <Link href="/terms" className="underline underline-offset-2">
-              Terms
+            <Link href="/terms" className="underline underline-offset-2" target="_blank">
+              Terms and Conditions
+            </Link>
+            . See{" "}
+            <Link href="/delivery-returns" className="underline underline-offset-2" target="_blank">
+              Delivery, Returns and Cancellations
+            </Link>{" "}
+            and our{" "}
+            <Link href="/privacy" className="underline underline-offset-2" target="_blank">
+              Privacy Policy
             </Link>
             .
           </p>

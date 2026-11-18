@@ -1,9 +1,11 @@
 import { Suspense } from "react"
 import type { Metadata } from "next"
+import Link from "next/link"
 
 import { CheckoutForm } from "@/components/checkout/checkout-form"
 import { Container } from "@/components/layout/container"
 import { SectionHeading } from "@/components/shared/section-heading"
+import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getMyProfile } from "@/lib/data/account"
 import { getPriceBook, getProducts } from "@/lib/data/products"
@@ -36,6 +38,21 @@ async function CheckoutContent() {
     getPriceBook(),
     getProductionOptions(),
   ])
+
+  // Switched off in Admin > Settings > Launches: the basket asks for a quote instead.
+  if (!settings.checkoutEnabled) {
+    return (
+      <div className="max-w-xl space-y-4 rounded-3xl border border-carbon/10 bg-card p-6">
+        <p className="font-display text-3xl font-bold uppercase">Not taking orders online yet</p>
+        <p className="text-muted-foreground">
+          We&apos;re finishing the last checks before orders open. Send us your basket from the basket page and we&apos;ll reply with a quote.
+        </p>
+        <Button asChild>
+          <Link href="/basket">Back to your basket</Link>
+        </Button>
+      </div>
+    )
+  }
 
   return (
     <CheckoutForm

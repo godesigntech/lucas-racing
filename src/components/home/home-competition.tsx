@@ -69,7 +69,7 @@ export async function HomeCompetition() {
                   key={slug}
                   className={[
                     "absolute top-1/2 w-[58%] -translate-y-1/2 overflow-hidden rounded-3xl bg-paper shadow-2xl ring-1 ring-white/10",
-                    index === 0 ? "left-0 -rotate-6" : index === 1 ? "left-1/2 z-10 -translate-x-1/2 scale-110" : "right-0 rotate-6",
+                    index === 0 ? "left-0" : index === 1 ? "left-1/2 z-10 -translate-x-1/2 scale-110" : "right-0",
                   ].join(" ")}
                 >
                   <Image src={`/models/templates/bell-kc7/${slug}/thumbnail.png`} alt="" width={290} height={250} className="h-auto w-full" />

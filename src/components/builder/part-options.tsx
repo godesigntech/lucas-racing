@@ -15,10 +15,11 @@ export function PartOptions({ config, priceBook, update }: {
   priceBook: PriceBook
   update: (changes: Partial<HelmetConfiguration>) => void
 }) {
-  // The trims are chosen above, with their own colour range and prices.
-  const parts = partsFor(config.model).filter(({ key }) => key !== "eyeportTrim" && key !== "baseTrim")
+  // The trims are chosen above; a visor fitting kit sets the pivot, side vents and screws itself.
+  const kitParts: string[] = config.visorKit ? ["visorPivot", "sideVents", "screws"] : []
+  const parts = partsFor(config.model).filter(({ key }) => key !== "eyeportTrim" && key !== "baseTrim" && !kitParts.includes(key))
   const [selected, setSelected] = useState<HelmetPartKey | undefined>(parts[0]?.key)
-  const part = parts.find(({ key }) => key === selected)
+  const part = parts.find(({ key }) => key === selected) ?? parts[0]
   if (!part) return null
   const colour = config[part.key] ?? part.defaultColour ?? config.trim
   const palette = priceBook.options.base.filter((option) => option.isActive).map((option) => ({ ...option, price: 0 }))

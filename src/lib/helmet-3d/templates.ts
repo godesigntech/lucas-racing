@@ -11,7 +11,7 @@ export interface HelmetTemplateArtwork {
  * once its files are there, or its picture shows as a broken image.
  */
 const available: Record<string, string[]> = {
-  "bell-kc7": ["emilio", "nygel", "rusinov", "pink-blade", "navy-pink", "ivory-gold", "neon-volt", "tricolore", "inferno", "strike-red", "red-fury", "sky-racer", "gold-line", "yellow-flash", "crimson-bolt", "hornet", "blue-arrow", "cobalt-storm"],
+  "bell-kc7": ["emilio", "rusinov", "pink-blade", "navy-pink", "ivory-gold", "neon-volt", "tricolore", "inferno", "strike-red", "red-fury", "sky-racer", "gold-line", "yellow-flash", "crimson-bolt", "hornet", "blue-arrow", "cobalt-storm"],
   "arai-sk6": ["navy-lime", "electric-blue", "red-silver", "red-yellow", "blue-current", "crimson-apex", "jade-circuit", "magenta-vector", "amber-vortex", "arctic-spear"],
 }
 const templates: Record<string, HelmetTemplateArtwork> = Object.fromEntries(

@@ -68,7 +68,7 @@ export function HomePaddock() {
               It&apos;s about dedication, hard work, friendship and family.
             </p>
             <footer className="eyebrow text-carbon/75">The Lucas family</footer>
-            <div aria-hidden className="chequer absolute -right-6 -top-6 size-20 rotate-12 rounded-lg opacity-15" />
+            <div aria-hidden className="chequer absolute -right-6 -top-6 size-20 rounded-lg opacity-15" />
           </blockquote>
 
           <figure className="reveal group relative min-h-60 overflow-hidden rounded-[2rem] bg-carbon">

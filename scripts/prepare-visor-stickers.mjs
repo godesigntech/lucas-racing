@@ -1,19 +1,26 @@
 // Turns the designer's visor sticker SVGs into ones the builder can recolour: every
 // colour becomes a part (a CSS class the builder rewrites), near-identical shades are
 // merged, and the thin cut outline stays as drawn. Writes the SVGs to
-// public/stickers/designs/ and their list to src/lib/helmet-3d/visor-sticker-designs.json.
+// public/stickers/designs/<bell|arai>/ and their list to src/lib/helmet-3d/visor-sticker-designs.json.
 //
-//   node scripts/prepare-visor-stickers.mjs "D:/downloads/.../Editable SVG"
+// Each design comes in two shapes, cut to each helmet's visor template: Bell (curved centre)
+// and Arai (flatter centre). Both use the same colours, so a customer's colours carry over.
+//
+//   node scripts/prepare-visor-stickers.mjs "<unzipped developer pack>"
+//   (the folder holding Bell/Blank designs and Arai/Blank designs)
 
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
 import path from "node:path"
 
 const [source] = process.argv.slice(2)
-if (!source) throw new Error("Usage: node scripts/prepare-visor-stickers.mjs <folder of SVGs>")
+if (!source) throw new Error("Usage: node scripts/prepare-visor-stickers.mjs <developer pack folder>")
 
-const outDir = "public/stickers/designs"
+const brands = [
+  { folder: "Bell", dir: "bell", model: "bell-kc7" },
+  { folder: "Arai", dir: "arai", model: "arai-sk6" },
+]
+const outRoot = "public/stickers/designs"
 const listFile = "src/lib/helmet-3d/visor-sticker-designs.json"
-mkdirSync(outDir, { recursive: true })
 
 const hexToRgb = (hex) => {
   const value = hex.length === 4 ? hex.slice(1).split("").map((c) => c + c).join("") : hex.slice(1)
@@ -44,15 +51,18 @@ function colourName(hex) {
 
 const titleCase = (slug) => slug.split("-").map((word) => word[0].toUpperCase() + word.slice(1)).join(" ")
 
-const designs = []
-for (const file of readdirSync(source).filter((name) => name.endsWith(".svg")).sort()) {
-  let svg = readFileSync(path.join(source, file), "utf8")
-  const slug = file.replace(/\.svg$/, "").replace(/^\d+-/, "")
+/** One design in one shape: writes its recolourable SVG and returns its colour parts. */
+function prepare(file, inDir, outDir) {
+  let svg = readFileSync(path.join(inDir, file), "utf8")
 
   // The cut outline is the sticker's edge: it keeps its own colour.
-  const outline = new Set([...svg.matchAll(/stroke="(#[0-9a-fA-F]{3,6})"[^>]*data-layer="outline"/g)].map((m) => m[1].toLowerCase()))
-  // The main band's first fill is the sticker's background.
-  const background = svg.match(/data-part="main-band"[^>]*>\s*<path[^>]*fill="(#[0-9a-fA-F]{3,6})"/)?.[1].toLowerCase()
+  const outline = new Set(
+    [...svg.matchAll(/<[^<>]*data-layer="outline"[^<>]*>/g)].flatMap((m) => [...m[0].matchAll(/stroke="(#[0-9a-fA-F]{3,6})"/g)].map((c) => c[1].toLowerCase())),
+  )
+  // The base layer's fill is the sticker's background.
+  const background = (
+    svg.match(/<path[^>]*fill="(#[0-9a-fA-F]{3,6})"[^>]*data-layer="base"/) ?? svg.match(/data-layer="base"[^>]*fill="(#[0-9a-fA-F]{3,6})"/)
+  )?.[1].toLowerCase()
 
   // Every colour used, most area-ish (most uses) first, merged when near-identical.
   const uses = new Map()
@@ -80,15 +90,13 @@ for (const file of readdirSync(source).filter((name) => name.endsWith(".svg")).s
   svg = svg.replace(/class="([^"]+)"([^>]*?)\sclass="([^"]+)"/g, 'class="$1 $3"$2')
   const style = parts.map((part) => `.${part.key} {fill:${part.colour}} .${part.key}-st {stroke:${part.colour}}`).join(" ")
   svg = svg.replace(/(<svg[^>]*>)/, `$1<style>${style}</style>`)
+  const slug = file.replace(/\.svg$/, "").replace(/^\d+-/, "")
   writeFileSync(path.join(outDir, `${slug}.svg`), svg)
 
   // Names for the colour pickers: the background, then each colour by name.
   const used = new Map()
-  designs.push({
-    id: slug,
-    name: titleCase(slug),
-    file: `/stickers/designs/${slug}.svg?v=1`,
-    shaped: true,
+  return {
+    slug,
     parts: parts.map((part) => {
       let label = part.colour === background ? "Background" : colourName(part.colour)
       const count = (used.get(label) ?? 0) + 1
@@ -96,9 +104,27 @@ for (const file of readdirSync(source).filter((name) => name.endsWith(".svg")).s
       if (count > 1) label = `${label} ${count}`
       return { key: part.key, label, colour: part.colour }
     }),
-  })
+  }
 }
 
-writeFileSync(listFile, JSON.stringify(designs, null, 2) + "\n")
-console.log(`Wrote ${designs.length} designs to ${outDir} and ${listFile}`)
-for (const design of designs) console.log(`  ${design.name}: ${design.parts.map((part) => `${part.label} ${part.colour}`).join(", ")}`)
+const designs = new Map()
+for (const brand of brands) {
+  const inDir = path.join(source, brand.folder, "Blank designs")
+  const outDir = path.join(outRoot, brand.dir)
+  mkdirSync(outDir, { recursive: true })
+  for (const file of readdirSync(inDir).filter((name) => name.endsWith(".svg")).sort()) {
+    const { slug, parts } = prepare(file, inDir, outDir)
+    const design = designs.get(slug) ?? { id: slug, name: titleCase(slug), file: "", files: {}, shaped: true, parts }
+    // The customer's colours are kept by part, so both shapes must have the same parts.
+    if (JSON.stringify(design.parts) !== JSON.stringify(parts)) throw new Error(`${slug}: the ${brand.folder} colours differ from the other shape's`)
+    design.files[brand.model] = `/stickers/designs/${brand.dir}/${slug}.svg?v=2`
+    design.file ||= design.files[brand.model]
+    designs.set(slug, design)
+  }
+}
+
+const list = [...designs.values()]
+writeFileSync(listFile, JSON.stringify(list, null, 2) + "\n")
+const designsOut = list
+console.log(`Wrote ${list.length} designs in ${brands.length} shapes to ${outRoot} and ${listFile}`)
+for (const design of designsOut) console.log(`  ${design.name}: ${design.parts.map((part) => `${part.label} ${part.colour}`).join(", ")}`)
