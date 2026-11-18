@@ -2,7 +2,7 @@
 
 import { CalendarDays, Check, Zap } from "lucide-react"
 
-import { addWeeks, formatUkDate, formatWeek } from "@/lib/dates/uk"
+import { addWeeks, formatUkDate, formatWeek, ukToday } from "@/lib/dates/uk"
 import { CHROME_EXTRA_WEEKS } from "@/lib/configurator/helmet-configuration"
 import { formatMoney } from "@/lib/format"
 import { cn } from "@/lib/utils"
@@ -41,6 +41,10 @@ export function ProductionDates({
   error,
 }: ProductionDatesProps) {
   const bookable = weeks.filter((week) => week.isBookable)
+  // Start the list at the first week with a free place: closed or full weeks before it
+  // (e.g. fully booked for the rest of the year) would only push the real dates down.
+  const firstOpen = weeks.findIndex((week) => week.isBookable)
+  const shownWeeks = firstOpen > 0 ? weeks.slice(firstOpen) : weeks
   const tier = tiers.find((item) => item.key === rushTier) ?? tiers[0]
   const leadWeeks = (tier?.leadWeeks ?? standardLeadWeeks) + (hasChrome ? CHROME_EXTRA_WEEKS : 0)
   const completion = startDate ? addWeeks(startDate, leadWeeks) : null
@@ -92,13 +96,21 @@ export function ProductionDates({
 
       <fieldset className="space-y-3">
         <legend className="text-sm font-semibold">Which week should we start?</legend>
+        {firstOpen > 0 && (
+          <p className="rounded-2xl bg-paddock/50 p-4 text-sm text-muted-foreground">
+            {shownWeeks[0].weekStart.slice(0, 4) > ukToday().slice(0, 4)
+              ? `We're fully booked for the rest of ${ukToday().slice(0, 4)}. `
+              : "We're fully booked for the next few weeks. "}
+            The soonest we can start is the week of <strong className="font-semibold text-carbon">{formatWeek(shownWeeks[0].weekStart)}</strong>.
+          </p>
+        )}
         {bookable.length === 0 ? (
           <p className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-200">
             Every week we can see is full. Place your order anyway and we&apos;ll call you with the soonest date.
           </p>
         ) : (
           <ul className="grid max-h-72 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
-            {weeks.map((week) => {
+            {shownWeeks.map((week) => {
               const selected = week.weekStart === startDate
               const disabled = !week.isBookable
               return (

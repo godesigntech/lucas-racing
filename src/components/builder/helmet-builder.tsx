@@ -422,6 +422,10 @@ function BuilderBody({
   const hasFilm = designHasHydroFilm(fullConfig(), priceBook)
 
   const returnTo = sketch ? "/helmet-builder/own-helmet" : builderUrl
+  // Where the footer's main action (basket, checkout, quote) sits: the last step, after
+  // Review, Confirm and Production. A competition entry is made from Review, as the
+  // competition rules say.
+  const actionHere = competitionMode ? stepId === "review" : !next
 
   return (
     <PricesHiddenContext.Provider value={sketch}>
@@ -603,21 +607,15 @@ function BuilderBody({
             <span />
           )}
           <span className="ml-auto" />
-          {step.stage !== "build" ? (
-            // The last two are previews; their own actions live in the panel above.
+          {!actionHere ? (
+            // Every step leads on to the next; the order button waits on the last one.
             next ? (
-              <Button variant="outline" size="lg" onClick={() => go(next.id)}>
+              <Button size="lg" onClick={() => go(next.id)}>
                 Next: {next.label} <ArrowRight />
               </Button>
             ) : (
               <span />
             )
-          ) : next && next.stage === "build" ? (
-            // Review keeps "Add to basket" as its action; Confirm and Production are
-            // reached from the stepper, not by stepping past the basket.
-            <Button size="lg" onClick={() => go(next.id)}>
-              Next: {next.label} <ArrowRight />
-            </Button>
           ) : sketch ? (
             <Button size="lg" onClick={() => document.getElementById(OWN_HELMET_FORM_ID)?.scrollIntoView({ behavior: "smooth", block: "start" })}>
               Done: fill in your request <ArrowDown />

@@ -50,7 +50,7 @@ export function BuilderStepper({ current, visited, onSelect, steps = builderStep
         {steps.map((step, position) => {
           const active = step.id === current
           const done = !active && visited.has(step.id)
-          // The last two happen after the basket, so they're marked as a later stage —
+          // The last two describe checkout and production, so they're marked as a later stage —
           // but they open, because customers (and the workshop) want to see what's coming.
           const later = step.stage !== "build"
           return (
@@ -61,8 +61,8 @@ export function BuilderStepper({ current, visited, onSelect, steps = builderStep
                 aria-current={active ? "step" : undefined}
                 // The label has to come first, or a screen reader announces the tooltip
                 // instead of the step's name.
-                aria-label={later ? `${step.label} — happens after your basket` : undefined}
-                title={later ? "Happens after your basket — open it to see what's next" : undefined}
+                aria-label={later ? `${step.label} — happens at checkout and after` : undefined}
+                title={later ? "Happens at checkout and after: open it to see what's next" : undefined}
                 className={cn(
                   "flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
                   active ? "bg-carbon text-paper" : "text-carbon/70 hover:bg-carbon/5 hover:text-carbon",

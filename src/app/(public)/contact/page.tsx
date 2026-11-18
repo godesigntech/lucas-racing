@@ -28,9 +28,9 @@ export default async function ContactPage() {
         image={images.teamAwning}
       />
       <section className="py-14 sm:py-20">
-        <Container className="grid gap-10 lg:grid-cols-[1fr_1.5fr] lg:gap-14">
+        <Container className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] lg:gap-14">
           <ContactDetails settings={settings} />
-          <div className="rounded-3xl border border-carbon/10 bg-card p-6 sm:p-8">
+          <div className="min-w-0 rounded-3xl border border-carbon/10 bg-card p-6 sm:p-8">
             <h2 className="font-display text-3xl font-bold uppercase">Send a message</h2>
             <p className="mt-1 mb-7 text-sm text-muted-foreground">
               The workshop reads every message and replies by email, usually within one working day.

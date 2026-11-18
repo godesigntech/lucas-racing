@@ -140,6 +140,7 @@ export function ContactForm({ designs, initialDesign, initialMessage }: ContactF
           {...register("message")}
           {...fieldA11y("contact-message", errors.message?.message)}
           rows={6}
+          className="max-h-80 overflow-y-auto"
           placeholder="Tell us about your helmet, your colours and when you need it."
         />
       </FormField>

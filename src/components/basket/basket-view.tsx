@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ArrowRight, Lock, ShoppingBag } from "lucide-react"
@@ -17,16 +18,20 @@ import type { PriceBook } from "@/types/catalog"
 import type { CatalogProduct } from "@/types/product"
 
 import { BasketLine } from "./basket-line"
+import { ProductionStart } from "./production-start"
 
 interface BasketViewProps {
   products: CatalogProduct[]
   priceBook: PriceBook
   /** Off: a quote request instead of checkout (Admin > Settings > Launches). */
   checkoutEnabled?: boolean
+  /** Weeks a helmet can start in (Mondays, soonest first), from the production calendar. */
+  startWeeks?: string[]
 }
 
-export function BasketView({ products, priceBook, checkoutEnabled = true }: BasketViewProps) {
+export function BasketView({ products, priceBook, checkoutEnabled = true, startWeeks = [] }: BasketViewProps) {
   const router = useRouter()
+  const [startWeek, setStartWeek] = useState(startWeeks[0] ?? "")
   const { items, lines, subtotal, loaded } = useResolvedBasket(products, priceBook)
   const available = lines.filter((line): line is AvailableLine => line.available)
   const orderable = available.length > 0
@@ -87,10 +92,14 @@ export function BasketView({ products, priceBook, checkoutEnabled = true }: Bask
             chrome={chromeHelmetCount(available) > 0}
           />
         )}
+        {hasHelmets && (
+          // Checkout asks for the week itself; a quote request carries the preferred week.
+          <ProductionStart weeks={startWeeks} value={startWeek} onChange={checkoutEnabled ? undefined : setStartWeek} />
+        )}
         {orderable && !checkoutEnabled ? (
           // While checkout is off (Admin > Settings > Launches), the basket goes to the team as a quote request.
           <>
-            <Button size="lg" className="w-full" onClick={() => router.push(`/contact?message=${encodeURIComponent(basketQuoteMessage(available, window.location.origin))}`)}>
+            <Button size="lg" className="w-full" onClick={() => router.push(`/contact?message=${encodeURIComponent(basketQuoteMessage(available, window.location.origin, hasHelmets ? startWeek : undefined))}`)}>
               Request a quote <ArrowRight />
             </Button>
             <p className="text-xs text-paper/70">We&apos;re not taking orders online just yet. Send us your basket and we&apos;ll reply with a quote.</p>

@@ -13,10 +13,11 @@ import type { ProductionOptions } from "@/lib/data/production"
 import type { OrderStatus } from "@/types/order"
 
 /**
- * Steps 15 and 16 of the journey. They happen after the basket — on the checkout page
- * and then on the customer's order page — so there is nothing to configure here. What
- * there is, is an honest preview: step 15 shows the real next available production week
- * read from the database, and step 16 shows the stages an order actually moves through.
+ * The last two steps of the builder: Confirm and Production. What they describe happens
+ * after the basket — on the checkout page and then on the customer's order page — so there
+ * is nothing to configure here. Confirm shows the real next available production week read
+ * from the database; Production shows the stages an order moves through, and its footer
+ * holds the Add to basket button.
  */
 
 function Row({ icon: Icon, title, children }: { icon: typeof Truck; title: string; children: React.ReactNode }) {
@@ -33,7 +34,7 @@ function Row({ icon: Icon, title, children }: { icon: typeof Truck; title: strin
   )
 }
 
-/** Step 15: what the checkout page will ask for, and when we could start. */
+/** Confirm: what the checkout page will ask for, and when we could start. */
 export function StepConfirm({
   production,
   hasBasketItem,
@@ -90,7 +91,7 @@ export function StepConfirm({
 
       <div className="flex flex-wrap gap-2">
         {blocked ? (
-          <p className="text-sm text-muted-foreground">One of your choices has no price yet. Swap it at step 14 to order.</p>
+          <p className="text-sm text-muted-foreground">One of your choices has no price yet. Change it on the Review step to order.</p>
         ) : hasBasketItem ? (
           <Button asChild size="lg">
             <Link href="/checkout">
@@ -99,7 +100,7 @@ export function StepConfirm({
           </Button>
         ) : (
           <p className="text-sm text-muted-foreground">
-            Add your helmet to the basket at step 14, then checkout opens here.
+            Next, see how production works. Then add your helmet to the basket on the last step.
           </p>
         )}
       </div>
@@ -120,7 +121,7 @@ const journey: OrderStatus[] = [
   "completed",
 ]
 
-/** Step 16: what happens after the order is placed. */
+/** Production: what happens after the order is placed. */
 export function StepProduction() {
   return (
     <div className="space-y-6">

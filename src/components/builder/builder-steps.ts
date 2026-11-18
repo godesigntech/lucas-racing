@@ -45,9 +45,9 @@ export const builderSteps: BuilderStep[] = [
   { id: "exterior", group: "Fittings", stage: "build", label: "Exterior", title: "Customise exterior components", description: "Rubber trims, vents, grilles and visor fittings." },
   { id: "visor", group: "Fittings", stage: "build", label: "Visor", title: "Choose your visor", description: "Clear, smoked, coloured or iridium." },
   { id: "visorStrip", group: "Fittings", stage: "build", label: "Visor sticker", title: "Your free visor sticker", description: "Every helmet comes with one: our Lucas Racing holographic sticker, or a design of your own in your colours." },
-  { id: "review", group: "Order", stage: "build", label: "Review", title: "Review your design", description: "Check everything, then add it to your basket." },
+  { id: "review", group: "Order", stage: "build", label: "Review", title: "Review your design", description: "Check everything before you order." },
   { id: "confirm", group: "Order", stage: "checkout", label: "Confirm", title: "Confirm your order", description: "Your details and an estimated production start date." },
-  { id: "production", group: "Order", stage: "after", label: "Production", title: "Production and delivery", description: "We send a proof to approve, then build and deliver your helmet." },
+  { id: "production", group: "Order", stage: "after", label: "Production", title: "Production and delivery", description: "We send a proof to approve, then build and deliver your helmet. Add it to your basket below." },
 ]
 
 /** The steps the builder itself shows. */
