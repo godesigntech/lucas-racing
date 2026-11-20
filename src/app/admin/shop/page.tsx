@@ -1,7 +1,7 @@
 import { Suspense } from "react"
 import { staffShop } from "@/lib/auth/roles"
 import Link from "next/link"
-import { FolderTree, Upload } from "lucide-react"
+import { Download, FolderTree, Upload } from "lucide-react"
 
 import { AdminCard } from "@/components/admin/admin-card"
 import { AdminPageHeader } from "@/components/admin/admin-page-header"
@@ -71,6 +71,12 @@ async function ShopList({ query }: { query: Query }) {
                 </Link>
               </Button>
             )}
+            <Button asChild variant="outline">
+              {/* A file download, not a page: a plain link so the browser saves it. */}
+              <a href={`/admin/shop/export${store ? `?store=${store}` : ""}`} download>
+                <Download /> Export CSV
+              </a>
+            </Button>
             <NewShopProductDialog defaultStore={store} stores={ownShop ? [ownShop] : undefined} />
           </>
         }
