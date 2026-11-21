@@ -37,5 +37,5 @@ async function Basket() {
   ])
   const startWeeks = weeks.filter((week) => week.isBookable).map((week) => week.weekStart)
 
-  return <BasketView products={products} priceBook={priceBook} checkoutEnabled={settings.checkoutEnabled} startWeeks={startWeeks} />
+  return <BasketView products={products} priceBook={priceBook} checkoutEnabled={settings.checkoutEnabled} startWeeks={startWeeks} partsDiscounts={settings.partsDiscounts} />
 }

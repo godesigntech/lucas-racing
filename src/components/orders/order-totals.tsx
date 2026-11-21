@@ -4,7 +4,7 @@ import type { Order } from "@/types/order"
 export function OrderTotals({
   order,
 }: {
-  order: Pick<Order, "subtotal" | "deliveryLabel" | "deliveryPrice" | "total"> & { depositAmount?: number; rushFee?: number; discountAmount?: number; voucherCode?: string | null }
+  order: Pick<Order, "subtotal" | "deliveryLabel" | "deliveryPrice" | "total"> & { depositAmount?: number; rushFee?: number; discountAmount?: number; voucherCode?: string | null; partsDiscount?: number }
 }) {
   return (
     <dl className="space-y-2 text-sm">
@@ -20,6 +20,12 @@ export function OrderTotals({
         <div className="flex justify-between gap-3">
           <dt className="text-muted-foreground">Faster turnaround</dt>
           <dd className="tabular-nums">{formatMoney(order.rushFee ?? 0)}</dd>
+        </div>
+      )}
+      {Boolean(order.partsDiscount) && (
+        <div className="flex justify-between gap-3">
+          <dt className="text-muted-foreground">Kart parts discount</dt>
+          <dd className="tabular-nums">−{formatMoney(order.partsDiscount ?? 0)}</dd>
         </div>
       )}
       {Boolean(order.discountAmount) && (

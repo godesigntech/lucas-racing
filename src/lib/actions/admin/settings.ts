@@ -20,7 +20,7 @@ import {
   type SocialLinksValues,
 } from "@/lib/validations/admin"
 import type { ActionResult, StaffRole } from "@/types/account"
-import type { SocialIconName } from "@/types/settings"
+import type { PartsDiscountTier, SocialIconName } from "@/types/settings"
 
 import { getFullAdmin, NOT_ALLOWED } from "./guard"
 
@@ -247,4 +247,28 @@ export async function setSectionVisible(section: "news" | "gallery", visible: bo
   revalidatePath("/")
   const name = section === "news" ? "News and results" : "The gallery"
   return { ok: true, message: visible ? `${name} is now on the website.` : `${name} now shows a coming-soon page.` }
+}
+
+/**
+ * The kart parts quantity discount: from this many custom-finished parts, this % off them.
+ * Steps are sorted by parts; each needs a whole number of parts (2 or more) and a % from 1
+ * to 90, and no two steps can share a number of parts.
+ */
+export async function updatePartsDiscounts(tiers: PartsDiscountTier[]): Promise<ActionResult> {
+  if (isDemoMode()) return DEMO_READ_ONLY
+  if (!(await getFullAdmin())) return NOT_ALLOWED
+  if (!Array.isArray(tiers) || tiers.length > 10) return failure("Add up to 10 steps.")
+  const clean = tiers.map((tier) => ({ parts: Number(tier?.parts), percent: Number(tier?.percent) }))
+  if (clean.some((tier) => !Number.isInteger(tier.parts) || tier.parts < 2 || tier.parts > 50)) return failure("Each step needs a number of parts from 2 to 50.")
+  if (clean.some((tier) => !Number.isFinite(tier.percent) || tier.percent < 1 || tier.percent > 90)) return failure("Each discount needs to be from 1% to 90%.")
+  if (new Set(clean.map((tier) => tier.parts)).size !== clean.length) return failure("Two steps have the same number of parts.")
+  clean.sort((a, b) => a.parts - b.parts)
+  const supabase = await createClient()
+  const { error } = await supabase.from("site_settings").update({ parts_discounts: clean }).eq("id", 1)
+  if (error) return databaseError(error, "We couldn't save the discounts.")
+  refreshSettings()
+  revalidatePath("/basket")
+  revalidatePath("/checkout")
+  revalidatePath("/customisation/kart-parts")
+  return { ok: true, message: clean.length ? "Kart parts discounts saved." : "Kart parts discounts are off." }
 }

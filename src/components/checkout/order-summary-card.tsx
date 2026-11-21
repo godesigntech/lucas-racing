@@ -2,6 +2,7 @@ import Image from "next/image"
 import { Package } from "lucide-react"
 
 import { HelmetArt } from "@/components/helmet/helmet-art"
+import type { PartsDiscount } from "@/lib/basket/parts-discount"
 import type { AvailableLine } from "@/lib/basket/resolve-basket"
 import { chromeHelmetCount, orderDeposit } from "@/lib/configurator/pricing-rules"
 import { formatMoney } from "@/lib/format"
@@ -19,6 +20,8 @@ interface OrderSummaryCardProps {
   chromePrice?: number
   /** A competition voucher: what it takes off, and its code. */
   discount?: { amount: number; code: string; percentOff: number } | null
+  /** The kart parts quantity discount, worked out like the order will be. */
+  partsDiscount?: PartsDiscount
   /** Shown above the order button: the voucher field. */
   extra?: React.ReactNode
   children?: React.ReactNode
@@ -67,10 +70,11 @@ export function OrderSummaryCard({
   rushLabel,
   chromePrice = 0,
   discount = null,
+  partsDiscount,
   extra,
   children,
 }: OrderSummaryCardProps) {
-  const total = subtotal + deliveryPrice + rushFee - (discount?.amount ?? 0)
+  const total = Math.round((subtotal + deliveryPrice + rushFee - (discount?.amount ?? 0) - (partsDiscount?.amount ?? 0)) * 100) / 100
   return (
     <aside className="space-y-5 rounded-3xl bg-carbon p-6 text-paper" aria-label="Order summary">
       <h2 className="font-display text-3xl font-bold uppercase">Your order</h2>
@@ -101,6 +105,14 @@ export function OrderSummaryCard({
           <div className="flex justify-between gap-3">
             <dt className="text-paper/60">{rushLabel ?? "Faster turnaround"}</dt>
             <dd className="tabular-nums">{formatMoney(rushFee)}</dd>
+          </div>
+        )}
+        {partsDiscount && partsDiscount.amount > 0 && (
+          <div className="flex justify-between gap-3">
+            <dt className="text-paper/60">
+              Kart parts discount · {partsDiscount.parts} parts, {partsDiscount.percent}% off
+            </dt>
+            <dd className="tabular-nums">−{formatMoney(partsDiscount.amount)}</dd>
           </div>
         )}
         {discount && discount.amount > 0 && (

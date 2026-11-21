@@ -102,4 +102,6 @@ export interface Order extends OrderListItem {
   /** Taken off by a competition voucher; 0 without one. */
   discountAmount: number
   voucherCode: string | null
+  /** Kart parts quantity discount: 2 or more custom-finished parts; 0 without. */
+  partsDiscount: number
 }

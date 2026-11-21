@@ -10,12 +10,14 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Deposit } from "@/components/checkout/order-summary-card"
 import type { AvailableLine } from "@/lib/basket/resolve-basket"
+import { partsDiscount } from "@/lib/basket/parts-discount"
 import { basketQuoteMessage } from "@/lib/basket/quote-message"
 import { useResolvedBasket } from "@/lib/basket/use-resolved-basket"
 import { chromeBaseCoatPrice, chromeHelmetCount, orderDeposit } from "@/lib/configurator/pricing-rules"
 import { formatMoney } from "@/lib/format"
 import type { PriceBook } from "@/types/catalog"
 import type { CatalogProduct } from "@/types/product"
+import type { PartsDiscountTier } from "@/types/settings"
 
 import { BasketLine } from "./basket-line"
 import { ProductionStart } from "./production-start"
@@ -27,15 +29,19 @@ interface BasketViewProps {
   checkoutEnabled?: boolean
   /** Weeks a helmet can start in (Mondays, soonest first), from the production calendar. */
   startWeeks?: string[]
+  /** Kart parts quantity discount steps (Admin > Settings). */
+  partsDiscounts?: PartsDiscountTier[]
 }
 
-export function BasketView({ products, priceBook, checkoutEnabled = true, startWeeks = [] }: BasketViewProps) {
+export function BasketView({ products, priceBook, checkoutEnabled = true, startWeeks = [], partsDiscounts = [] }: BasketViewProps) {
   const router = useRouter()
   const [startWeek, setStartWeek] = useState(startWeeks[0] ?? "")
   const { items, lines, subtotal, loaded } = useResolvedBasket(products, priceBook)
   const available = lines.filter((line): line is AvailableLine => line.available)
   const orderable = available.length > 0
   const hasHelmets = lines.some((line) => line.available && line.kind === "helmet")
+  const discount = partsDiscount(available, partsDiscounts)
+  const total = Math.round((subtotal - discount.amount) * 100) / 100
 
   if (!loaded) return <Skeleton className="h-80 rounded-3xl" aria-label="Loading your basket" />
 
@@ -80,15 +86,26 @@ export function BasketView({ products, priceBook, checkoutEnabled = true, startW
             <dt className="text-paper/60">Delivery</dt>
             <dd className="text-paper/60">Chosen at checkout</dd>
           </div>
+          {discount.amount > 0 && (
+            <div className="flex justify-between">
+              <dt className="text-paper/60">Kart parts discount ({discount.parts} parts, {discount.percent}%)</dt>
+              <dd className="font-semibold tabular-nums text-brand">−{formatMoney(discount.amount)}</dd>
+            </div>
+          )}
         </dl>
+        {discount.next && (
+          <p className="rounded-xl bg-white/5 px-3 py-2 text-xs text-paper/75">
+            Add {discount.next.parts - discount.parts} more custom {discount.next.parts - discount.parts === 1 ? "part" : "parts"} to get {discount.next.percent}% off your kart parts.
+          </p>
+        )}
         <div className="flex items-baseline justify-between border-t border-white/10 pt-4">
           <span className="text-sm text-paper/60">Estimated total</span>
-          <span className="font-display text-4xl font-bold">{formatMoney(subtotal)}</span>
+          <span className="font-display text-4xl font-bold">{formatMoney(total)}</span>
         </div>
         {orderable && (
           <Deposit
             label="Estimated deposit"
-            amount={orderDeposit(subtotal, chromeHelmetCount(available), chromeBaseCoatPrice(priceBook))}
+            amount={orderDeposit(total, chromeHelmetCount(available), chromeBaseCoatPrice(priceBook))}
             chrome={chromeHelmetCount(available) > 0}
           />
         )}
@@ -99,7 +116,7 @@ export function BasketView({ products, priceBook, checkoutEnabled = true, startW
         {orderable && !checkoutEnabled ? (
           // While checkout is off (Admin > Settings > Launches), the basket goes to the team as a quote request.
           <>
-            <Button size="lg" className="w-full" onClick={() => router.push(`/contact?message=${encodeURIComponent(basketQuoteMessage(available, window.location.origin, hasHelmets ? startWeek : undefined))}`)}>
+            <Button size="lg" className="w-full" onClick={() => router.push(`/contact?message=${encodeURIComponent(basketQuoteMessage(available, window.location.origin, hasHelmets ? startWeek : undefined, discount))}`)}>
               Request a quote <ArrowRight />
             </Button>
             <p className="text-xs text-paper/70">We&apos;re not taking orders online just yet. Send us your basket and we&apos;ll reply with a quote.</p>

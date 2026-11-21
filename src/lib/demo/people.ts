@@ -97,6 +97,7 @@ function order(seed: OrderSeed): Order {
     rushFee: 0,
     depositAmount: 0,
     discountAmount: 0,
+    partsDiscount: 0,
     voucherCode: null,
     customerName: seed.customer.fullName,
     customerEmail: seed.customer.email,

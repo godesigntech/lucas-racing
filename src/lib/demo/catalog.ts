@@ -24,6 +24,7 @@ export const demoSettings: SiteSettings = {
   showGallery: true,
   siteNotice: "",
   checkoutEnabled: true,
+  partsDiscounts: [{ parts: 2, percent: 10 }, { parts: 3, percent: 20 }, { parts: 4, percent: 30 }, { parts: 5, percent: 40 }],
   showSiteNotice: false,
   socialLinks: [
     { label: "Instagram", icon: "instagram", href: "https://www.instagram.com/" },

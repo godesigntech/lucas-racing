@@ -50,6 +50,7 @@ export type SiteSettingsRow = {
   show_gallery: boolean
   site_notice: string
   checkout_enabled: boolean
+  parts_discounts: Json
   show_site_notice: boolean
   social_links: Json
   delivery_methods: Json
@@ -315,6 +316,8 @@ export type OrderRow = Timestamps & {
   /** Taken off the total by a voucher (place_order_with_voucher()); 0 without one. */
   discount_amount: number
   voucher_code: string | null
+  /** Kart parts quantity discount (order_items_apply_parts_discount()); 0 without one. */
+  parts_discount: number
 }
 
 /** One AI kart sticker design (kart_stickers migration). */

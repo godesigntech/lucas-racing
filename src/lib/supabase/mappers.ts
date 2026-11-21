@@ -159,6 +159,13 @@ export function toSiteSettings(row: SiteSettingsRow): SiteSettings {
     showGallery: row.show_gallery ?? true,
     siteNotice: row.site_notice ?? "",
     checkoutEnabled: row.checkout_enabled ?? true,
+    partsDiscounts: asArray(row.parts_discounts)
+      .map((tier) => {
+        const item = asObject(tier)
+        return { parts: Math.round(Number(item.parts)), percent: Number(item.percent) }
+      })
+      .filter((tier) => tier.parts >= 1 && tier.percent > 0 && tier.percent <= 100)
+      .sort((a, b) => a.parts - b.parts),
     showSiteNotice: row.show_site_notice ?? false,
     socialLinks: asArray(row.social_links).map((link) => {
       const item = asObject(link)
@@ -324,6 +331,7 @@ export function toOrder(
     rushFee: num(row.rush_fee),
     depositAmount: num(row.deposit_amount ?? 0),
     discountAmount: num(row.discount_amount ?? 0),
+    partsDiscount: num(row.parts_discount ?? 0),
     voucherCode: row.voucher_code ?? null,
     items,
     events: [...row.order_status_events]

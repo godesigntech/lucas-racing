@@ -5,6 +5,7 @@ import { AdminUsersCard } from "@/components/admin/settings/admin-users-card"
 import { BusinessForm } from "@/components/admin/settings/business-form"
 import { DeliveryMethodsForm } from "@/components/admin/settings/delivery-methods-form"
 import { LaunchesCard } from "@/components/admin/settings/launches-card"
+import { PartsDiscountCard } from "@/components/admin/settings/parts-discount-card"
 import { SocialLinksForm } from "@/components/admin/settings/social-links-form"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -40,6 +41,9 @@ async function SettingsEditor() {
           <TabsTrigger value="delivery" className="rounded-full px-4">
             Delivery
           </TabsTrigger>
+          <TabsTrigger value="discounts" className="rounded-full px-4">
+            Discounts
+          </TabsTrigger>
           <TabsTrigger value="launches" className="rounded-full px-4">
             Launches
           </TabsTrigger>
@@ -56,6 +60,9 @@ async function SettingsEditor() {
       </TabsContent>
       <TabsContent value="delivery">
         <DeliveryMethodsForm methods={settings.deliveryMethods} />
+      </TabsContent>
+      <TabsContent value="discounts">
+        <PartsDiscountCard tiers={settings.partsDiscounts} />
       </TabsContent>
       <TabsContent value="launches">
         <LaunchesCard kartPartsLive={settings.kartPartsLive} showNews={settings.showNews} showGallery={settings.showGallery} siteNotice={settings.siteNotice} showSiteNotice={settings.showSiteNotice} checkoutEnabled={settings.checkoutEnabled} />

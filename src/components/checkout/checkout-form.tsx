@@ -22,13 +22,14 @@ import { placeOrder } from "@/lib/actions/checkout"
 import { voucherDiscount } from "@/lib/checkout/voucher"
 import { buildUsesChrome } from "@/lib/configurator/helmet-configuration"
 import { basket } from "@/lib/basket/basket-store"
+import { partsDiscount } from "@/lib/basket/parts-discount"
 import { basketSubtotal, toOrderItems, type AvailableLine } from "@/lib/basket/resolve-basket"
 import { useResolvedBasket } from "@/lib/basket/use-resolved-basket"
 import { checkoutSchema, type CheckoutValues } from "@/lib/validations/checkout"
 import type { Profile } from "@/types/account"
 import type { PriceBook } from "@/types/catalog"
 import type { CatalogProduct } from "@/types/product"
-import type { DeliveryMethod } from "@/types/settings"
+import type { DeliveryMethod, PartsDiscountTier } from "@/types/settings"
 import type { ProductionOptions } from "@/lib/data/production"
 
 import { CheckoutSection } from "./checkout-section"
@@ -43,9 +44,11 @@ interface CheckoutFormProps {
   products: CatalogProduct[]
   priceBook: PriceBook
   production: ProductionOptions
+  /** Kart parts quantity discount steps (Admin > Settings). */
+  partsDiscounts?: PartsDiscountTier[]
 }
 
-export function CheckoutForm({ profile, deliveryMethods, products, priceBook, production }: CheckoutFormProps) {
+export function CheckoutForm({ profile, deliveryMethods, products, priceBook, production, partsDiscounts = [] }: CheckoutFormProps) {
   const router = useRouter()
   const basketState = useResolvedBasket(products, priceBook)
   const loaded = basketState.loaded
@@ -57,6 +60,7 @@ export function CheckoutForm({ profile, deliveryMethods, products, priceBook, pr
   // A competition voucher: a percentage off one helmet's custom finish.
   const [voucher, setVoucher] = useState<AppliedVoucher | null>(null)
   const discount = voucher ? { ...voucher, amount: voucherDiscount(lines, voucher.percentOff, priceBook) } : null
+  const kartPartsDiscount = partsDiscount(lines, partsDiscounts)
 
   const firstMethod = deliveryMethods[0]
   const {
@@ -313,6 +317,7 @@ export function CheckoutForm({ profile, deliveryMethods, products, priceBook, pr
           rushFee={rushFee}
           rushLabel={chosenTier && chosenTier.key !== "standard" ? chosenTier.label : undefined}
           discount={discount}
+          partsDiscount={kartPartsDiscount}
           extra={<VoucherField voucher={voucher} onChange={setVoucher} hasHelmets={hasHelmets} />}
         >
           <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>

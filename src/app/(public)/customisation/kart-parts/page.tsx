@@ -1,6 +1,6 @@
 import { Suspense } from "react"
 import type { Metadata } from "next"
-import { Droplets, Paintbrush, PackageCheck, Wrench } from "lucide-react"
+import { BadgePercent, Droplets, Paintbrush, PackageCheck, Wrench } from "lucide-react"
 
 import { CustomPartCard } from "@/components/kart-parts/custom-part-card"
 import { KartPartsBrand } from "@/components/kart-parts/kart-parts-brand"
@@ -13,7 +13,9 @@ import { PageHero } from "@/components/shared/page-hero"
 import { SectionHeading } from "@/components/shared/section-heading"
 import { Skeleton } from "@/components/ui/skeleton"
 import { images } from "@/constants/images"
+import { describeTiers } from "@/lib/basket/parts-discount"
 import { getPriceBook } from "@/lib/data/products"
+import { getSiteSettings } from "@/lib/data/settings"
 import { canSeeKartParts, listCustomParts } from "@/lib/data/shop"
 
 export const metadata: Metadata = {
@@ -57,7 +59,7 @@ async function KartParts() {
     )
   }
 
-  const [parts, priceBook] = await Promise.all([listCustomParts(), getPriceBook()])
+  const [parts, priceBook, settings] = await Promise.all([listCustomParts(), getPriceBook(), getSiteSettings()])
 
   return (
     <>
@@ -73,6 +75,13 @@ async function KartParts() {
       <section className="py-12 sm:py-16">
         <Container className="space-y-10">
           <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Customisation", href: "/customisation" }, { label: "Kart parts" }]} />
+          {settings.partsDiscounts.length > 0 && parts.length > 1 && (
+            <p className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl bg-accent px-4 py-3 text-sm text-accent-foreground">
+              <BadgePercent className="size-5 shrink-0 text-brand-ink" aria-hidden />
+              <span className="font-semibold">Finish more parts, save more:</span>
+              <span>{describeTiers(settings.partsDiscounts)} off, taken off in your basket.</span>
+            </p>
+          )}
           {parts.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-carbon/20 p-10 text-center">
               <p className="font-display text-2xl font-bold uppercase">No parts yet</p>

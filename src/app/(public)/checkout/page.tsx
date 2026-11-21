@@ -61,6 +61,7 @@ async function CheckoutContent() {
       products={products}
       priceBook={priceBook}
       production={production}
+      partsDiscounts={settings.partsDiscounts}
     />
   )
 }

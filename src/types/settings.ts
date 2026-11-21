@@ -16,6 +16,12 @@ export interface DeliveryMethod {
   active: boolean
 }
 
+/** One step of the kart parts quantity discount, e.g. 3 parts or more: 20% off. */
+export interface PartsDiscountTier {
+  parts: number
+  percent: number
+}
+
 export interface SiteSettings {
   businessName: string
   partnerName: string
@@ -37,6 +43,8 @@ export interface SiteSettings {
   siteNotice: string
   /** Customers can place orders (off: the basket asks for a quote instead, e.g. while prices are confirmed). */
   checkoutEnabled: boolean
+  /** Quantity discount on custom-finished kart parts: from this many parts, this % off them. */
+  partsDiscounts: PartsDiscountTier[]
   showSiteNotice: boolean
   socialLinks: SocialLink[]
   deliveryMethods: DeliveryMethod[]
