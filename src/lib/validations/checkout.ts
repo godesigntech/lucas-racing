@@ -119,6 +119,8 @@ export const helmetItemSchema = z.object({
     aero: z.string().trim().max(60).optional(),
     visor: z.string().trim().max(60).optional(),
     visorKit: z.string().trim().max(40).optional(),
+    visorScrews: z.string().trim().max(40).optional(),
+    visorScrewStyle: z.string().trim().max(40).optional(),
     visorStrip: z
       .object({
         enabled: z.boolean(),

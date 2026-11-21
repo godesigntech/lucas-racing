@@ -50,7 +50,9 @@ async function getCatalog(): Promise<Catalog> {
 
 function buildCatalog(products: Product[], helmetModels: HelmetModel[], films: Film[], options: ConfiguratorOption[]): Catalog {
   const grouped = Object.fromEntries(optionGroupKeys.map((key) => [key, []])) as unknown as PriceBook["options"]
-  for (const option of options) grouped[option.group as OptionGroupKey].push(option)
+  // An option group this code doesn't know yet (added in the database before a deploy) is
+  // skipped rather than breaking every page that prices a helmet.
+  for (const option of options) grouped[option.group as OptionGroupKey]?.push(option)
 
   return {
     products: products.map((product) => ({

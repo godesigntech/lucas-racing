@@ -15,8 +15,8 @@ export function PartOptions({ config, priceBook, update }: {
   priceBook: PriceBook
   update: (changes: Partial<HelmetConfiguration>) => void
 }) {
-  // The trims are chosen above; a visor fitting kit sets the pivot, side vents and screws itself.
-  const kitParts: string[] = config.visorKit ? ["visorPivot", "sideVents", "screws"] : []
+  // The trims are chosen above; the visor kits set the pivot and side vents (plastics) and the screws themselves.
+  const kitParts: string[] = [...(config.visorKit ? ["visorPivot", "sideVents"] : []), ...(config.visorScrews ? ["screws"] : [])]
   const parts = partsFor(config.model).filter(({ key }) => key !== "eyeportTrim" && key !== "baseTrim" && !kitParts.includes(key))
   const [selected, setSelected] = useState<HelmetPartKey | undefined>(parts[0]?.key)
   const part = parts.find(({ key }) => key === selected) ?? parts[0]

@@ -83,6 +83,14 @@ export function pendingPrices(
     const kit = find("visor_kit", config.visorKit)
     pending.push(fromOption(kit, "visorKit", `${kit?.label ?? ""} visor fitting kit`))
   }
+  if (config.model === "arai-sk6" && config.visorScrews) {
+    const screws = find("visor_screws", config.visorScrews)
+    pending.push(fromOption(screws, "visorScrews", `${screws?.label ?? ""} visor screws`))
+    if (config.visorScrewStyle) {
+      const style = find("visor_screw_style", config.visorScrewStyle)
+      pending.push(fromOption(style, "visorScrewStyle", `${style?.label ?? ""} screw style`))
+    }
+  }
 
   // One entry per thing, even if it was chosen in two places.
   const seen = new Set<string>()

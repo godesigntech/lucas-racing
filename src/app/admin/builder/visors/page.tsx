@@ -33,7 +33,9 @@ async function Visors() {
       <BuilderOptionGroups
         groups={[
           { key: "visor_strip", title: "Visor strip", description: "Step 13: the printed band across the top of the visor." },
-          { key: "visor_kit", title: "Visor fitting kit (Arai SK-6)", description: "Exterior step: the visor pivot, side covers and screws in one colour. Leave a price blank until it's confirmed: it still previews, but checkout won't take it." },
+          { key: "visor_kit", title: "Visor kit plastics (Arai SK-6)", description: "Exterior step: the pivot plates, round caps and side pods in one colour. Leave a price blank until it's confirmed: it still previews, but checkout won't take it." },
+          { key: "visor_screws", title: "Visor screws (Arai SK-6)", description: "Exterior step: the visor screws and bolts in one colour, chosen separately from the plastics." },
+          { key: "visor_screw_style", title: "Visor screw style (Arai SK-6)", description: "Exterior step: Plain, Dash or Oval screw heads, added to the screw price. Shown once screws are chosen." },
         ]}
       />
     </div>

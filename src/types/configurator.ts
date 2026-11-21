@@ -158,8 +158,12 @@ export interface HelmetConfiguration extends HelmetPartColours {
   /** How the spoilers are finished. Left out, they stay clear. */
   spoilerFinish?: SpoilerFinish
   visorStrip?: VisorStrip
-  /** Arai SK-6 visor fitting kit (visor_kit option): visor pivot, side covers and screws in one colour. */
+  /** Arai SK-6 visor fitting kit (visor_kit option): the plastics (pivot plates, round caps, side pods) in one colour. */
   visorKit?: string
+  /** Arai SK-6 visor screw kit (visor_screws option): the screws and bolts in one colour. */
+  visorScrews?: string
+  /** The screw kit's style (visor_screw_style option): plain, dash or oval. Only with visorScrews. */
+  visorScrewStyle?: string
 
   /** Treatment per editable region of the template, keyed by region key. */
   regions?: Record<string, RegionTreatment>

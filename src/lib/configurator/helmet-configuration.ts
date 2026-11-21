@@ -286,9 +286,15 @@ function carryV2Fields(
 
   if (typeof input.aero === "string" && input.aero) config.aero = input.aero.slice(0, 60)
   if (typeof input.visor === "string" && input.visor) config.visor = input.visor.slice(0, 60)
-  // The visor fitting kit is an Arai SK-6 part.
+  // The visor fitting kit and screw kit are Arai SK-6 parts; a screw style needs screws.
   if (config.model === "arai-sk6" && typeof input.visorKit === "string" && activeOptions(priceBook, "visor_kit").some((option) => option.value === input.visorKit)) {
     config.visorKit = input.visorKit
+  }
+  if (config.model === "arai-sk6" && typeof input.visorScrews === "string" && activeOptions(priceBook, "visor_screws").some((option) => option.value === input.visorScrews)) {
+    config.visorScrews = input.visorScrews
+    if (typeof input.visorScrewStyle === "string" && activeOptions(priceBook, "visor_screw_style").some((option) => option.value === input.visorScrewStyle)) {
+      config.visorScrewStyle = input.visorScrewStyle
+    }
   }
 
   const strip = input.visorStrip
@@ -420,10 +426,20 @@ export function visorKitOption(config: HelmetConfiguration, priceBook: PriceBook
   return priceBook.options.visor_kit?.find((option) => option.value === config.visorKit && option.isActive)
 }
 
-/** The kit's parts in its colour, over any colours picked for them one by one. */
+/** The chosen visor screw kit (Arai SK-6) and its style, if any. */
+export function visorScrewOptions(config: HelmetConfiguration, priceBook: PriceBook) {
+  if (config.model !== "arai-sk6" || !config.visorScrews) return undefined
+  const screws = priceBook.options.visor_screws?.find((option) => option.value === config.visorScrews && option.isActive)
+  if (!screws) return undefined
+  const style = config.visorScrewStyle ? priceBook.options.visor_screw_style?.find((option) => option.value === config.visorScrewStyle && option.isActive) : undefined
+  return { screws, style }
+}
+
+/** The kits' parts in their colours, over any colours picked for them one by one: plastics, then screws. */
 function visorKitColours(config: HelmetConfiguration, priceBook: PriceBook): Partial<Record<"visorPivot" | "sideVents" | "screws", string>> {
-  const colour = visorKitOption(config, priceBook)?.swatch
-  return colour ? { visorPivot: colour, sideVents: colour, screws: colour } : {}
+  const plastics = visorKitOption(config, priceBook)?.swatch
+  const screws = visorScrewOptions(config, priceBook)?.screws.swatch
+  return { ...(plastics ? { visorPivot: plastics, sideVents: plastics } : {}), ...(screws ? { screws } : {}) }
 }
 
 export function configurationToLook(product: CatalogProduct, config: HelmetConfiguration, priceBook: PriceBook): HelmetLook {
@@ -566,6 +582,9 @@ export function calculateHelmetPrice(
   if (visor?.price) lines.push({ label: `${visor.name} visor`, amount: visor.price })
   const kit = visorKitOption(config, priceBook)
   if (kit?.price) lines.push({ label: `${kit.label} visor fitting kit`, amount: kit.price })
+  const screwKit = visorScrewOptions(config, priceBook)
+  if (screwKit?.screws.price) lines.push({ label: `${screwKit.screws.label} visor screws`, amount: screwKit.screws.price })
+  if (screwKit?.style?.price) lines.push({ label: `${screwKit.style.label} screw style`, amount: screwKit.style.price })
 
   if (config.visorStrip?.enabled) {
     const strip = priceBook.options.visor_strip?.find((item) => item.value === "printed")
@@ -641,6 +660,8 @@ export function summariseConfiguration(
   if (visor) lines.push({ key: "visor", label: "Visor", value: visor.name })
   const kitOption = visorKitOption(config, priceBook)
   if (kitOption) lines.push({ key: "visorKit", label: "Visor fitting kit", value: kitOption.label })
+  const screwChoice = visorScrewOptions(config, priceBook)
+  if (screwChoice) lines.push({ key: "visorScrews", label: "Visor screws", value: [screwChoice.screws.label, screwChoice.style?.label].filter(Boolean).join(", ") })
 
   if (config.visorStrip?.enabled) {
     const design = findStickerDesign(config.visorStrip.design)

@@ -36,6 +36,7 @@ const stepFor: Record<string, BuilderStepId> = {
   spoiler: "aero",
   visor: "visor",
   visorKit: "exterior",
+  visorScrews: "exterior",
   visorStrip: "visorStrip",
   visorStripBottom: "visorStrip",
   visorStripFinish: "visorStrip",
